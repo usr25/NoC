@@ -1,2 +1,4 @@
 # Engine
-A try at making a chess engine
+
+An attempt at making a chess engine from scratch.
+
