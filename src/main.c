@@ -7,13 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../include/chess.h"
+#include "../include/io.h"
+#include "../include/board.h"
+#include "../include/test.h"
+
+#define BOOL(x) ((x)?"true":"false")
 
 int main(int argc, char const *argv[])
 {
-    printf("%d\n", DIMS);
-    printf("%d\n", DIMS2);
-    printf("%d\n", val());
-    
+    drawPosition(defaultBoard());
+    printf("[+] Starting pos is valid: %s\n", BOOL(validStartingPos(defaultBoard())));
     return (EXIT_SUCCESS);
 }

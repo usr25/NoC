@@ -1,0 +1,2 @@
+
+int validStartingPos(Board b); 

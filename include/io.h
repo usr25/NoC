@@ -1,0 +1,3 @@
+
+int getNextMove();
+void drawPosition();
