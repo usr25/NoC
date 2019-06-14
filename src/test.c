@@ -27,3 +27,12 @@ int validStartingPos(Board b)
     return 
     correctNumOfPieces && piecesAddUp && availableAddUp && avAreCorrect && whiteAreInAvBlack && blackAreInAvWhite;
 }
+
+int validPieces(Board b)
+{
+    int validKings = (__builtin_popcountll(b.wKing) == 1) && (__builtin_popcountll(b.bKing) == 1);
+    int totNumPieces = (__builtin_popcountll(b.white) <= 16) && (__builtin_popcountll(b.black) <= 16);
+    int validNumPawns = (__builtin_popcountll(b.wPawns) <= 8) && (__builtin_popcountll(b.bPawns) <= 8);
+
+    return validKings && totNumPieces && validNumPawns;
+}

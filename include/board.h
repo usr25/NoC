@@ -52,5 +52,5 @@ typedef struct
     unsigned long long bKnight;
 } Board;
 
-Board generateFromFen(char const* fen);
+Board generateFromFen(char* const fen, char* const toPlay);
 Board defaultBoard();
