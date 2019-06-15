@@ -28,6 +28,21 @@ unsigned long long board[NUMPIECES];
 #define ALL 0xffffffffffffffff
 #define SIDE 8
 
+#define WCASTLEK 16
+#define WCASTLEQ 8
+#define BCASTLEK 4
+#define BCASTLEQ 2
+
+#define WHITETOPLAY 1
+
+//The LSB is used to indicate the color
+#define KING 2
+#define QUEEN 4
+#define ROOK 8
+#define BISH 16
+#define KNIGHT 32
+#define PAWN 64
+
 typedef struct
 {
     unsigned long long white;
@@ -50,7 +65,14 @@ typedef struct
     unsigned long long bBish;
     unsigned long long bRook;
     unsigned long long bKnight;
+
+    int posInfo;
+    int value;
 } Board;
 
-Board generateFromFen(char* const fen, char* const toPlay);
+Board generateFromFen(char* const fen, char* const toPlay, char* const castle);
 Board defaultBoard();
+
+unsigned int pieceAt(Board* const b, const unsigned int coord);
+unsigned int whitePieceAt(Board* const b, const unsigned int coord);
+unsigned int blackPieceAt(Board* const b, const unsigned int coord);

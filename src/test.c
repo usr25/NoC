@@ -23,9 +23,10 @@ int validStartingPos(Board b)
     int avAreCorrect = (b.white & b.avWhite) == 0 && (b.black & b.avBlack) == 0;
     int whiteAreInAvBlack = (b.white & b.avBlack) == b.white;
     int blackAreInAvWhite = (b.black & b.avWhite) == b.black;
+    int posInfoCorrect = b.posInfo == 0b11111;
 
     return 
-    correctNumOfPieces && piecesAddUp && availableAddUp && avAreCorrect && whiteAreInAvBlack && blackAreInAvWhite;
+    correctNumOfPieces && piecesAddUp && availableAddUp && avAreCorrect && whiteAreInAvBlack && blackAreInAvWhite && posInfoCorrect;
 }
 
 int validPieces(Board b)

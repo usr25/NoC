@@ -15,15 +15,16 @@
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-int main(int argc, char* const argv[])
+int main(const int argc, char* const argv[])
 {
     Board start;
     if (argc >= 2)
-        start = generateFromFen(argv[1], argv[2]);
+        start = generateFromFen(argv[1], argv[2], argv[3]);
     else
         start = defaultBoard();
     drawPosition(start);
     printf("[+] Is starting pos: %s\n", BOOL(validStartingPos(start)));
     printf("[+] Pieces are valid: %s\n", BOOL(validPieces(start)));
+
     return (EXIT_SUCCESS);
 }

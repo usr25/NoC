@@ -31,7 +31,7 @@ White pieces
 
 //Starting: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-Board generateFromFen(char* const fen, char* const toPlay)
+Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
 {
     Board b = (Board) {};
     int i, num, shift;
@@ -103,10 +103,35 @@ Board generateFromFen(char* const fen, char* const toPlay)
 
         pos >>= shift;
     }
-    int whiteToPlay = toPlay[0] == 'w';
 
     b.avWhite = ALL ^ b.white;
     b.avBlack = ALL ^ b.black;
+
+    int castleInfo = 0;
+
+    for (int i = 0, brk = 1; brk && i < 4; ++i)
+    {
+        switch (castle[i])
+        {
+            case 'K':
+                castleInfo |= WCASTLEK;
+                break;
+            case 'Q':
+                castleInfo |= WCASTLEQ;
+                break;
+            case 'k':
+                castleInfo |= BCASTLEK;
+                break;
+            case 'q':
+                castleInfo |= BCASTLEQ;
+                break;
+            default:
+                brk = 0;
+                break;
+        }
+    }
+
+    b.posInfo = castleInfo | (toPlay[0] == 'w');
 
     return b;
 }
@@ -118,8 +143,56 @@ Board defaultBoard()
     .wKing = INITIAL_WKING, .wQueen = INITIAL_WQUEEN, .wRook = INITIAL_WROOK, .wBish = INITIAL_WBISH, .wKnight = INITIAL_WKNIGHT,
     
     .black = INITIAL_BPIECES, .avBlack = ALL ^ INITIAL_BPIECES, .bPawns = INITIAL_BPAWNS, 
-    .bKing = INITIAL_BKING, .bQueen = INITIAL_BQUEEN, .bRook = INITIAL_BROOK, .bBish = INITIAL_BBISH, .bKnight = INITIAL_BKNIGHT
+    .bKing = INITIAL_BKING, .bQueen = INITIAL_BQUEEN, .bRook = INITIAL_BROOK, .bBish = INITIAL_BBISH, .bKnight = INITIAL_BKNIGHT,
+    .posInfo = 0b11111
     };
 
     return b;
+}
+
+//Get the piece in the respective coord
+unsigned int pieceAt(Board* const b, const unsigned int coord)
+{
+    if ((1ULL << coord) & b->white)
+        return whitePieceAt(b, coord);
+    else if ((1ULL << coord) & b->black)
+        return blackPieceAt(b, coord);
+    return 0;
+}
+
+/*
+Specialized cases in which it is already assumed that there is a piece of 
+the respective color.
+The ifs are improved based on the average num of the piece type there are on
+the board
+*/
+
+//TODO: finish implementing using the coords
+unsigned int whitePieceAt(Board* const b, const unsigned int coord)
+{
+    unsigned long long pos = 1ULL << coord;
+    unsigned int res = 1;
+
+    if (pos & b->wPawns)     res |= PAWN;
+    else if (pos & b->wRook) res |= ROOK;
+    else if (pos & b->wBish) res |= BISH;
+    else if (pos & b->wKnight) res |= KNIGHT;
+    else if (pos & b->wQueen) res |= QUEEN;
+    else if (pos & b->wKing) res |= KING;
+
+    return res;
+}
+unsigned int blackPieceAt(Board* const b, const unsigned int coord)
+{
+    unsigned long long pos = 1ULL << coord;
+    unsigned int res = 0;
+
+    if (pos & b->bPawns)     res |= PAWN;
+    else if (pos & b->bRook) res |= ROOK;
+    else if (pos & b->bBish) res |= BISH;
+    else if (pos & b->bKnight) res |= KNIGHT;
+    else if (pos & b->bQueen) res |= QUEEN;
+    else if (pos & b->bKing) res |= KING;
+    
+    return res;
 }

@@ -3,7 +3,7 @@
 
 #include "../include/board.h"
 
-void drawPosition(Board b, int drawCoords){
+void drawPosition(const Board b, const int drawCoords){
     unsigned long long pos = 1LLU << 63;
     int i, j;
     for (i = 0; i < SIDE; ++i)
@@ -47,4 +47,17 @@ void drawPosition(Board b, int drawCoords){
     printf("\n");
     if (drawCoords)
         printf(" a  b  c  d  e  f  g  h\n");
+}
+
+int getNextMove()
+{
+    int fcol, tcol;
+    int frow, trow;
+
+    printf("From col:"); scanf("%d", &fcol);
+    printf("From row:"); scanf("%d", &frow);
+    printf("To col:"); scanf("%d", &tcol);
+    printf("To row:"); scanf("%d", &trow);
+
+    return fcol - (int)'a' + frow - 1;
 }
