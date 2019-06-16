@@ -26,7 +26,6 @@ unsigned long long board[NUMPIECES];
 */
 
 #define ALL 0xffffffffffffffff
-#define SIDE 8
 
 #define WCASTLEK 16
 #define WCASTLEQ 8
@@ -67,11 +66,12 @@ typedef struct
     unsigned long long bKnight;
 
     int posInfo;
-    int value;
 } Board;
 
 Board generateFromFen(char* const fen, char* const toPlay, char* const castle);
 Board defaultBoard();
+
+unsigned int index(unsigned long long bitboard, int prev);
 
 unsigned int pieceAt(Board* const b, const unsigned int coord);
 unsigned int whitePieceAt(Board* const b, const unsigned int coord);

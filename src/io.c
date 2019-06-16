@@ -3,12 +3,12 @@
 
 #include "../include/board.h"
 
-void drawPosition(const Board b, const int drawCoords){
+void drawPosition(Board b, const int drawCoords){
     unsigned long long pos = 1LLU << 63;
     int i, j;
-    for (i = 0; i < SIDE; ++i)
+    for (i = 0; i < 8; ++i)
     {
-        for (j = 0; j < SIDE; ++j)
+        for (j = 0; j < 8; ++j)
         {
             if (pos & b.wPawns)
                 printf(" P ");
@@ -40,13 +40,25 @@ void drawPosition(const Board b, const int drawCoords){
             pos >>= 1;
         }
         if (drawCoords)
-            printf("  %d\n", SIDE - i);
+            printf("  %d\n", 8 - i);
         else
             printf("\n");
     }
     printf("\n");
     if (drawCoords)
         printf(" a  b  c  d  e  f  g  h\n");
+}
+void drawBitboard(unsigned long long b)
+{
+    unsigned long long pos = 1ULL << 63;
+    for (int i = 64; i > 0; --i)
+    {
+        if (i % 8 == 0) printf("\n");
+        printf("%d", pos & b?1:0);
+        pos >>= 1;
+
+    }
+    printf("\n");
 }
 
 int getNextMove()

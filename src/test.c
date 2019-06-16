@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "../include/board.h"
 
 int validStartingPos(Board b)

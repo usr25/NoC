@@ -7,9 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../include/io.h"
 #include "../include/board.h"
+#include "../include/io.h"
 #include "../include/test.h"
+#include "../include/node.h"
+#include "../include/memoization.h"
 
 #define BOOL(x) ((x)?"true":"false")
 
@@ -22,9 +24,18 @@ int main(const int argc, char* const argv[])
         start = generateFromFen(argv[1], argv[2], argv[3]);
     else
         start = defaultBoard();
-    drawPosition(start);
+
+    drawPosition(start, 1);
     printf("[+] Is starting pos: %s\n", BOOL(validStartingPos(start)));
     printf("[+] Pieces are valid: %s\n", BOOL(validPieces(start)));
+
+    initialize();
+
+    for (int i = 8; i < 56; ++i)
+    {
+        unsigned long long p = getBlackPawnCaptures(i);
+        drawBitboard(p);
+    }
 
     return (EXIT_SUCCESS);
 }

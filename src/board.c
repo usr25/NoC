@@ -150,6 +150,22 @@ Board defaultBoard()
     return b;
 }
 
+/*
+prev is incremented by 1, so the first call has to be made with prev = -1
+It begins from h1, so that the wking index = 1 and bking index = 59
+*/
+unsigned int index(const unsigned long long bitboard, int prev)
+{
+    unsigned long long pos = 1ULL << (++prev);
+    
+    while(prev < 64 && !(pos & bitboard))
+    {
+        pos <<= 1;
+        ++prev;
+    }
+
+    return prev;
+}
 //Get the piece in the respective coord
 unsigned int pieceAt(Board* const b, const unsigned int coord)
 {
