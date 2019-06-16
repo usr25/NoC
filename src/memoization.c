@@ -1,4 +1,3 @@
-
 unsigned long long kingMoves[64];
 unsigned long long queenMoves[64];
 unsigned long long rookMoves[64];
@@ -10,12 +9,20 @@ unsigned long long whitePawnCaptures[64];
 unsigned long long blackPawnMoves[64];
 unsigned long long blackPawnCaptures[64];
 
+static inline int GETX(int i)
+{return i % 8;}
+static inline int GETY(int i)
+{return i / 8;}
+
+static inline int ISVALID(int x, int y)
+{return x >= 0 && x < 8 && y >= 0 && y < 8;}
+
 void genWhitePawnMoves()
 {   
     int i = 8;
 
     for (; i < 16; ++i)
-        whitePawnMoves[i] = ((1ULL << (i + 8)) + (1ULL << i)) << 8;
+        whitePawnMoves[i] = ((1ULL << (i + 8)) | (1ULL << i)) << 8;
 
     for (; i < 56; ++i)
         whitePawnMoves[i] = 1ULL << (i + 8);
@@ -25,7 +32,7 @@ void genBlackPawnMoves()
     int i = 55;
 
     for (; i > 47; --i)
-        blackPawnMoves[i] = ((1ULL << (i - 8)) + (1ULL << i)) >> 8;
+        blackPawnMoves[i] = ((1ULL << (i - 8)) | (1ULL << i)) >> 8;
 
     for (; i > 7; --i)
         blackPawnMoves[i] = 1ULL << (i - 8);
@@ -40,7 +47,7 @@ void genWhitePawnCaptures()
         else if (i % 8 == 7)
             whitePawnCaptures[i] = 1ULL << (i + 7);
         else
-            whitePawnCaptures[i] = ((1ULL << 2) + 1ULL) << (i + 7);
+            whitePawnCaptures[i] = ((1ULL << 2) | 1ULL) << (i + 7);
     }
 }
 void genBlackPawnCaptures()
@@ -53,19 +60,150 @@ void genBlackPawnCaptures()
         else if (i % 8 == 7)
             blackPawnCaptures[i] = 1ULL << (i - 9);
         else
-            blackPawnCaptures[i] = ((1ULL << 2) + 1ULL) << (i - 9);
+            blackPawnCaptures[i] = ((1ULL << 2) | 1ULL) << (i - 9);
+    }
+}
+
+//Generates the king moves, it does NOT implement castling
+void genKingMoves()
+{
+    int x, y, i;
+    unsigned long long pos;
+    for (i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        if (ISVALID(x + 1, y + 1)) pos |= 1ULL << ((y + 1) * 8 + x + 1);
+        if (ISVALID(x - 1, y + 1)) pos |= 1ULL << ((y + 1) * 8 + x - 1);
+        if (ISVALID(x + 1, y - 1)) pos |= 1ULL << ((y - 1) * 8 + x + 1);
+        if (ISVALID(x - 1, y - 1)) pos |= 1ULL << ((y - 1) * 8 + x - 1);
+        if (ISVALID(x + 1, y)) pos |= 1ULL << (y * 8 + x + 1);
+        if (ISVALID(x - 1, y)) pos |= 1ULL << (y * 8 + x - 1);
+        if (ISVALID(x, y + 1)) pos |= 1ULL << ((y + 1) * 8 + x);
+        if (ISVALID(x, y - 1)) pos |= 1ULL << ((y - 1) * 8 + x);
+
+        kingMoves[i] = pos;
+    }
+}
+void genQueenMoves()
+{
+    int x, y, i, j;
+    unsigned long long pos;
+    for (i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int x0 = 0; x0 < 8; ++x0)
+        {
+            if (x0 != x)
+                pos |= 1ULL << (y * 8 + x0);
+        }
+        for (int y0 = 0; y0 < 8; ++y0)
+        {
+            if (y0 != y)
+                pos |= 1ULL << (y0 * 8 + x);
+        }
+
+        for (j = 1; x + j < 8 && y + j < 8; ++j)
+            pos |= 1ULL << ((y + j) * 8 + x + j);
+
+        for (j = 1; x - j > -1 && y + j < 8; ++j)
+            pos |= 1ULL << ((y + j) * 8 + x - j);
+        
+        for (j = 1; x + j < 8 && y - j > -1; ++j)
+            pos |= 1ULL << ((y - j) * 8 + x + j);
+        
+        for (j = 1; x - j > -1 && y - j > -1; ++j)
+            pos |= 1ULL << ((y - j) * 8 + x - j);
+
+        queenMoves[i] = pos;
+    }
+}
+
+
+void genRookMoves()
+{
+    int x, y, i;
+    unsigned long long pos;
+    for (i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int x0 = 0; x0 < 8; ++x0)
+        {
+            if (x0 != x)
+                pos |= 1ULL << (y * 8 + x0);
+        }
+        for (int y0 = 0; y0 < 8; ++y0)
+        {
+            if (y0 != y)
+                pos |= 1ULL << (y0 * 8 + x);
+        }
+        rookMoves[i] = pos;
+    }
+}
+void genBishMoves()
+{
+    int x, y, i, j;
+    unsigned long long pos;
+    for (i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (j = 1; x + j < 8 && y + j < 8; ++j)
+            pos |= 1ULL << ((y + j) * 8 + x + j);
+
+        for (j = 1; x - j > -1 && y + j < 8; ++j)
+            pos |= 1ULL << ((y + j) * 8 + x - j);
+        
+        for (j = 1; x + j < 8 && y - j > -1; ++j)
+            pos |= 1ULL << ((y - j) * 8 + x + j);
+        
+        for (j = 1; x - j > -1 && y - j > -1; ++j)
+            pos |= 1ULL << ((y - j) * 8 + x - j);
+        
+        bishMoves[i] = pos;
+    }
+}
+void genKnightMoves()
+{
+    int x, y, i;
+    unsigned long long pos;
+    for (i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        if (ISVALID(x + 1, y + 2)) pos |= 1ULL << ((y + 2) * 8 + x + 1);
+        if (ISVALID(x - 1, y + 2)) pos |= 1ULL << ((y + 2) * 8 + x - 1);
+        if (ISVALID(x + 1, y - 2)) pos |= 1ULL << ((y - 2) * 8 + x + 1);
+        if (ISVALID(x - 1, y - 2)) pos |= 1ULL << ((y - 2) * 8 + x - 1);
+        if (ISVALID(x + 2, y + 1)) pos |= 1ULL << ((y + 1) * 8 + x + 2);
+        if (ISVALID(x - 2, y + 1)) pos |= 1ULL << ((y + 1) * 8 + x - 2);
+        if (ISVALID(x + 2, y - 1)) pos |= 1ULL << ((y - 1) * 8 + x + 2);
+        if (ISVALID(x - 2, y - 1)) pos |= 1ULL << ((y - 1) * 8 + x - 2);
+
+        knightMoves[i] |= pos;
     }
 }
 
 void initialize()
 {
-    /*
-    generateKingMoves();
-    generateQueenMoves();
-    generateRookMoves();
-    generateBishMoves();
-    generateKnightMoves();
-    */
+    genKingMoves();
+    genQueenMoves();
+    genRookMoves();
+    genBishMoves();
+    genKnightMoves();
+
     genWhitePawnMoves();
     genWhitePawnCaptures();
     genBlackPawnMoves();

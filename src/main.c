@@ -31,11 +31,5 @@ int main(const int argc, char* const argv[])
 
     initialize();
 
-    for (int i = 8; i < 56; ++i)
-    {
-        unsigned long long p = getBlackPawnCaptures(i);
-        drawBitboard(p);
-    }
-
     return (EXIT_SUCCESS);
 }
