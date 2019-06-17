@@ -12,10 +12,15 @@
 #include "../include/test.h"
 #include "../include/node.h"
 #include "../include/memoization.h"
+#include "../include/moves.h"
 
 #define BOOL(x) ((x)?"true":"false")
 
-//rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+//rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
+//8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns
+//8/8/2Br2R1/8/8/2BR2r1/8/8 w - -                           Rook moves
+//8/2r4R/3B2b1/8/8/3B2b1/2R4r/8 w - -                       Bish moves
+//8/2n2N2/8/1br2rb1/n1Q2q1N/1BR2RB1/8/8 w - -               Queen moves
 
 int main(const int argc, char* const argv[])
 {
@@ -31,8 +36,9 @@ int main(const int argc, char* const argv[])
 
     initialize();
 
-    for (int i = 0; i < 64; ++i)
-        drawBitboard(getQueenMoves(i));
-
+    drawBitboard(posQueenMoves(&start, 1, 0));    
+    drawBitboard(posQueenMoves(&start, 0, 0));    
+   
+    
     return EXIT_SUCCESS;
 }

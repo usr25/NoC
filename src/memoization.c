@@ -1,7 +1,4 @@
 unsigned long long kingMoves[64];
-unsigned long long queenMoves[64];
-unsigned long long rookMoves[64];
-unsigned long long bishMoves[64];
 unsigned long long knightMoves[64];
 
 unsigned long long rightMoves[64];
@@ -20,6 +17,8 @@ unsigned long long blackPawnMoves[64];
 unsigned long long blackPawnCaptures[64];
 
 #include <stdio.h>
+
+#include "../include/memoization.h"
 
 static inline int GETX(int i)
 {return i % 8;}
@@ -229,23 +228,7 @@ void genKingMoves()
         kingMoves[i] = pos;
     }
 }
-void genQueenMoves()
-{
-    for (int i = 0; i < 64; ++i)
-        queenMoves[i] = rookMoves[i] | bishMoves[i];
-}
 
-
-void genRookMoves()
-{
-    for (int i = 0; i < 64; ++i)
-        rookMoves[i] = rightMoves[i] | leftMoves[i] | upMoves[i] | downMoves[i];
-}
-void genBishMoves()
-{
-    for (int i = 0; i < 64; ++i)
-        bishMoves[i] = uprightMoves[i] | upleftMoves[i] | downrightMoves[i] | downleftMoves[i]; 
-}
 void genKnightMoves()
 {
     int x, y, i;
@@ -282,9 +265,6 @@ void initialize()
     genDownLeftMoves();
 
     genKingMoves();
-    genRookMoves();
-    genBishMoves();
-    genQueenMoves();
     genKnightMoves();
 
     genWhitePawnMoves();
@@ -295,12 +275,6 @@ void initialize()
 
 unsigned long long getKingMoves(unsigned int index)
 {return kingMoves[index];}
-unsigned long long getQueenMoves(unsigned int index)
-{return queenMoves[index];}
-unsigned long long getRookMoves(unsigned int index)
-{return rookMoves[index];}
-unsigned long long getBishMoves(unsigned int index)
-{return bishMoves[index];}
 unsigned long long getKnightMoves(unsigned int index)
 {return knightMoves[index];}
 
