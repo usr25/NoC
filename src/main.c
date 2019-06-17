@@ -31,5 +31,8 @@ int main(const int argc, char* const argv[])
 
     initialize();
 
-    return (EXIT_SUCCESS);
+    for (int i = 0; i < 64; ++i)
+        drawBitboard(getQueenMoves(i));
+
+    return EXIT_SUCCESS;
 }

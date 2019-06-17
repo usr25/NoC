@@ -3,11 +3,23 @@ unsigned long long queenMoves[64];
 unsigned long long rookMoves[64];
 unsigned long long bishMoves[64];
 unsigned long long knightMoves[64];
+
+unsigned long long rightMoves[64];
+unsigned long long leftMoves[64];
+unsigned long long upMoves[64];
+unsigned long long downMoves[64];
+
+unsigned long long uprightMoves[64];
+unsigned long long downrightMoves[64];
+unsigned long long upleftMoves[64];
+unsigned long long downleftMoves[64];
 //It can be made to be 64 - 8 but the impact in memory is tiny
 unsigned long long whitePawnMoves[64];
 unsigned long long whitePawnCaptures[64];
 unsigned long long blackPawnMoves[64];
 unsigned long long blackPawnCaptures[64];
+
+#include <stdio.h>
 
 static inline int GETX(int i)
 {return i % 8;}
@@ -64,6 +76,136 @@ void genBlackPawnCaptures()
     }
 }
 
+void genUpMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int y0 = y + 1; y0 < 8; ++y0)
+            pos |= 1ULL << (y0 * 8 + x);
+
+        upMoves[i] = pos;
+    }
+}
+void genDownMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int y0 = y - 1; y0 > -1; --y0)
+            pos |= 1ULL << (y0 * 8 + x);
+
+        downMoves[i] = pos;
+    }
+}
+void genRightMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int x0 = x - 1; x0 > -1; --x0)
+            pos |= 1ULL << (y * 8 + x0);
+
+        rightMoves[i] = pos;
+    }
+}
+void genLeftMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int x0 = x + 1; x0 < 8; ++x0)
+            pos |= 1ULL << (y * 8 + x0);
+
+        leftMoves[i] = pos;
+    }
+}
+
+void genUpRightMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int j = 1; ISVALID(y + j, x - j); ++j)
+            pos |= 1ULL << ((y + j) * 8 + x - j);
+
+        uprightMoves[i] = pos;
+    }
+}
+void genUpLeftMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int j = 1; ISVALID(y + j, x + j); ++j)
+            pos |= 1ULL << ((y + j) * 8 + x + j);
+
+        upleftMoves[i] = pos;
+    }
+}
+void genDownLeftMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int j = 1; ISVALID(y - j, x + j); ++j)
+            pos |= 1ULL << ((y - j) * 8 + x + j);
+
+        downleftMoves[i] = pos;
+    }
+}
+void genDownRightMoves()
+{
+    int x, y;
+    unsigned long long pos;
+    for (int i = 0; i < 64; ++i)
+    {
+        pos = 0;
+        x = GETX(i);
+        y = GETY(i);
+
+        for (int j = 1; ISVALID(y - j, x - j); ++j)
+            pos |= 1ULL << ((y - j) * 8 + x - j);
+
+        downrightMoves[i] = pos;
+    }
+}
+
 //Generates the king moves, it does NOT implement castling
 void genKingMoves()
 {
@@ -89,89 +231,20 @@ void genKingMoves()
 }
 void genQueenMoves()
 {
-    int x, y, i, j;
-    unsigned long long pos;
-    for (i = 0; i < 64; ++i)
-    {
-        pos = 0;
-        x = GETX(i);
-        y = GETY(i);
-
-        for (int x0 = 0; x0 < 8; ++x0)
-        {
-            if (x0 != x)
-                pos |= 1ULL << (y * 8 + x0);
-        }
-        for (int y0 = 0; y0 < 8; ++y0)
-        {
-            if (y0 != y)
-                pos |= 1ULL << (y0 * 8 + x);
-        }
-
-        for (j = 1; x + j < 8 && y + j < 8; ++j)
-            pos |= 1ULL << ((y + j) * 8 + x + j);
-
-        for (j = 1; x - j > -1 && y + j < 8; ++j)
-            pos |= 1ULL << ((y + j) * 8 + x - j);
-        
-        for (j = 1; x + j < 8 && y - j > -1; ++j)
-            pos |= 1ULL << ((y - j) * 8 + x + j);
-        
-        for (j = 1; x - j > -1 && y - j > -1; ++j)
-            pos |= 1ULL << ((y - j) * 8 + x - j);
-
-        queenMoves[i] = pos;
-    }
+    for (int i = 0; i < 64; ++i)
+        queenMoves[i] = rookMoves[i] | bishMoves[i];
 }
 
 
 void genRookMoves()
 {
-    int x, y, i;
-    unsigned long long pos;
-    for (i = 0; i < 64; ++i)
-    {
-        pos = 0;
-        x = GETX(i);
-        y = GETY(i);
-
-        for (int x0 = 0; x0 < 8; ++x0)
-        {
-            if (x0 != x)
-                pos |= 1ULL << (y * 8 + x0);
-        }
-        for (int y0 = 0; y0 < 8; ++y0)
-        {
-            if (y0 != y)
-                pos |= 1ULL << (y0 * 8 + x);
-        }
-        rookMoves[i] = pos;
-    }
+    for (int i = 0; i < 64; ++i)
+        rookMoves[i] = rightMoves[i] | leftMoves[i] | upMoves[i] | downMoves[i];
 }
 void genBishMoves()
 {
-    int x, y, i, j;
-    unsigned long long pos;
-    for (i = 0; i < 64; ++i)
-    {
-        pos = 0;
-        x = GETX(i);
-        y = GETY(i);
-
-        for (j = 1; x + j < 8 && y + j < 8; ++j)
-            pos |= 1ULL << ((y + j) * 8 + x + j);
-
-        for (j = 1; x - j > -1 && y + j < 8; ++j)
-            pos |= 1ULL << ((y + j) * 8 + x - j);
-        
-        for (j = 1; x + j < 8 && y - j > -1; ++j)
-            pos |= 1ULL << ((y - j) * 8 + x + j);
-        
-        for (j = 1; x - j > -1 && y - j > -1; ++j)
-            pos |= 1ULL << ((y - j) * 8 + x - j);
-        
-        bishMoves[i] = pos;
-    }
+    for (int i = 0; i < 64; ++i)
+        bishMoves[i] = uprightMoves[i] | upleftMoves[i] | downrightMoves[i] | downleftMoves[i]; 
 }
 void genKnightMoves()
 {
@@ -198,10 +271,20 @@ void genKnightMoves()
 
 void initialize()
 {
+    genRightMoves();
+    genLeftMoves();
+    genUpMoves();
+    genDownMoves();
+    
+    genUpRightMoves();
+    genUpLeftMoves();
+    genDownRightMoves();
+    genDownLeftMoves();
+
     genKingMoves();
-    genQueenMoves();
     genRookMoves();
     genBishMoves();
+    genQueenMoves();
     genKnightMoves();
 
     genWhitePawnMoves();
@@ -220,6 +303,24 @@ unsigned long long getBishMoves(unsigned int index)
 {return bishMoves[index];}
 unsigned long long getKnightMoves(unsigned int index)
 {return knightMoves[index];}
+
+unsigned long long getUpMoves(unsigned int index)
+{return upMoves[index];}
+unsigned long long getDownMoves(unsigned int index)
+{return downMoves[index];}
+unsigned long long getRightMoves(unsigned int index)
+{return rightMoves[index];}
+unsigned long long getLeftMoves(unsigned int index)
+{return leftMoves[index];}
+
+unsigned long long getUpRightMoves(unsigned int index)
+{return uprightMoves[index];}
+unsigned long long getUpLeftMoves(unsigned int index)
+{return upleftMoves[index];}
+unsigned long long getDownRightMoves(unsigned int index)
+{return downrightMoves[index];}
+unsigned long long getDownLeftMoves(unsigned int index)
+{return downleftMoves[index];}
 
 unsigned long long getWhitePawnMoves(unsigned int index)
 {return whitePawnMoves[index];}
