@@ -4,15 +4,25 @@
 #include "../include/memoization.h"
 #include "../include/io.h"
 
-uint64_t posKingMoves(Board* b, int color)
-{   
-    if (color)
-        return getKingMoves(LSB_INDEX(b->wKing)) & b->avWhite;
-    else
-        return getKingMoves(LSB_INDEX(b->bKing)) & b->avBlack;
+uint64_t posWhiteKingMoves(Board* b)
+{
+    return getKingMoves(LSB_INDEX(b->wKing)) & b->avWhite;
+}
+uint64_t posBlackKingMoves(Board* b)
+{
+    return getKingMoves(LSB_INDEX(b->bKing)) & b->avBlack;
 }
 
-uint64_t posKnightMoves(Board* b, int color, int index)
+uint64_t posKingMoves(Board* b, const int color)
+{   
+    if (color)
+        return posWhiteKingMoves(b);
+    else
+        return posBlackKingMoves(b);
+}
+
+
+uint64_t posKnightMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wKnight:b->bKnight;
     while(index--) pos &= (pos - 1);
@@ -23,7 +33,7 @@ uint64_t posKnightMoves(Board* b, int color, int index)
         return getKnightMoves(LSB_INDEX(pos)) & b->avBlack;
 }
 
-uint64_t posPawnMoves(Board* b, int color, int index)
+uint64_t posPawnMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wPawns:b->bPawns;
     while(index--) pos &= (pos - 1);
@@ -48,7 +58,7 @@ uint64_t posPawnMoves(Board* b, int color, int index)
     }
 }
 
-uint64_t posRookMoves(Board* b, int color, int index)
+uint64_t posRookMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wRook:b->bRook;
     while(index--) pos &= (pos - 1);
@@ -91,7 +101,7 @@ uint64_t posRookMoves(Board* b, int color, int index)
     return res;
 }
 
-uint64_t posBishMoves(Board* b, int color, int index)
+uint64_t posBishMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wBish:b->bBish;
     while(index--) pos &= (pos - 1);
@@ -133,7 +143,7 @@ uint64_t posBishMoves(Board* b, int color, int index)
 
     return res;
 }
-uint64_t posQueenMoves(Board* b, int color, int index)
+uint64_t posQueenMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wQueen:b->bQueen;
     while(index--) pos &= (pos - 1);
@@ -207,7 +217,7 @@ uint64_t posQueenMoves(Board* b, int color, int index)
 
 
 //TODO: Improve this function
-uint64_t kingStraight(Board* b, uint64_t pos)
+uint64_t kingStraight(Board* b, const uint64_t pos)
 {
     int i = LSB_INDEX(pos);
 
@@ -242,7 +252,7 @@ uint64_t kingStraight(Board* b, uint64_t pos)
 
     return res;
 }
-uint64_t kingDiagonal(Board* b, uint64_t pos)
+uint64_t kingDiagonal(Board* b, const uint64_t pos)
 {
     int i = LSB_INDEX(pos);
 
@@ -277,18 +287,18 @@ uint64_t kingDiagonal(Board* b, uint64_t pos)
 
     return res;
 }
-uint64_t kingKnight(uint64_t pos)
+static inline uint64_t kingKnight(const uint64_t pos)
 {
     int i = LSB_INDEX(pos);
     return getKnightMoves(i);
 }
-uint64_t kingPawn(uint64_t pos, int color)
+static inline uint64_t kingPawn(const uint64_t pos, const int color)
 {
     int i = LSB_INDEX(pos);
     return color ? getWhitePawnCaptures(i) : getBlackPawnCaptures(i);
 }
 
-int isInCheck(Board* b, int kingsColor)
+int isInCheck(Board* b, const int kingsColor)
 {
     int numPawns;
     uint64_t straight, diagonal;
@@ -331,4 +341,17 @@ int isInCheck(Board* b, int kingsColor)
     }
 
     return 0;
+}
+
+//It is assumed that the king is in check
+//TODO: Not fully implemented, so far it kind of only detects available sqrs
+int isMate(Board* b, const int kingsColor)
+{
+    uint64_t posEscapes, numPawn, numQueen, numRook, numBish, numKnight;
+
+    if (kingsColor){
+        posEscapes = posWhiteKingMoves(b);
+        posEscapes &= ALL ^ posBlackKingMoves(b);
+        //Get each pow2 in pos escapes and see if it is in check
+    } 
 }

@@ -25,4 +25,6 @@ optimized: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS)
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
+	rm -f main
+	rm -f optimized

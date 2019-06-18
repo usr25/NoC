@@ -5,7 +5,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -14,6 +13,8 @@
 #include "../include/node.h"
 #include "../include/memoization.h"
 #include "../include/moves.h"
+
+#include "../include/evaluation.h"
 
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
@@ -49,5 +50,5 @@ int main(const int argc, char* const argv[])
 
     runTests();
 
-    return EXIT_SUCCESS;
+    return 0;
 }

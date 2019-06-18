@@ -5,18 +5,26 @@
 #define VKNIGHT 300
 #define VPAWN 100
 
-#define VLASTRANK 300
-
-#define SEVENTH_RANK_MASK 0xff000000000000
-#define SECOND_RANK_MASK 0xff00
-
 #include "../include/global.h"
 #include "../include/board.h"
+
+#include <stdio.h>
 
 int matrices(Board* b);
 int allPiecesValue(Board* b);
 int analyzePawnStructure(Board* b);
-int multiply(int vals[64], uint64_t mask, int comparison);
+int multiply(int vals[64], uint64_t mask);
+
+int castlingStructure();
+int rookOnOpenFiles();
+int knightCoordination(); //Two knights side by side are better
+int bishopPair(); //Having a bishop pair but the opponent doesnt
+int passedPawns();
+int connectedPawns(); //Pawns lined up diagonally
+int knightForks();
+int materialHit(); //? 
+int pins(); //?
+int skewers();  //?
 
 int kingMatrix[64] = 
    {0, 8, 8, 0,     0, 4, 10, 5,
@@ -42,13 +50,13 @@ int queenMatrix[64] =
 
 int rookMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
+    10, 10, 10, 10,     10, 10, 10, 10,
     0, 0, 0, 0,     0, 0, 0, 0,
     0, 0, 0, 0,     0, 0, 0, 0,
 
     0, 0, 0, 0,     0, 0, 0, 0,
     0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
+    10, 10, 10, 10,     10, 10, 10, 10,
     0, 0, 0, 0,     0, 0, 0, 0};
 
 int bishMatrix[64] = 
@@ -76,22 +84,22 @@ int knightMatrix[64] =
 int wPawnMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
     175, 200, 200, 200,     200, 200, 200, 175,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 15,     15, 0, 0, 0,
+    -10, 10, 0, 0,     0, 0, 10, -10,
+    -5, 5, 0, 15,     15, 0, 5, -5,
 
     0, 0, 0, 20,     20, 0, 0, 0,
-    0, 0, 0, 10,     10, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
+    0, 3, 0, 10,     10, 0, 3, 0,
+    5, 5, 5, 0,     0, 5, 5, 5,
     0, 0, 0, 0,     0, 0, 0, 0};
 
 int bPawnMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
+    5, 5, 5, 0,     0, 5, 5, 5,
+    0, 3, 0, 15,     15, 0, 3, 0,
+    0, 0, 0, 20,     20, 0, 0, 0,
 
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
+    -5, 5, 0, 10,     10, 0, 5, -5,
+    -10, 10, 0, 0,     0, 0, 10, -10,
     175, 200, 200, 200,     200, 200, 200, 175,
     0, 0, 0, 0,     0, 0, 0, 0};
 
@@ -111,20 +119,20 @@ int matrices(Board* b)
 {
     int val = 0;
 
-    val += multiply(wPawnMatrix, b->wPawns, 1);
-    val += multiply(bPawnMatrix, b->bPawns, -1);
+    val += multiply(wPawnMatrix, b->wPawns);
+    val -= multiply(bPawnMatrix, b->bPawns);
 
-    val += multiply(kingMatrix, b->wKing, 1);
-    val += multiply(queenMatrix, b->wQueen, 1);
-    val += multiply(rookMatrix, b->wRook, 1);
-    val += multiply(bishMatrix, b->wBish, 1);
-    val += multiply(knightMatrix, b->wKnight, 1);
+    val += multiply(kingMatrix, b->wKing);
+    val += multiply(queenMatrix, b->wQueen);
+    val += multiply(rookMatrix, b->wRook);
+    val += multiply(bishMatrix, b->wBish);
+    val += multiply(knightMatrix, b->wKnight);
 
-    val += multiply(kingMatrix, b->bKing, -1);
-    val += multiply(queenMatrix, b->bQueen, -1);
-    val += multiply(rookMatrix, b->bRook, -1);
-    val += multiply(bishMatrix, b->bBish, -1);
-    val += multiply(knightMatrix, b->bKnight, -1);
+    val -= multiply(kingMatrix, b->bKing);
+    val -= multiply(queenMatrix, b->bQueen);
+    val -= multiply(rookMatrix, b->bRook);
+    val -= multiply(bishMatrix, b->bBish);
+    val -= multiply(knightMatrix, b->bKnight);
 
     return val;
 }
@@ -141,15 +149,31 @@ int allPiecesValue(Board* bo)
     return k + q + r + b + n + p;
 }
 
-int multiply(int vals[64], uint64_t mask, int comparison)
+int multiply(int vals[64], uint64_t mask)
 {
     int val = 0;
-    int index = 0;
-    do
-    {
-        if (mask & 1) val += comparison * vals[index];
-        ++index;
+    int index = 63;
+
+    do{
+        if (mask & 1) val += vals[index];
+        index--;
     }while(mask >>= 1);
 
     return val;
+}
+
+int testMatrix[64] =
+    {0, 0, 0, 0,     0, 0, 0, 0,
+    0, 0, 0, 0,     0, 0, 0, 0,
+    0, 0, 0, 0,     0, 0, 0, 0,
+    0, 0, 0, 0,     0, 0, 0, 0,
+
+    0, 0, 0, 0,     0, 0, 0, 0,
+    0, 0, 0, 0,     0, 0, 0, 0,
+    0, 0, 0, 0,     0, 0, 0, 0,
+    0, 0, 0, 0,     0, 0, 2, -1};
+
+int testE(uint64_t val)
+{
+    return multiply(testMatrix, val);
 }

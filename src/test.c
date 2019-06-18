@@ -220,11 +220,14 @@ int testChecks()
 
 void runTests()
 {
-    printf("[+] King moves: %d\n", testKingMoves());
-    printf("[+] Queen moves: %d\n", testQueenMoves());
-    printf("[+] Rook moves: %d\n", testRookMoves());
-    printf("[+] Bish moves: %d\n", testBishMoves());
-    printf("[+] Knight moves: %d\n", testKnightMoves());
-    printf("[+] Pawn moves: %d\n", testPawnMoves());
-    printf("[+] Checks: %d\n", testChecks());
+    //Moves
+    printf("[+] King moves: %d\n",      testKingMoves());
+    printf("[+] Queen moves: %d\n",     testQueenMoves());
+    printf("[+] Rook moves: %d\n",      testRookMoves());
+    printf("[+] Bish moves: %d\n",      testBishMoves());
+    printf("[+] Knight moves: %d\n",    testKnightMoves());
+    printf("[+] Pawn moves: %d\n",      testPawnMoves());
+    
+    //Checks
+    printf("[+] Checks: %d\n",          testChecks());
 }
