@@ -1,3 +1,4 @@
+#include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/io.h"
@@ -155,8 +156,8 @@ int testPawnMoves()
     int defaultMovs = 1;
     for (int i = 0; i < 8 && defaultMovs; ++i)
     {
-        defaultMovs &= posPawnMoves(&b, 1, i) == ((1ULL << (i + 8)) | (1ULL << i)) << 16;
-        defaultMovs &= posPawnMoves(&b, 0, i) == ((1ULL << i) | (1ULL << (i + 8))) << 32;
+        defaultMovs &= posPawnMoves(&b, 1, i) == (POW2[i + 8] | POW2[i]) << 16;
+        defaultMovs &= posPawnMoves(&b, 0, i) == (POW2[i] | POW2[i + 8]) << 32;
     }
 
     b = generateFromFen("8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8", "w", "-");
@@ -174,6 +175,49 @@ int testPawnMoves()
     return defaultMovs && otherMovs;
 }
 
+int testChecks()
+{
+    Board b;
+    int white = 1, black = 1;
+
+    //White king
+    
+    b = generateFromFen("8/8/1q6/8/3K4/8/8/8", "w", "-");
+    white &= isInCheck(&b, 1) == QUEEN;
+    b = generateFromFen("8/8/8/8/3K4/8/8/3q4", "w", "-");
+    white &= isInCheck(&b, 1) == QUEEN;
+
+    b = generateFromFen("8/8/8/8/3K3r/8/8/8", "w", "-");
+    white &= isInCheck(&b, 1) == ROOK;    
+    b = generateFromFen("8/8/8/2b5/3K4/8/8/8", "w", "-");
+    white &= isInCheck(&b, 1) == BISH;
+    b = generateFromFen("8/8/8/5n2/3K4/8/8/8", "w", "-");
+    white &= isInCheck(&b, 1) == KNIGHT;
+    b = generateFromFen("8/8/8/2p5/3K4/8/8/8", "w", "-");
+    white &= isInCheck(&b, 1) == PAWN;
+    b = generateFromFen("4r3/8/3k4/1q6/3K4/8/2p2n2/2b5", "w", "-");
+    white &= isInCheck(&b, 1) == 0;
+
+    //Black king
+    b = generateFromFen("8/8/1Q6/8/3k4/8/8/8", "w", "-");
+    black &= isInCheck(&b, 0) == QUEEN;
+    b = generateFromFen("8/8/8/8/3k4/8/8/3Q4", "w", "-");
+    black &= isInCheck(&b, 0) == QUEEN;
+
+    b = generateFromFen("8/8/8/8/3k3R/8/8/8", "w", "-");
+    black &= isInCheck(&b, 0) == ROOK;
+    b = generateFromFen("8/8/8/2B5/3k4/8/8/8", "w", "-");
+    black &= isInCheck(&b, 0) == BISH;
+    b = generateFromFen("8/8/8/5N2/3k4/8/8/8", "w", "-");
+    black &= isInCheck(&b, 0) == KNIGHT;
+    b = generateFromFen("8/8/8/8/3k4/2P5/8/8", "w", "-");
+    black &= isInCheck(&b, 0) == PAWN;
+    b = generateFromFen("4R3/8/3K4/1Q6/3k4/8/2P2N2/2B5", "w", "-");
+    black &= isInCheck(&b, 0) == 0;
+    
+    return white && black;
+}
+
 void runTests()
 {
     printf("[+] King moves: %d\n", testKingMoves());
@@ -182,4 +226,5 @@ void runTests()
     printf("[+] Bish moves: %d\n", testBishMoves());
     printf("[+] Knight moves: %d\n", testKnightMoves());
     printf("[+] Pawn moves: %d\n", testPawnMoves());
+    printf("[+] Checks: %d\n", testChecks());
 }

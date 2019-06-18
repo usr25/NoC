@@ -8,8 +8,7 @@ Black pawns
 White pawns
 White pieces
 */
-#include <stdio.h>
-
+#include "../include/global.h"
 #include "../include/board.h"
 
 
@@ -35,7 +34,7 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
 {
     Board b = (Board) {};
     int i, num, shift;
-    unsigned long long pos = 1ULL << 63;
+    unsigned long long pos = POW2[63];
     
     for (i = 0; pos != 0; ++i)
     {
@@ -168,7 +167,7 @@ It begins from h1, so that the wking index = 1 and bking index = 59
 */
 unsigned int index(const unsigned long long bitboard, int prev)
 {
-    unsigned long long pos = 1ULL << (++prev);
+    unsigned long long pos = POW2[++prev];
     
     while(prev < 64 && !(pos & bitboard))
     {
@@ -181,9 +180,9 @@ unsigned int index(const unsigned long long bitboard, int prev)
 //Get the piece in the respective coord
 unsigned int pieceAt(Board* const b, const unsigned int coord)
 {
-    if ((1ULL << coord) & b->white)
+    if (POW2[1ULL << coord] & b->white)
         return whitePieceAt(b, coord);
-    else if ((1ULL << coord) & b->black)
+    else if (POW2[1ULL << coord] & b->black)
         return blackPieceAt(b, coord);
     return 0;
 }
@@ -198,7 +197,7 @@ the board
 //TODO: finish implementing using the coords
 unsigned int whitePieceAt(Board* const b, const unsigned int coord)
 {
-    unsigned long long pos = 1ULL << coord;
+    unsigned long long pos = POW2[coord];
     unsigned int res = 1;
 
     if (pos & b->wPawns)     res |= PAWN;
@@ -212,7 +211,7 @@ unsigned int whitePieceAt(Board* const b, const unsigned int coord)
 }
 unsigned int blackPieceAt(Board* const b, const unsigned int coord)
 {
-    unsigned long long pos = 1ULL << coord;
+    unsigned long long pos = POW2[coord];
     unsigned int res = 0;
 
     if (pos & b->bPawns)     res |= PAWN;

@@ -4,3 +4,5 @@ unsigned long long posPawnMoves(Board* b, int color, int index);
 unsigned long long posRookMoves(Board* b, int color, int index);
 unsigned long long posBishMoves(Board* b, int color, int index);
 unsigned long long posQueenMoves(Board* b, int color, int index);
+
+int isInCheck(Board* b, int kingsColor);

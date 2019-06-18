@@ -1,5 +1,3 @@
-#define ALL 0xffffffffffffffff
-
 #define WCASTLEK 16
 #define WCASTLEQ 8
 #define BCASTLEK 4
@@ -26,16 +24,6 @@
 #define SH_BKNIGHT 32
 #define SH_BPAWN 36
 
-#define NUM_WQUEEN  0xf
-#define NUM_WROOK   0xf0
-#define NUM_WBISH   0xf00
-#define NUM_WKNIGHT 0xf000
-#define NUM_WPAWNS  0xf0000
-#define NUM_BQUEEN  0xf00000
-#define NUM_BROOK   0xf000000
-#define NUM_BBISH   0xf0000000
-#define NUM_BKNIGHT 0xf00000000
-#define NUM_BPAWN   0xf000000000
 
 typedef struct
 {
@@ -66,17 +54,19 @@ typedef struct
     int posInfo;
 } Board;
 
-static inline int numWQueen(Board* b)   {return (b->numPieces & NUM_WQUEEN) >> SH_WQUEEN;}
-static inline int numWRook(Board* b)    {return (b->numPieces & NUM_WROOK) >> SH_WROOK;}
-static inline int numWBish(Board* b)    {return (b->numPieces & NUM_WBISH) >> SH_WBISH;}
-static inline int numWKnight(Board* b)  {return (b->numPieces & NUM_WKNIGHT) >> SH_WKNIGHT;}
-static inline int numWPawns(Board* b)   {return (b->numPieces & NUM_WPAWNS) >> SH_WPAWNS;}
+static inline int numWKing(unsigned long long pieces)   {return (pieces >> SH_WQUEEN) & 0xf;}
+static inline int numWQueen(unsigned long long pieces)   {return (pieces >> SH_WQUEEN) & 0xf;}
+static inline int numWRook(unsigned long long pieces)    {return (pieces >> SH_WROOK) & 0xf;}
+static inline int numWBish(unsigned long long pieces)    {return (pieces >> SH_WBISH) & 0xf;}
+static inline int numWKnight(unsigned long long pieces)  {return (pieces >> SH_WKNIGHT) & 0xf;}
+static inline int numWPawn(unsigned long long pieces)   {return (pieces >> SH_WPAWNS) & 0xf;}
 
-static inline int numBQueen(Board* b)   {return (b->numPieces & NUM_BQUEEN) >> SH_BQUEEN;}
-static inline int numBRook(Board* b)    {return (b->numPieces & NUM_BROOK) >> SH_BROOK;}
-static inline int numBBish(Board* b)    {return (b->numPieces & NUM_BBISH) >> SH_BBISH;}
-static inline int numBKnight(Board* b)  {return (b->numPieces & NUM_BKNIGHT) >> SH_BKNIGHT;}
-static inline int numBPawns(Board* b)   {return (b->numPieces & NUM_BPAWN) >> SH_BPAWN;}
+static inline int numBKing(unsigned long long pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
+static inline int numBQueen(unsigned long long pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
+static inline int numBRook(unsigned long long pieces)    {return (pieces >> SH_BROOK) & 0xf;}
+static inline int numBBish(unsigned long long pieces)    {return (pieces >> SH_BBISH) & 0xf;}
+static inline int numBKnight(unsigned long long pieces)  {return (pieces >> SH_BKNIGHT) & 0xf;}
+static inline int numBPawn(unsigned long long pieces)   {return (pieces >> SH_BPAWN) & 0xf;}
 
 
 static inline void incrWQueen(Board* b)     {b->numPieces += 1ULL << SH_WQUEEN;}

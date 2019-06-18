@@ -1,10 +1,10 @@
-
 #include <stdio.h>
 
+#include "../include/global.h"
 #include "../include/board.h"
 
 void drawPosition(Board b, const int drawCoords){
-    unsigned long long pos = 1LLU << 63;
+    unsigned long long pos = POW2[63];
     int i, j;
     for (i = 0; i < 8; ++i)
     {
@@ -50,7 +50,7 @@ void drawPosition(Board b, const int drawCoords){
 }
 void drawBitboard(unsigned long long b)
 {
-    unsigned long long pos = 1ULL << 63;
+    unsigned long long pos = POW2[63];
     for (int i = 64; i > 0; --i)
     {
         if (i % 8 == 0) printf("\n");

@@ -19,6 +19,7 @@ unsigned long long blackPawnCaptures[64];
 #include <stdio.h>
 
 #include "../include/memoization.h"
+#include "../include/global.h"
 
 static inline int GETX(int i)
 {return i % 8;}

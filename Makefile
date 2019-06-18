@@ -19,7 +19,10 @@ $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 main: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
-.PHONY: clean
+.PHONY: clean optimized
+
+optimized: $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS)
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
