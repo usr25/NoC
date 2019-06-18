@@ -1,30 +1,3 @@
-#define LEN 8
-#define AREA 64
-
-/*
-Should offer better performance, but I want to start simple
-#define LEN 16
-
-#define WHITE   0
-#define BLACK   1
-#define WPAWN   2
-#define WKING   3
-#define WQUEEN  4
-#define WROOK   5
-#define WBISH   6
-#define WKNIGHT 7
-#define BPAWN   8
-#define BKING   9
-#define BQUEEN  10
-#define BROOK   11
-#define BBISH   12
-#define BKNIGHT 13
-#define AVWHITE 14
-#define AVBLACK 15
-
-unsigned long long board[NUMPIECES];
-*/
-
 #define ALL 0xffffffffffffffff
 
 #define WCASTLEK 16
@@ -41,6 +14,28 @@ unsigned long long board[NUMPIECES];
 #define BISH 16
 #define KNIGHT 32
 #define PAWN 64
+
+#define SH_WQUEEN 0
+#define SH_WROOK 4
+#define SH_WBISH 8
+#define SH_WKNIGHT 12
+#define SH_WPAWNS 16
+#define SH_BQUEEN 20
+#define SH_BROOK 24
+#define SH_BBISH 28
+#define SH_BKNIGHT 32
+#define SH_BPAWN 36
+
+#define NUM_WQUEEN  0xf
+#define NUM_WROOK   0xf0
+#define NUM_WBISH   0xf00
+#define NUM_WKNIGHT 0xf000
+#define NUM_WPAWNS  0xf0000
+#define NUM_BQUEEN  0xf00000
+#define NUM_BROOK   0xf000000
+#define NUM_BBISH   0xf0000000
+#define NUM_BKNIGHT 0xf00000000
+#define NUM_BPAWN   0xf000000000
 
 typedef struct
 {
@@ -65,8 +60,37 @@ typedef struct
     unsigned long long bRook;
     unsigned long long bKnight;
 
+    unsigned long long pieces;
+    unsigned long long numPieces;
+
     int posInfo;
 } Board;
+
+static inline int numWQueen(Board* b)   {return (b->numPieces & NUM_WQUEEN) >> SH_WQUEEN;}
+static inline int numWRook(Board* b)    {return (b->numPieces & NUM_WROOK) >> SH_WROOK;}
+static inline int numWBish(Board* b)    {return (b->numPieces & NUM_WBISH) >> SH_WBISH;}
+static inline int numWKnight(Board* b)  {return (b->numPieces & NUM_WKNIGHT) >> SH_WKNIGHT;}
+static inline int numWPawns(Board* b)   {return (b->numPieces & NUM_WPAWNS) >> SH_WPAWNS;}
+
+static inline int numBQueen(Board* b)   {return (b->numPieces & NUM_BQUEEN) >> SH_BQUEEN;}
+static inline int numBRook(Board* b)    {return (b->numPieces & NUM_BROOK) >> SH_BROOK;}
+static inline int numBBish(Board* b)    {return (b->numPieces & NUM_BBISH) >> SH_BBISH;}
+static inline int numBKnight(Board* b)  {return (b->numPieces & NUM_BKNIGHT) >> SH_BKNIGHT;}
+static inline int numBPawns(Board* b)   {return (b->numPieces & NUM_BPAWN) >> SH_BPAWN;}
+
+
+static inline void incrWQueen(Board* b)     {b->numPieces += 1ULL << SH_WQUEEN;}
+static inline void incrWRook(Board* b)      {b->numPieces += 1ULL << SH_WROOK;}
+static inline void incrWBish(Board* b)      {b->numPieces += 1ULL << SH_WBISH;}
+static inline void incrWKnight(Board* b)    {b->numPieces += 1ULL << SH_WKNIGHT;}
+static inline void incrWPawns(Board* b)     {b->numPieces += 1ULL << SH_WPAWNS;}
+
+static inline void incrBQueen(Board* b)     {b->numPieces += 1ULL << SH_BQUEEN;}
+static inline void incrBRook(Board* b)      {b->numPieces += 1ULL << SH_BROOK;}
+static inline void incrBBish(Board* b)      {b->numPieces += 1ULL << SH_BBISH;}
+static inline void incrBKnight(Board* b)    {b->numPieces += 1ULL << SH_BKNIGHT;}
+static inline void incrBPawns(Board* b)     {b->numPieces += 1ULL << SH_BPAWN;}
+
 
 Board generateFromFen(char* const fen, char* const toPlay, char* const castle);
 Board defaultBoard();

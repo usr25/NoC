@@ -49,22 +49,27 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
             case 'Q':
                 b.white |= pos;
                 b.wQueen |= pos;
+                incrWQueen(&b);
                 break;
             case 'R':
                 b.white |= pos;
                 b.wRook |= pos;
+                incrWRook(&b);
                 break;
             case 'B':
                 b.white |= pos;
                 b.wBish |= pos;
+                incrWBish(&b);
                 break;
             case 'N':
                 b.white |= pos;
                 b.wKnight |= pos;
+                incrWKnight(&b);
                 break;
             case 'P':
                 b.white |= pos;
                 b.wPawns |= pos;
+                incrWPawns(&b);
                 break;
 
             case 'k':
@@ -74,22 +79,27 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
             case 'q':
                 b.black |= pos;
                 b.bQueen |= pos;
+                incrBQueen(&b);
                 break;
             case 'r':
                 b.black |= pos;
                 b.bRook |= pos;
+                incrBRook(&b);
                 break;
             case 'b':
                 b.black |= pos;
                 b.bBish |= pos;
+                incrBBish(&b);
                 break;
             case 'n':
                 b.black |= pos;
                 b.bKnight |= pos;
+                incrBKnight(&b);
                 break;
             case 'p':
                 b.black |= pos;
                 b.bPawns |= pos;
+                incrBPawns(&b);
                 break;
             case '/': 
                 shift = 0;
@@ -106,6 +116,8 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
 
     b.avWhite = ALL ^ b.white;
     b.avBlack = ALL ^ b.black;
+
+    b.pieces = b.black | b.white;
 
     int castleInfo = 0;
 
@@ -144,7 +156,7 @@ Board defaultBoard()
     
     .black = INITIAL_BPIECES, .avBlack = ALL ^ INITIAL_BPIECES, .bPawns = INITIAL_BPAWNS, 
     .bKing = INITIAL_BKING, .bQueen = INITIAL_BQUEEN, .bRook = INITIAL_BROOK, .bBish = INITIAL_BBISH, .bKnight = INITIAL_BKNIGHT,
-    .posInfo = 0b11111
+    .posInfo = 0b11111, .pieces = INITIAL_WPIECES | INITIAL_BPIECES
     };
 
     return b;
