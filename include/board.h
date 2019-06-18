@@ -27,46 +27,46 @@
 
 typedef struct
 {
-    unsigned long long white;
-    unsigned long long avWhite;
+    uint64_t white;
+    uint64_t avWhite;
 
-    unsigned long long wPawns;
-    unsigned long long wKing;
-    unsigned long long wQueen;
-    unsigned long long wBish;
-    unsigned long long wRook;
-    unsigned long long wKnight;
+    uint64_t wPawns;
+    uint64_t wKing;
+    uint64_t wQueen;
+    uint64_t wBish;
+    uint64_t wRook;
+    uint64_t wKnight;
 
     
-    unsigned long long black;
-    unsigned long long avBlack;
+    uint64_t black;
+    uint64_t avBlack;
 
-    unsigned long long bPawns;
-    unsigned long long bKing;
-    unsigned long long bQueen;
-    unsigned long long bBish;
-    unsigned long long bRook;
-    unsigned long long bKnight;
+    uint64_t bPawns;
+    uint64_t bKing;
+    uint64_t bQueen;
+    uint64_t bBish;
+    uint64_t bRook;
+    uint64_t bKnight;
 
-    unsigned long long pieces;
-    unsigned long long numPieces;
+    uint64_t pieces;
+    uint64_t numPieces;
 
     int posInfo;
 } Board;
 
-static inline int numWKing(unsigned long long pieces)   {return (pieces >> SH_WQUEEN) & 0xf;}
-static inline int numWQueen(unsigned long long pieces)   {return (pieces >> SH_WQUEEN) & 0xf;}
-static inline int numWRook(unsigned long long pieces)    {return (pieces >> SH_WROOK) & 0xf;}
-static inline int numWBish(unsigned long long pieces)    {return (pieces >> SH_WBISH) & 0xf;}
-static inline int numWKnight(unsigned long long pieces)  {return (pieces >> SH_WKNIGHT) & 0xf;}
-static inline int numWPawn(unsigned long long pieces)   {return (pieces >> SH_WPAWNS) & 0xf;}
+static inline int numWKing(uint64_t pieces)   {return (pieces >> SH_WQUEEN) & 0xf;}
+static inline int numWQueen(uint64_t pieces)   {return (pieces >> SH_WQUEEN) & 0xf;}
+static inline int numWRook(uint64_t pieces)    {return (pieces >> SH_WROOK) & 0xf;}
+static inline int numWBish(uint64_t pieces)    {return (pieces >> SH_WBISH) & 0xf;}
+static inline int numWKnight(uint64_t pieces)  {return (pieces >> SH_WKNIGHT) & 0xf;}
+static inline int numWPawn(uint64_t pieces)   {return (pieces >> SH_WPAWNS) & 0xf;}
 
-static inline int numBKing(unsigned long long pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
-static inline int numBQueen(unsigned long long pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
-static inline int numBRook(unsigned long long pieces)    {return (pieces >> SH_BROOK) & 0xf;}
-static inline int numBBish(unsigned long long pieces)    {return (pieces >> SH_BBISH) & 0xf;}
-static inline int numBKnight(unsigned long long pieces)  {return (pieces >> SH_BKNIGHT) & 0xf;}
-static inline int numBPawn(unsigned long long pieces)   {return (pieces >> SH_BPAWN) & 0xf;}
+static inline int numBKing(uint64_t pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
+static inline int numBQueen(uint64_t pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
+static inline int numBRook(uint64_t pieces)    {return (pieces >> SH_BROOK) & 0xf;}
+static inline int numBBish(uint64_t pieces)    {return (pieces >> SH_BBISH) & 0xf;}
+static inline int numBKnight(uint64_t pieces)  {return (pieces >> SH_BKNIGHT) & 0xf;}
+static inline int numBPawn(uint64_t pieces)   {return (pieces >> SH_BPAWN) & 0xf;}
 
 
 static inline void incrWQueen(Board* b)     {b->numPieces += 1ULL << SH_WQUEEN;}
@@ -85,7 +85,7 @@ static inline void incrBPawns(Board* b)     {b->numPieces += 1ULL << SH_BPAWN;}
 Board generateFromFen(char* const fen, char* const toPlay, char* const castle);
 Board defaultBoard();
 
-unsigned int index(unsigned long long bitboard, int prev);
+unsigned int index(uint64_t bitboard, int prev);
 
 unsigned int pieceAt(Board* const b, const unsigned int coord);
 unsigned int whitePieceAt(Board* const b, const unsigned int coord);

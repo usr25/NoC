@@ -34,7 +34,7 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
 {
     Board b = (Board) {};
     int i, num, shift;
-    unsigned long long pos = POW2[63];
+    uint64_t pos = POW2[63];
     
     for (i = 0; pos != 0; ++i)
     {
@@ -155,6 +155,7 @@ Board defaultBoard()
     
     .black = INITIAL_BPIECES, .avBlack = ALL ^ INITIAL_BPIECES, .bPawns = INITIAL_BPAWNS, 
     .bKing = INITIAL_BKING, .bQueen = INITIAL_BQUEEN, .bRook = INITIAL_BROOK, .bBish = INITIAL_BBISH, .bKnight = INITIAL_BKNIGHT,
+    
     .posInfo = 0b11111, .pieces = INITIAL_WPIECES | INITIAL_BPIECES
     };
 
@@ -165,9 +166,9 @@ Board defaultBoard()
 prev is incremented by 1, so the first call has to be made with prev = -1
 It begins from h1, so that the wking index = 1 and bking index = 59
 */
-unsigned int index(const unsigned long long bitboard, int prev)
+unsigned int index(const uint64_t bitboard, int prev)
 {
-    unsigned long long pos = POW2[++prev];
+    uint64_t pos = POW2[++prev];
     
     while(prev < 64 && !(pos & bitboard))
     {
@@ -197,7 +198,7 @@ the board
 //TODO: finish implementing using the coords
 unsigned int whitePieceAt(Board* const b, const unsigned int coord)
 {
-    unsigned long long pos = POW2[coord];
+    uint64_t pos = POW2[coord];
     unsigned int res = 1;
 
     if (pos & b->wPawns)     res |= PAWN;
@@ -211,7 +212,7 @@ unsigned int whitePieceAt(Board* const b, const unsigned int coord)
 }
 unsigned int blackPieceAt(Board* const b, const unsigned int coord)
 {
-    unsigned long long pos = POW2[coord];
+    uint64_t pos = POW2[coord];
     unsigned int res = 0;
 
     if (pos & b->bPawns)     res |= PAWN;

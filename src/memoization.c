@@ -1,25 +1,24 @@
-unsigned long long kingMoves[64];
-unsigned long long knightMoves[64];
-
-unsigned long long rightMoves[64];
-unsigned long long leftMoves[64];
-unsigned long long upMoves[64];
-unsigned long long downMoves[64];
-
-unsigned long long uprightMoves[64];
-unsigned long long downrightMoves[64];
-unsigned long long upleftMoves[64];
-unsigned long long downleftMoves[64];
-//It can be made to be 64 - 8 but the impact in memory is tiny
-unsigned long long whitePawnMoves[64];
-unsigned long long whitePawnCaptures[64];
-unsigned long long blackPawnMoves[64];
-unsigned long long blackPawnCaptures[64];
-
-#include <stdio.h>
-
-#include "../include/memoization.h"
 #include "../include/global.h"
+#include "../include/memoization.h"
+
+uint64_t kingMoves[64];
+uint64_t knightMoves[64];
+
+uint64_t rightMoves[64];
+uint64_t leftMoves[64];
+uint64_t upMoves[64];
+uint64_t downMoves[64];
+
+uint64_t uprightMoves[64];
+uint64_t downrightMoves[64];
+uint64_t upleftMoves[64];
+uint64_t downleftMoves[64];
+//It can be made to be 64 - 8 but the impact in memory is tiny
+uint64_t whitePawnMoves[64];
+uint64_t whitePawnCaptures[64];
+uint64_t blackPawnMoves[64];
+uint64_t blackPawnCaptures[64];
+
 
 static inline int GETX(int i)
 {return i % 8;}
@@ -79,7 +78,7 @@ void genBlackPawnCaptures()
 void genUpMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -95,7 +94,7 @@ void genUpMoves()
 void genDownMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -111,7 +110,7 @@ void genDownMoves()
 void genRightMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -127,7 +126,7 @@ void genRightMoves()
 void genLeftMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -144,7 +143,7 @@ void genLeftMoves()
 void genUpRightMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -160,7 +159,7 @@ void genUpRightMoves()
 void genUpLeftMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -176,7 +175,7 @@ void genUpLeftMoves()
 void genDownLeftMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -192,7 +191,7 @@ void genDownLeftMoves()
 void genDownRightMoves()
 {
     int x, y;
-    unsigned long long pos;
+    uint64_t pos;
     for (int i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -210,7 +209,7 @@ void genDownRightMoves()
 void genKingMoves()
 {
     int x, y, i;
-    unsigned long long pos;
+    uint64_t pos;
     for (i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -233,7 +232,7 @@ void genKingMoves()
 void genKnightMoves()
 {
     int x, y, i;
-    unsigned long long pos;
+    uint64_t pos;
     for (i = 0; i < 64; ++i)
     {
         pos = 0;
@@ -274,34 +273,34 @@ void initialize()
     genBlackPawnCaptures();
 }
 
-unsigned long long getKingMoves(unsigned int index)
+uint64_t getKingMoves(unsigned int index)
 {return kingMoves[index];}
-unsigned long long getKnightMoves(unsigned int index)
+uint64_t getKnightMoves(unsigned int index)
 {return knightMoves[index];}
 
-unsigned long long getUpMoves(unsigned int index)
+uint64_t getUpMoves(unsigned int index)
 {return upMoves[index];}
-unsigned long long getDownMoves(unsigned int index)
+uint64_t getDownMoves(unsigned int index)
 {return downMoves[index];}
-unsigned long long getRightMoves(unsigned int index)
+uint64_t getRightMoves(unsigned int index)
 {return rightMoves[index];}
-unsigned long long getLeftMoves(unsigned int index)
+uint64_t getLeftMoves(unsigned int index)
 {return leftMoves[index];}
 
-unsigned long long getUpRightMoves(unsigned int index)
+uint64_t getUpRightMoves(unsigned int index)
 {return uprightMoves[index];}
-unsigned long long getUpLeftMoves(unsigned int index)
+uint64_t getUpLeftMoves(unsigned int index)
 {return upleftMoves[index];}
-unsigned long long getDownRightMoves(unsigned int index)
+uint64_t getDownRightMoves(unsigned int index)
 {return downrightMoves[index];}
-unsigned long long getDownLeftMoves(unsigned int index)
+uint64_t getDownLeftMoves(unsigned int index)
 {return downleftMoves[index];}
 
-unsigned long long getWhitePawnMoves(unsigned int index)
+uint64_t getWhitePawnMoves(unsigned int index)
 {return whitePawnMoves[index];}
-unsigned long long getWhitePawnCaptures(unsigned int index)
+uint64_t getWhitePawnCaptures(unsigned int index)
 {return whitePawnCaptures[index];}
-unsigned long long getBlackPawnMoves(unsigned int index)
+uint64_t getBlackPawnMoves(unsigned int index)
 {return blackPawnMoves[index];}
-unsigned long long getBlackPawnCaptures(unsigned int index)
+uint64_t getBlackPawnCaptures(unsigned int index)
 {return blackPawnCaptures[index];}

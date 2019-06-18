@@ -15,7 +15,6 @@
 #include "../include/memoization.h"
 #include "../include/moves.h"
 
-#define BOOL(x) ((x)?"true":"false")
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
 //8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns

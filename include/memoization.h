@@ -1,19 +1,19 @@
-unsigned long long getKingMoves(unsigned int index);
-unsigned long long getKnightMoves(unsigned int index);
+uint64_t getKingMoves(unsigned int index);
+uint64_t getKnightMoves(unsigned int index);
 
-unsigned long long getRightMoves(unsigned int index);
-unsigned long long getLeftMoves(unsigned int index);
-unsigned long long getUpMoves(unsigned int index);
-unsigned long long getDownMoves(unsigned int index);
+uint64_t getRightMoves(unsigned int index);
+uint64_t getLeftMoves(unsigned int index);
+uint64_t getUpMoves(unsigned int index);
+uint64_t getDownMoves(unsigned int index);
 
-unsigned long long getUpRightMoves(unsigned int index);
-unsigned long long getUpLeftMoves(unsigned int index);
-unsigned long long getDownRightMoves(unsigned int index);
-unsigned long long getDownLeftMoves(unsigned int index);
+uint64_t getUpRightMoves(unsigned int index);
+uint64_t getUpLeftMoves(unsigned int index);
+uint64_t getDownRightMoves(unsigned int index);
+uint64_t getDownLeftMoves(unsigned int index);
 
-unsigned long long getWhitePawnMoves(unsigned int index);
-unsigned long long getWhitePawnCaptures(unsigned int index);
-unsigned long long getBlackPawnMoves(unsigned int index);
-unsigned long long getBlackPawnCaptures(unsigned int index);
+uint64_t getWhitePawnMoves(unsigned int index);
+uint64_t getWhitePawnCaptures(unsigned int index);
+uint64_t getBlackPawnMoves(unsigned int index);
+uint64_t getBlackPawnCaptures(unsigned int index);
 
 void initialize();

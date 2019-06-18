@@ -10,13 +10,13 @@
 #define SEVENTH_RANK_MASK 0xff000000000000
 #define SECOND_RANK_MASK 0xff00
 
-#include "../include/board.h"
 #include "../include/global.h"
+#include "../include/board.h"
 
 int matrices(Board* b);
 int allPiecesValue(Board* b);
 int analyzePawnStructure(Board* b);
-int multiply(int vals[64], unsigned long long mask, int comparison);
+int multiply(int vals[64], uint64_t mask, int comparison);
 
 int kingMatrix[64] = 
    {0, 8, 8, 0,     0, 4, 10, 5,
@@ -141,7 +141,7 @@ int allPiecesValue(Board* bo)
     return k + q + r + b + n + p;
 }
 
-int multiply(int vals[64], unsigned long long mask, int comparison)
+int multiply(int vals[64], uint64_t mask, int comparison)
 {
     int val = 0;
     int index = 0;

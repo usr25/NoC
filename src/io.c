@@ -4,7 +4,7 @@
 #include "../include/board.h"
 
 void drawPosition(Board b, const int drawCoords){
-    unsigned long long pos = POW2[63];
+    uint64_t pos = POW2[63];
     int i, j;
     for (i = 0; i < 8; ++i)
     {
@@ -48,9 +48,9 @@ void drawPosition(Board b, const int drawCoords){
     if (drawCoords)
         printf(" a  b  c  d  e  f  g  h\n");
 }
-void drawBitboard(unsigned long long b)
+void drawBitboard(uint64_t b)
 {
-    unsigned long long pos = POW2[63];
+    uint64_t pos = POW2[63];
     for (int i = 64; i > 0; --i)
     {
         if (i % 8 == 0) printf("\n");

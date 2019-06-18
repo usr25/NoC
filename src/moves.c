@@ -4,32 +4,32 @@
 #include "../include/memoization.h"
 #include "../include/io.h"
 
-unsigned long long posKingMoves(Board* b, int color)
+uint64_t posKingMoves(Board* b, int color)
 {   
     if (color)
-        return getKingMoves(__builtin_ctzll(b->wKing)) & b->avWhite;
+        return getKingMoves(LSB_INDEX(b->wKing)) & b->avWhite;
     else
-        return getKingMoves(__builtin_ctzll(b->bKing)) & b->avBlack;
+        return getKingMoves(LSB_INDEX(b->bKing)) & b->avBlack;
 }
 
-unsigned long long posKnightMoves(Board* b, int color, int index)
+uint64_t posKnightMoves(Board* b, int color, int index)
 {
-    unsigned long long pos = (color)?b->wKnight:b->bKnight;
+    uint64_t pos = (color)?b->wKnight:b->bKnight;
     while(index--) pos &= (pos - 1);
 
     if (color)
-        return getKnightMoves(__builtin_ctzll(pos)) & b->avWhite;
+        return getKnightMoves(LSB_INDEX(pos)) & b->avWhite;
     else
-        return getKnightMoves(__builtin_ctzll(pos)) & b->avBlack;
+        return getKnightMoves(LSB_INDEX(pos)) & b->avBlack;
 }
 
-unsigned long long posPawnMoves(Board* b, int color, int index)
+uint64_t posPawnMoves(Board* b, int color, int index)
 {
-    unsigned long long pos = (color)?b->wPawns:b->bPawns;
+    uint64_t pos = (color)?b->wPawns:b->bPawns;
     while(index--) pos &= (pos - 1);
 
-    int i = __builtin_ctzll(pos);
-    unsigned long long forward;
+    int i = LSB_INDEX(pos);
+    uint64_t forward;
     if (color){
         forward = getWhitePawnMoves(i) & (b->avWhite ^ b->black);
         
@@ -48,41 +48,41 @@ unsigned long long posPawnMoves(Board* b, int color, int index)
     }
 }
 
-unsigned long long posRookMoves(Board* b, int color, int index)
+uint64_t posRookMoves(Board* b, int color, int index)
 {
-    unsigned long long pos = (color)?b->wRook:b->bRook;
+    uint64_t pos = (color)?b->wRook:b->bRook;
     while(index--) pos &= (pos - 1);
-    int i = __builtin_ctzll(pos);
+    int i = LSB_INDEX(pos);
 
-    unsigned long long inteUp = getUpMoves(i) & b->pieces;
-    unsigned long long inteDown = getDownMoves(i) & b->pieces;
-    unsigned long long inteRight = getRightMoves(i) & b->pieces;
-    unsigned long long inteLeft = getLeftMoves(i) & b->pieces;
+    uint64_t inteUp = getUpMoves(i) & b->pieces;
+    uint64_t inteDown = getDownMoves(i) & b->pieces;
+    uint64_t inteRight = getRightMoves(i) & b->pieces;
+    uint64_t inteLeft = getLeftMoves(i) & b->pieces;
 
-    unsigned long long res = 0;
+    uint64_t res = 0;
     int obstacle;
 
 
     if (inteUp){
-        obstacle = __builtin_ctzll(inteUp);
+        obstacle = LSB_INDEX(inteUp);
         res |= getUpMoves(i) ^ getUpMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getUpMoves(i);
     
     if (inteDown){
-        obstacle = 63 - __builtin_clzll(inteDown);
+        obstacle = MSB_INDEX(inteDown);
         res |= getDownMoves(i) ^ getDownMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getDownMoves(i);
     
     if (inteRight){
-        obstacle = 63 - __builtin_clzll(inteRight);
+        obstacle = MSB_INDEX(inteRight);
         res |= getRightMoves(i) ^ getRightMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getRightMoves(i);
     
     if (inteLeft){
-        obstacle = __builtin_ctzll(inteLeft);
+        obstacle = LSB_INDEX(inteLeft);
         res |= getLeftMoves(i) ^ getLeftMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getLeftMoves(i);
@@ -91,41 +91,41 @@ unsigned long long posRookMoves(Board* b, int color, int index)
     return res;
 }
 
-unsigned long long posBishMoves(Board* b, int color, int index)
+uint64_t posBishMoves(Board* b, int color, int index)
 {
-    unsigned long long pos = (color)?b->wBish:b->bBish;
+    uint64_t pos = (color)?b->wBish:b->bBish;
     while(index--) pos &= (pos - 1);
-    int i = __builtin_ctzll(pos);
+    int i = LSB_INDEX(pos);
 
-    unsigned long long inteUpRight = getUpRightMoves(i) & b->pieces;
-    unsigned long long inteUpLeft = getUpLeftMoves(i) & b->pieces;
-    unsigned long long inteDownRight = getDownRightMoves(i) & b->pieces;
-    unsigned long long inteDownLeft = getDownLeftMoves(i) & b->pieces;
+    uint64_t inteUpRight = getUpRightMoves(i) & b->pieces;
+    uint64_t inteUpLeft = getUpLeftMoves(i) & b->pieces;
+    uint64_t inteDownRight = getDownRightMoves(i) & b->pieces;
+    uint64_t inteDownLeft = getDownLeftMoves(i) & b->pieces;
 
-    unsigned long long res = 0;
+    uint64_t res = 0;
     int obstacle;
 
 
     if (inteUpRight){
-        obstacle = __builtin_ctzll(inteUpRight);
+        obstacle = LSB_INDEX(inteUpRight);
         res |= getUpRightMoves(i) ^ getUpRightMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getUpRightMoves(i);
     
     if (inteUpLeft){
-        obstacle = __builtin_ctzll(inteUpLeft);
+        obstacle = LSB_INDEX(inteUpLeft);
         res |= getUpLeftMoves(i) ^ getUpLeftMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getUpLeftMoves(i);
     
     if (inteDownRight){
-        obstacle = 63 - __builtin_clzll(inteDownRight);
+        obstacle = MSB_INDEX(inteDownRight);
         res |= getDownRightMoves(i) ^ getDownRightMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getDownRightMoves(i);
     
     if (inteDownLeft){
-        obstacle = 63 - __builtin_clzll(inteDownLeft);
+        obstacle = MSB_INDEX(inteDownLeft);
         res |= getDownLeftMoves(i) ^ getDownLeftMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getDownLeftMoves(i);
@@ -133,70 +133,70 @@ unsigned long long posBishMoves(Board* b, int color, int index)
 
     return res;
 }
-unsigned long long posQueenMoves(Board* b, int color, int index)
+uint64_t posQueenMoves(Board* b, int color, int index)
 {
-    unsigned long long pos = (color)?b->wQueen:b->bQueen;
+    uint64_t pos = (color)?b->wQueen:b->bQueen;
     while(index--) pos &= (pos - 1);
-    int i = __builtin_ctzll(pos);
+    int i = LSB_INDEX(pos);
 
-    unsigned long long inteUp = getUpMoves(i) & b->pieces;
-    unsigned long long inteDown = getDownMoves(i) & b->pieces;
-    unsigned long long inteRight = getRightMoves(i) & b->pieces;
-    unsigned long long inteLeft = getLeftMoves(i) & b->pieces;
+    uint64_t inteUp = getUpMoves(i) & b->pieces;
+    uint64_t inteDown = getDownMoves(i) & b->pieces;
+    uint64_t inteRight = getRightMoves(i) & b->pieces;
+    uint64_t inteLeft = getLeftMoves(i) & b->pieces;
 
-    unsigned long long inteUpRight = getUpRightMoves(i) & b->pieces;
-    unsigned long long inteUpLeft = getUpLeftMoves(i) & b->pieces;
-    unsigned long long inteDownRight = getDownRightMoves(i) & b->pieces;
-    unsigned long long inteDownLeft = getDownLeftMoves(i) & b->pieces;
+    uint64_t inteUpRight = getUpRightMoves(i) & b->pieces;
+    uint64_t inteUpLeft = getUpLeftMoves(i) & b->pieces;
+    uint64_t inteDownRight = getDownRightMoves(i) & b->pieces;
+    uint64_t inteDownLeft = getDownLeftMoves(i) & b->pieces;
 
-    unsigned long long res = 0;
+    uint64_t res = 0;
     int obstacle;
 
     if (inteUp){
-        obstacle = __builtin_ctzll(inteUp);
+        obstacle = LSB_INDEX(inteUp);
         res |= getUpMoves(i) ^ getUpMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getUpMoves(i);
     
     if (inteDown){
-        obstacle = 63 - __builtin_clzll(inteDown);
+        obstacle = MSB_INDEX(inteDown);
         res |= getDownMoves(i) ^ getDownMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getDownMoves(i);
     
     if (inteRight){
-        obstacle = 63 - __builtin_clzll(inteRight);
+        obstacle = MSB_INDEX(inteRight);
         res |= getRightMoves(i) ^ getRightMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getRightMoves(i);
     
     if (inteLeft){
-        obstacle = __builtin_ctzll(inteLeft);
+        obstacle = LSB_INDEX(inteLeft);
         res |= getLeftMoves(i) ^ getLeftMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getLeftMoves(i);
     
 
     if (inteUpRight){
-        obstacle = __builtin_ctzll(inteUpRight);
+        obstacle = LSB_INDEX(inteUpRight);
         res |= getUpRightMoves(i) ^ getUpRightMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getUpRightMoves(i);
     
     if (inteUpLeft){
-        obstacle = __builtin_ctzll(inteUpLeft);
+        obstacle = LSB_INDEX(inteUpLeft);
         res |= getUpLeftMoves(i) ^ getUpLeftMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getUpLeftMoves(i);
     
     if (inteDownRight){
-        obstacle = 63 - __builtin_clzll(inteDownRight);
+        obstacle = MSB_INDEX(inteDownRight);
         res |= getDownRightMoves(i) ^ getDownRightMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getDownRightMoves(i);
     
     if (inteDownLeft){
-        obstacle = 63 - __builtin_clzll(inteDownLeft);
+        obstacle = MSB_INDEX(inteDownLeft);
         res |= getDownLeftMoves(i) ^ getDownLeftMoves(obstacle);
         res ^= color ? POW2[obstacle] & b->white : POW2[obstacle] & b->black;
     } else res |= getDownLeftMoves(i);
@@ -207,92 +207,93 @@ unsigned long long posQueenMoves(Board* b, int color, int index)
 
 
 //TODO: Improve this function
-unsigned long long kingStraight(Board* b, unsigned long long pos)
+uint64_t kingStraight(Board* b, uint64_t pos)
 {
-    int i = __builtin_ctzll(pos);
+    int i = LSB_INDEX(pos);
 
-    unsigned long long inteUp = getUpMoves(i) & b->pieces;
-    unsigned long long inteDown = getDownMoves(i) & b->pieces;
-    unsigned long long inteRight = getRightMoves(i) & b->pieces;
-    unsigned long long inteLeft = getLeftMoves(i) & b->pieces;
+    uint64_t inteUp = getUpMoves(i) & b->pieces;
+    uint64_t inteDown = getDownMoves(i) & b->pieces;
+    uint64_t inteRight = getRightMoves(i) & b->pieces;
+    uint64_t inteLeft = getLeftMoves(i) & b->pieces;
 
-    unsigned long long res = 0;
+    uint64_t res = 0;
     int obstacle;
 
 
     if (inteUp){
-        obstacle = __builtin_ctzll(inteUp);
+        obstacle = LSB_INDEX(inteUp);
         res |= getUpMoves(i) ^ getUpMoves(obstacle);
     } else res |= getUpMoves(i);
     
     if (inteDown){
-        obstacle = 63 - __builtin_clzll(inteDown);
+        obstacle = MSB_INDEX(inteDown);
         res |= getDownMoves(i) ^ getDownMoves(obstacle);
     } else res |= getDownMoves(i);
     
     if (inteRight){
-        obstacle = 63 - __builtin_clzll(inteRight);
+        obstacle = MSB_INDEX(inteRight);
         res |= getRightMoves(i) ^ getRightMoves(obstacle);
     } else res |= getRightMoves(i);
     
     if (inteLeft){
-        obstacle = __builtin_ctzll(inteLeft);
+        obstacle = LSB_INDEX(inteLeft);
         res |= getLeftMoves(i) ^ getLeftMoves(obstacle);
     } else res |= getLeftMoves(i);
 
     return res;
 }
-unsigned long long kingDiagonal(Board* b, unsigned long long pos)
+uint64_t kingDiagonal(Board* b, uint64_t pos)
 {
-    int i = __builtin_ctzll(pos);
+    int i = LSB_INDEX(pos);
 
-    unsigned long long inteUpRight = getUpRightMoves(i) & b->pieces;
-    unsigned long long inteUpLeft = getUpLeftMoves(i) & b->pieces;
-    unsigned long long inteDownRight = getDownRightMoves(i) & b->pieces;
-    unsigned long long inteDownLeft = getDownLeftMoves(i) & b->pieces;
+    uint64_t inteUpRight = getUpRightMoves(i) & b->pieces;
+    uint64_t inteUpLeft = getUpLeftMoves(i) & b->pieces;
+    uint64_t inteDownRight = getDownRightMoves(i) & b->pieces;
+    uint64_t inteDownLeft = getDownLeftMoves(i) & b->pieces;
 
-    unsigned long long res = 0;
+    uint64_t res = 0;
     int obstacle;
 
 
     if (inteUpRight){
-        obstacle = __builtin_ctzll(inteUpRight);
+        obstacle = LSB_INDEX(inteUpRight);
         res |= getUpRightMoves(i) ^ getUpRightMoves(obstacle);
     } else res |= getUpRightMoves(i);
     
     if (inteUpLeft){
-        obstacle = __builtin_ctzll(inteUpLeft);
+        obstacle = LSB_INDEX(inteUpLeft);
         res |= getUpLeftMoves(i) ^ getUpLeftMoves(obstacle);
     } else res |= getUpLeftMoves(i);
     
     if (inteDownRight){
-        obstacle = 63 - __builtin_clzll(inteDownRight);
+        obstacle = MSB_INDEX(inteDownRight);
         res |= getDownRightMoves(i) ^ getDownRightMoves(obstacle);
     } else res |= getDownRightMoves(i);
     
     if (inteDownLeft){
-        obstacle = 63 - __builtin_clzll(inteDownLeft);
+        obstacle = MSB_INDEX(inteDownLeft);
         res |= getDownLeftMoves(i) ^ getDownLeftMoves(obstacle);
     } else res |= getDownLeftMoves(i);
 
     return res;
 }
-unsigned long long kingKnight(unsigned long long pos)
+uint64_t kingKnight(uint64_t pos)
 {
-    int i = __builtin_ctzll(pos);
+    int i = LSB_INDEX(pos);
     return getKnightMoves(i);
 }
-unsigned long long kingPawn(unsigned long long pos, int color)
+uint64_t kingPawn(uint64_t pos, int color)
 {
-    int i = __builtin_ctzll(pos);
+    int i = LSB_INDEX(pos);
     return color ? getWhitePawnCaptures(i) : getBlackPawnCaptures(i);
 }
 
 int isInCheck(Board* b, int kingsColor)
 {
     int numPawns;
-    unsigned long long straight, diagonal;
-    unsigned long long pos;
+    uint64_t straight, diagonal;
+    uint64_t pos;
+
     if (kingsColor)
     {
         pos = b->wKing;

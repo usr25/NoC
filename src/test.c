@@ -8,21 +8,21 @@
 int validStartingPos(Board b)
 {
     int correctNumOfPieces = 
-        __builtin_popcountll(b.wPawns) == 8 &&
-        __builtin_popcountll(b.bPawns) == 8 &&
-        __builtin_popcountll(b.wKing) == 1 &&
-        __builtin_popcountll(b.bKing) == 1 &&
-        __builtin_popcountll(b.wQueen) == 1 &&
-        __builtin_popcountll(b.bQueen) == 1 &&
-        __builtin_popcountll(b.wRook) == 2 &&
-        __builtin_popcountll(b.bRook) == 2 &&
-        __builtin_popcountll(b.wBish) == 2 &&
-        __builtin_popcountll(b.bBish) == 2 &&
-        __builtin_popcountll(b.wKnight) == 2 &&
-        __builtin_popcountll(b.bKnight) == 2;
+        POPCOUNT(b.wPawns) == 8 &&
+        POPCOUNT(b.bPawns) == 8 &&
+        POPCOUNT(b.wKing) == 1 &&
+        POPCOUNT(b.bKing) == 1 &&
+        POPCOUNT(b.wQueen) == 1 &&
+        POPCOUNT(b.bQueen) == 1 &&
+        POPCOUNT(b.wRook) == 2 &&
+        POPCOUNT(b.bRook) == 2 &&
+        POPCOUNT(b.wBish) == 2 &&
+        POPCOUNT(b.bBish) == 2 &&
+        POPCOUNT(b.wKnight) == 2 &&
+        POPCOUNT(b.bKnight) == 2;
 
-    int piecesAddUp = __builtin_popcountll(b.white) == 16 && __builtin_popcountll(b.black) == 16;
-    int availableAddUp = __builtin_popcountll(b.avWhite) == 48 && __builtin_popcountll(b.avBlack) == 48;
+    int piecesAddUp = POPCOUNT(b.white) == 16 && POPCOUNT(b.black) == 16;
+    int availableAddUp = POPCOUNT(b.avWhite) == 48 && POPCOUNT(b.avBlack) == 48;
     int avAreCorrect = (b.white & b.avWhite) == 0 && (b.black & b.avBlack) == 0;
     int whiteAreInAvBlack = (b.white & b.avBlack) == b.white;
     int blackAreInAvWhite = (b.black & b.avWhite) == b.black;
@@ -34,16 +34,16 @@ int validStartingPos(Board b)
 
 int validPieces(Board b)
 {
-    int validKings = (__builtin_popcountll(b.wKing) == 1) && (__builtin_popcountll(b.bKing) == 1);
-    int totNumPieces = (__builtin_popcountll(b.white) <= 16) && (__builtin_popcountll(b.black) <= 16);
-    int validNumPawns = (__builtin_popcountll(b.wPawns) <= 8) && (__builtin_popcountll(b.bPawns) <= 8);
+    int validKings = (POPCOUNT(b.wKing) == 1) && (POPCOUNT(b.bKing) == 1);
+    int totNumPieces = (POPCOUNT(b.white) <= 16) && (POPCOUNT(b.black) <= 16);
+    int validNumPawns = (POPCOUNT(b.wPawns) <= 8) && (POPCOUNT(b.bPawns) <= 8);
 
     return validKings && totNumPieces && validNumPawns;
 }
 
 int testKingMoves()
 {
-    unsigned long long movsW, movsB;
+    uint64_t movsW, movsB;
     Board b = defaultBoard();
     movsW = posKingMoves(&b, 1);
     movsB = posKingMoves(&b, 0);
@@ -62,7 +62,7 @@ int testKingMoves()
 }
 int testQueenMoves()
 {
-    unsigned long long movsW, movsB;
+    uint64_t movsW, movsB;
     Board b = defaultBoard();
     movsW = posQueenMoves(&b, 1, 0);
     movsB = posQueenMoves(&b, 0, 0);
@@ -81,7 +81,7 @@ int testQueenMoves()
 }
 int testRookMoves()
 {
-    unsigned long long movsW1, movsW2, movsB1, movsB2;
+    uint64_t movsW1, movsW2, movsB1, movsB2;
     Board b = defaultBoard();
     movsW1 = posRookMoves(&b, 1, 0);
     movsW2 = posRookMoves(&b, 1, 1);
@@ -104,7 +104,7 @@ int testRookMoves()
 }
 int testBishMoves()
 {
-    unsigned long long movsW1, movsW2, movsB1, movsB2;
+    uint64_t movsW1, movsW2, movsB1, movsB2;
     Board b = defaultBoard();
     movsW1 = posBishMoves(&b, 1, 0);
     movsW2 = posBishMoves(&b, 1, 1);
@@ -127,7 +127,7 @@ int testBishMoves()
 }
 int testKnightMoves()
 {
-    unsigned long long movsW1, movsW2, movsB1, movsB2;
+    uint64_t movsW1, movsW2, movsB1, movsB2;
     Board b = defaultBoard();
     movsW1 = posKnightMoves(&b, 1, 0);
     movsW2 = posKnightMoves(&b, 1, 1);
@@ -151,7 +151,7 @@ int testKnightMoves()
 
 int testPawnMoves()
 {
-    unsigned long long movsW1, movsW2, movsW3, movsB1, movsB2, movsB3;
+    uint64_t movsW1, movsW2, movsW3, movsB1, movsB2, movsB3;
     Board b = defaultBoard();
     int defaultMovs = 1;
     for (int i = 0; i < 8 && defaultMovs; ++i)
