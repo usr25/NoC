@@ -17,7 +17,7 @@
 #define SH_WROOK 4
 #define SH_WBISH 8
 #define SH_WKNIGHT 12
-#define SH_WPAWNS 16
+#define SH_WPAWN 16
 #define SH_BQUEEN 20
 #define SH_BROOK 24
 #define SH_BBISH 28
@@ -59,7 +59,7 @@ static inline int numWQueen(uint64_t pieces)   {return (pieces >> SH_WQUEEN) & 0
 static inline int numWRook(uint64_t pieces)    {return (pieces >> SH_WROOK) & 0xf;}
 static inline int numWBish(uint64_t pieces)    {return (pieces >> SH_WBISH) & 0xf;}
 static inline int numWKnight(uint64_t pieces)  {return (pieces >> SH_WKNIGHT) & 0xf;}
-static inline int numWPawn(uint64_t pieces)   {return (pieces >> SH_WPAWNS) & 0xf;}
+static inline int numWPawn(uint64_t pieces)   {return (pieces >> SH_WPAWN) & 0xf;}
 
 static inline int numBKing(uint64_t pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
 static inline int numBQueen(uint64_t pieces)   {return (pieces >> SH_BQUEEN) & 0xf;}
@@ -69,17 +69,29 @@ static inline int numBKnight(uint64_t pieces)  {return (pieces >> SH_BKNIGHT) & 
 static inline int numBPawn(uint64_t pieces)   {return (pieces >> SH_BPAWN) & 0xf;}
 
 
-static inline void incrWQueen(Board* b)     {b->numPieces += 1ULL << SH_WQUEEN;}
-static inline void incrWRook(Board* b)      {b->numPieces += 1ULL << SH_WROOK;}
-static inline void incrWBish(Board* b)      {b->numPieces += 1ULL << SH_WBISH;}
-static inline void incrWKnight(Board* b)    {b->numPieces += 1ULL << SH_WKNIGHT;}
-static inline void incrWPawns(Board* b)     {b->numPieces += 1ULL << SH_WPAWNS;}
+static inline void incrWQueen(Board* b)     {b->numPieces += POW2[SH_WQUEEN];}
+static inline void incrWRook(Board* b)      {b->numPieces += POW2[SH_WROOK];}
+static inline void incrWBish(Board* b)      {b->numPieces += POW2[SH_WBISH];}
+static inline void incrWKnight(Board* b)    {b->numPieces += POW2[SH_WKNIGHT];}
+static inline void incrWPawns(Board* b)     {b->numPieces += POW2[SH_WPAWN];}
 
-static inline void incrBQueen(Board* b)     {b->numPieces += 1ULL << SH_BQUEEN;}
-static inline void incrBRook(Board* b)      {b->numPieces += 1ULL << SH_BROOK;}
-static inline void incrBBish(Board* b)      {b->numPieces += 1ULL << SH_BBISH;}
-static inline void incrBKnight(Board* b)    {b->numPieces += 1ULL << SH_BKNIGHT;}
-static inline void incrBPawns(Board* b)     {b->numPieces += 1ULL << SH_BPAWN;}
+static inline void incrBQueen(Board* b)     {b->numPieces += POW2[SH_BQUEEN];}
+static inline void incrBRook(Board* b)      {b->numPieces += POW2[SH_BROOK];}
+static inline void incrBBish(Board* b)      {b->numPieces += POW2[SH_BBISH];}
+static inline void incrBKnight(Board* b)    {b->numPieces += POW2[SH_BKNIGHT];}
+static inline void incrBPawns(Board* b)     {b->numPieces += POW2[SH_BPAWN];}
+
+static inline void decrWQueen(Board* b)     {b->numPieces -= POW2[SH_WQUEEN];}
+static inline void decrWRook(Board* b)      {b->numPieces -= POW2[SH_WROOK];}
+static inline void decrWBish(Board* b)      {b->numPieces -= POW2[SH_WBISH];}
+static inline void decrWKnight(Board* b)    {b->numPieces -= POW2[SH_WKNIGHT];}
+static inline void decrWPawns(Board* b)     {b->numPieces -= POW2[SH_WPAWN];}
+
+static inline void decrBQueen(Board* b)     {b->numPieces -= POW2[SH_BQUEEN];}
+static inline void decrBRook(Board* b)      {b->numPieces -= POW2[SH_BROOK];}
+static inline void decrBBish(Board* b)      {b->numPieces -= POW2[SH_BBISH];}
+static inline void decrBKnight(Board* b)    {b->numPieces -= POW2[SH_BKNIGHT];}
+static inline void decrBPawns(Board* b)     {b->numPieces -= POW2[SH_BPAWN];}
 
 
 Board generateFromFen(char* const fen, char* const toPlay, char* const castle);

@@ -4,6 +4,8 @@
 #include "../include/memoization.h"
 #include "../include/io.h"
 
+#include <stdio.h>
+
 uint64_t posWhiteKingMoves(Board* b)
 {
     return getKingMoves(LSB_INDEX(b->wKing)) & b->avWhite;
@@ -307,37 +309,47 @@ int isInCheck(Board* b, const int kingsColor)
     if (kingsColor)
     {
         pos = b->wKing;
-        straight = kingStraight(b, pos);
-        diagonal = kingDiagonal(b, pos);
-
 
         if (b->bPawns & kingPawn(pos, 1)) return PAWN;
 
         if (b->bKnight & kingKnight(pos)) return KNIGHT;
 
-        if (b->bQueen & (straight | diagonal)) return QUEEN;
-
-        if (b->bRook & straight) return ROOK;
-
-        if (b->bBish & diagonal) return BISH;
+        if (numBQueen(b->numPieces) || numBRook(b->numPieces))
+        {
+            straight = kingStraight(b, pos);
+            if (b->bRook & straight) return ROOK;
+            if (b->bQueen & straight) return QUEEN;
+        
+        }
+        if (numBQueen(b->numPieces) || numBBish(b->numPieces))
+        {
+            diagonal = kingDiagonal(b, pos);
+            if (b->bQueen & diagonal) return QUEEN;
+            if (b->bBish & diagonal) return BISH;
+        }
     
     }
     else
     {
         pos = b->bKing;
-        straight = kingStraight(b, pos);
-        diagonal = kingDiagonal(b, pos);
 
-        
         if (b->wPawns & kingPawn(pos, 0)) return PAWN;
         
         if (b->wKnight & kingKnight(pos)) return KNIGHT;
+
+        if (numWQueen(b->numPieces) || numWRook(b->numPieces))
+        {
+            straight = kingStraight(b, pos);
+            if (b->wRook & straight) return ROOK;
+            if (b->wQueen & straight) return QUEEN;
         
-        if (b->wQueen & (straight | diagonal)) return QUEEN;
-        
-        if (b->wRook & straight) return ROOK;
-        
-        if (b->wBish & diagonal) return BISH;
+        }
+        if (numWQueen(b->numPieces) || numWBish(b->numPieces))
+        {
+            diagonal = kingDiagonal(b, pos);
+            if (b->wQueen & diagonal) return QUEEN;
+            if (b->wBish & diagonal) return BISH;
+        }
     }
 
     return 0;
