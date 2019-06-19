@@ -10,7 +10,7 @@ void drawPosition(Board b, const int drawCoords){
     {
         for (j = 0; j < 8; ++j)
         {
-            if (pos & b.wPawns)
+            if (pos & b.wPawn)
                 printf(" P ");
             else if (pos & b.wKing)
                 printf(" K ");
@@ -22,7 +22,7 @@ void drawPosition(Board b, const int drawCoords){
                 printf(" B ");
             else if (pos & b.wKnight)
                 printf(" N ");
-            else if (pos & b.bPawns)
+            else if (pos & b.bPawn)
                 printf(" p ");
             else if (pos & b.bKing)
                 printf(" k ");

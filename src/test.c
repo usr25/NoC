@@ -1,6 +1,7 @@
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
+#include "../include/boardmoves.h"
 #include "../include/io.h"
 
 #include <stdio.h>
@@ -8,8 +9,8 @@
 int validStartingPos(Board b)
 {
     int correctNumOfPieces = 
-        POPCOUNT(b.wPawns) == 8 &&
-        POPCOUNT(b.bPawns) == 8 &&
+        POPCOUNT(b.wPawn) == 8 &&
+        POPCOUNT(b.bPawn) == 8 &&
         POPCOUNT(b.wKing) == 1 &&
         POPCOUNT(b.bKing) == 1 &&
         POPCOUNT(b.wQueen) == 1 &&
@@ -20,6 +21,20 @@ int validStartingPos(Board b)
         POPCOUNT(b.bBish) == 2 &&
         POPCOUNT(b.wKnight) == 2 &&
         POPCOUNT(b.bKnight) == 2;
+
+    int countIsCorrect = 
+        POPCOUNT(b.wPawn) == numWPawn(b.numPieces) &&
+        POPCOUNT(b.bPawn) == numBPawn(b.numPieces) &&
+        POPCOUNT(b.wKing) == numWKing(b.numPieces) &&
+        POPCOUNT(b.bKing) == numBKing(b.numPieces) &&
+        POPCOUNT(b.wQueen) == numWQueen(b.numPieces) &&
+        POPCOUNT(b.bQueen) == numBQueen(b.numPieces) &&
+        POPCOUNT(b.wRook) == numWRook(b.numPieces) &&
+        POPCOUNT(b.bRook) == numBRook(b.numPieces) &&
+        POPCOUNT(b.wBish) == numWBish(b.numPieces) &&
+        POPCOUNT(b.bBish) == numBBish(b.numPieces) &&
+        POPCOUNT(b.wKnight) == numWKnight(b.numPieces) &&
+        POPCOUNT(b.bKnight) == numBKnight(b.numPieces);
 
     int piecesAddUp = POPCOUNT(b.white) == 16 && POPCOUNT(b.black) == 16;
     int availableAddUp = POPCOUNT(b.avWhite) == 48 && POPCOUNT(b.avBlack) == 48;
@@ -36,9 +51,18 @@ int validPieces(Board b)
 {
     int validKings = (POPCOUNT(b.wKing) == 1) && (POPCOUNT(b.bKing) == 1);
     int totNumPieces = (POPCOUNT(b.white) <= 16) && (POPCOUNT(b.black) <= 16);
-    int validNumPawns = (POPCOUNT(b.wPawns) <= 8) && (POPCOUNT(b.bPawns) <= 8);
+    int validNumPawns = (POPCOUNT(b.wPawn) <= 8) && (POPCOUNT(b.bPawn) <= 8);
 
     return validKings && totNumPieces && validNumPawns;
+}
+
+int testGeneration()
+{
+    Board a = defaultBoard();
+    Board b = generateFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "w", "KQkq");
+
+    return 
+        equal(&a, &b) && validPieces(a) && validPieces(b) && validStartingPos(a) && validStartingPos(b);
 }
 
 int testKingMoves()
@@ -218,8 +242,82 @@ int testChecks()
     return white && black;
 }
 
+int testUndoMoves()
+{
+    Board b = defaultBoard();
+    Board _b = defaultBoard();
+    int stays = equal(&b, &_b);
+
+    makeMoveWhite(&b, PAWN, 8, 56);
+    undoMoveWhite(&b, PAWN, ROOK, 8,  56);
+    int white = equal(&b, &_b);
+
+    makeMoveBlack(&b, PAWN, 55, 7);
+    undoMoveBlack(&b, PAWN, ROOK, 55,  7);
+    int black = equal(&b, &_b);
+
+    return stays && white && black;
+}
+
+int testBoardPawnMoves()
+{
+    Board b;
+    int pawnMovesNoCapture = 1;
+    for (int i = 0; i < 8; ++i)
+    {
+        b = defaultBoard();
+        makeMoveWhite(&b, PAWN, i + 8, i + 16);
+        makeMoveWhite(&b, PAWN, i + 16, i + 32);
+        makeMoveBlack(&b, PAWN, 55 - i, 47 - i);
+        makeMoveBlack(&b, PAWN, 47 - i, 39 - i);
+
+        pawnMovesNoCapture &= ((b.wPawn & POW2[i + 16]) == 0) && ((POW2[i + 32] & b.wPawn) == POW2[i + 32]);
+        pawnMovesNoCapture &= ((b.white | b.wPawn) == b.white) && ((b.white & b.wPawn) == b.wPawn);
+        
+        pawnMovesNoCapture &= ((b.bPawn & POW2[47 - i]) == 0) && ((POW2[39 - i] & b.bPawn) == POW2[39 - i]);
+        pawnMovesNoCapture &= ((b.black | b.bPawn) == b.black) && ((b.black & b.bPawn) == b.bPawn);
+
+        pawnMovesNoCapture &= (POPCOUNT(b.wPawn) == numWPawn(b.numPieces)) && (POPCOUNT(b.bPawn) == numBPawn(b.numPieces));
+    }
+
+    int pawnMovesCapture = 1;
+
+    for (int i = 0; i < 8; ++i)
+    {
+        b = defaultBoard();
+        makeMoveWhite(&b, PAWN, i + 8, 48 + i);
+
+        pawnMovesCapture &= ((b.wPawn & POW2[8 + i]) == 0) && ((POW2[48 + i] & b.wPawn) == POW2[48 + i]);
+        pawnMovesCapture &= ((b.white | b.wPawn) == b.white) && ((b.white & b.wPawn) == b.wPawn);
+
+        pawnMovesCapture &= (b.bPawn & POW2[48 + i]) == 0;
+        pawnMovesCapture &= (POPCOUNT(b.bPawn) == 7) && (numBPawn(b.numPieces) == 7);
+        pawnMovesCapture &= POPCOUNT(b.black) == 15;
+    
+        b = defaultBoard();
+        makeMoveBlack(&b, PAWN, 48 + i, 8 + i);
+
+        pawnMovesCapture &= ((b.bPawn & POW2[48 + i]) == 0) && ((POW2[8 + i] & b.bPawn) == POW2[8 + i]);
+        pawnMovesCapture &= ((b.black | b.bPawn) == b.black) && ((b.black & b.bPawn) == b.bPawn);
+
+        pawnMovesCapture &= (b.wPawn & POW2[8 + i]) == 0;
+        pawnMovesCapture &= (POPCOUNT(b.wPawn) == 7) && (numWPawn(b.numPieces) == 7);
+        pawnMovesCapture &= POPCOUNT(b.white) == 15;
+    }
+
+    b = defaultBoard();
+    makeMoveWhite(&b, PAWN, 8, 56);
+    int extra = ((b.wPawn & POW2[8]) == 0) && ((b.wPawn & POW2[56]) == POW2[56]) && (b.bRook == POW2[63]);
+    makeMoveBlack(&b, PAWN, 55, 7);
+    extra &= ((b.bPawn & POW2[57]) == 0) && ((b.bPawn & POW2[7]) == POW2[7]) && (b.wRook == POW2[0]);
+    
+    return pawnMovesNoCapture && pawnMovesCapture && extra;
+}
+
 void runTests()
 {
+    //Generation
+    printf("[+] Generation: %d\n",      testGeneration());
     //Moves
     printf("[+] King moves: %d\n",      testKingMoves());
     printf("[+] Queen moves: %d\n",     testQueenMoves());
@@ -230,4 +328,8 @@ void runTests()
     
     //Checks
     printf("[+] Checks: %d\n",          testChecks());
+
+    //Moves
+    printf("[+] Undo moves: %d\n",      testUndoMoves());
+    printf("[+] Board Pawn moves: %d\n",testBoardPawnMoves());
 }

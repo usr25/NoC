@@ -11,6 +11,7 @@ White pieces
 #include "../include/global.h"
 #include "../include/board.h"
 
+#include <stdio.h>
 
 #define INITIAL_WPIECES 0xffff
 #define INITIAL_WPAWNS 0xff00
@@ -67,8 +68,8 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
                 break;
             case 'P':
                 b.white |= pos;
-                b.wPawns |= pos;
-                incrWPawns(&b);
+                b.wPawn |= pos;
+                incrWPawn(&b);
                 break;
 
             case 'k':
@@ -97,8 +98,8 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
                 break;
             case 'p':
                 b.black |= pos;
-                b.bPawns |= pos;
-                incrBPawns(&b);
+                b.bPawn |= pos;
+                incrBPawn(&b);
                 break;
             case '/': 
                 shift = 0;
@@ -150,13 +151,13 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
 Board defaultBoard()
 {
     Board b = (Board) {
-    .white = INITIAL_WPIECES, .avWhite = ALL ^ INITIAL_WPIECES, .wPawns = INITIAL_WPAWNS, 
+    .white = INITIAL_WPIECES, .avWhite = ALL ^ INITIAL_WPIECES, .wPawn = INITIAL_WPAWNS, 
     .wKing = INITIAL_WKING, .wQueen = INITIAL_WQUEEN, .wRook = INITIAL_WROOK, .wBish = INITIAL_WBISH, .wKnight = INITIAL_WKNIGHT,
     
-    .black = INITIAL_BPIECES, .avBlack = ALL ^ INITIAL_BPIECES, .bPawns = INITIAL_BPAWNS, 
+    .black = INITIAL_BPIECES, .avBlack = ALL ^ INITIAL_BPIECES, .bPawn = INITIAL_BPAWNS, 
     .bKing = INITIAL_BKING, .bQueen = INITIAL_BQUEEN, .bRook = INITIAL_BROOK, .bBish = INITIAL_BBISH, .bKnight = INITIAL_BKNIGHT,
     
-    .posInfo = 0b11111, .pieces = INITIAL_WPIECES | INITIAL_BPIECES
+    .posInfo = 0b11111, .pieces = INITIAL_WPIECES | INITIAL_BPIECES, .numPieces = 0x8222182221ULL
     };
 
     return b;
@@ -181,9 +182,9 @@ unsigned int index(const uint64_t bitboard, int prev)
 //Get the piece in the respective coord
 unsigned int pieceAt(Board* const b, const unsigned int coord)
 {
-    if (POW2[1ULL << coord] & b->white)
+    if (POW2[coord] & b->white)
         return whitePieceAt(b, coord);
-    else if (POW2[1ULL << coord] & b->black)
+    else if (POW2[coord] & b->black)
         return blackPieceAt(b, coord);
     return 0;
 }
@@ -195,32 +196,117 @@ The ifs are improved based on the average num of the piece type there are on
 the board
 */
 
-//TODO: finish implementing using the coords
-unsigned int whitePieceAt(Board* const b, const unsigned int coord)
+unsigned int captureBlackPiece(Board* b, const uint64_t pos)
 {
-    uint64_t pos = POW2[coord];
-    unsigned int res = 1;
+    unsigned int targetPiece = blackPieceAt(b, pos);
+    switch (targetPiece)
+    {
+        case KING:
+        b->bKing ^= pos;
+        //decr
+        break;
+        case QUEEN:
+        b->bQueen ^= pos;
+        decrBQueen(b);
+        break;
+        case ROOK:
+        b->bRook ^= pos;
+        decrBRook(b);
+        break;
+        case BISH:
+        b->bBish ^= pos;
+        decrBBish(b);
+        break;
+        case KNIGHT:
+        b->bKnight ^= pos;
+        decrBKnight(b);
+        break;
+        case PAWN:
+        b->bPawn ^= pos;
+        decrBPawn(b);
+        break;
+    }
+    return targetPiece;
+}
 
-    if (pos & b->wPawns)     res |= PAWN;
-    else if (pos & b->wRook) res |= ROOK;
-    else if (pos & b->wBish) res |= BISH;
-    else if (pos & b->wKnight) res |= KNIGHT;
-    else if (pos & b->wQueen) res |= QUEEN;
-    else if (pos & b->wKing) res |= KING;
+unsigned int captureWhitePiece(Board* b, const uint64_t pos)
+{
+    unsigned int targetPiece = whitePieceAt(b, pos);
+    switch (targetPiece)
+    {
+        case KING:
+        b->wKing ^= pos;
+        //decr
+        break;
+        case QUEEN:
+        b->wQueen ^= pos;
+        decrWQueen(b);
+        break;
+        case ROOK:
+        b->wRook ^= pos;
+        decrWRook(b);
+        break;
+        case BISH:
+        b->wBish ^= pos;
+        decrWBish(b);
+        break;
+        case KNIGHT:
+        b->wKnight ^= pos;
+        decrWKnight(b);
+        break;
+        case PAWN:
+        b->wPawn ^= pos;
+        decrWPawn(b);
+        break;
+    }
+
+    return targetPiece;
+}
+
+//TODO: finish implementing using the coords
+unsigned int whitePieceAt(Board* const b, const uint64_t pos)
+{
+    unsigned int res = 0;
+
+    if (pos & b->wPawn)     res = PAWN;
+    else if (pos & b->wRook) res = ROOK;
+    else if (pos & b->wBish) res = BISH;
+    else if (pos & b->wKnight) res = KNIGHT;
+    else if (pos & b->wQueen) res = QUEEN;
+    else if (pos & b->wKing) res = KING;
 
     return res;
 }
-unsigned int blackPieceAt(Board* const b, const unsigned int coord)
+unsigned int blackPieceAt(Board* const b, const uint64_t pos)
 {
-    uint64_t pos = POW2[coord];
     unsigned int res = 0;
 
-    if (pos & b->bPawns)     res |= PAWN;
-    else if (pos & b->bRook) res |= ROOK;
-    else if (pos & b->bBish) res |= BISH;
-    else if (pos & b->bKnight) res |= KNIGHT;
-    else if (pos & b->bQueen) res |= QUEEN;
-    else if (pos & b->bKing) res |= KING;
+    if (pos & b->bPawn)     res = PAWN;
+    else if (pos & b->bRook) res = ROOK;
+    else if (pos & b->bBish) res = BISH;
+    else if (pos & b->bKnight) res = KNIGHT;
+    else if (pos & b->bQueen) res = QUEEN;
+    else if (pos & b->bKing) res = KING;
     
     return res;
+}
+
+int equal(Board* a, Board* b)
+{
+    int data = 
+        (a->posInfo == b->posInfo) && (a->pieces == b->pieces) && (a->numPieces == b->numPieces);
+    int white = 
+        (a->white == b->white) && (a->avWhite == b->avWhite) && (a->wPawn == b->wPawn) && (a->wKing == b->wKing) && 
+        (a->wQueen == b->wQueen) && (a->wRook == b->wRook) && (a->wBish == b->wBish) && (a->wKnight == b->wKnight);
+    int black = 
+        (a->black == b->black) && (a->avBlack == b->avBlack) && (a->bPawn == b->bPawn) && (a->bKing == b->bKing) && 
+        (a->bQueen == b->bQueen) && (a->bRook == b->bRook) && (a->bBish == b->bBish) && (a->bKnight == b->bKnight);
+
+    /*
+    printf("Data: %d\n", data);
+    printf("White: %d\n", white);
+    printf("Black: %d\n", black);
+    */
+
+    return data && white && black;
 }

@@ -119,8 +119,8 @@ int matrices(Board* b)
 {
     int val = 0;
 
-    val += multiply(wPawnMatrix, b->wPawns);
-    val -= multiply(bPawnMatrix, b->bPawns);
+    val += multiply(wPawnMatrix, b->wPawn);
+    val -= multiply(bPawnMatrix, b->bPawn);
 
     val += multiply(kingMatrix, b->wKing);
     val += multiply(queenMatrix, b->wQueen);

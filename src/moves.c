@@ -16,7 +16,7 @@ uint64_t posBlackKingMoves(Board* b)
 }
 
 uint64_t posKingMoves(Board* b, const int color)
-{   
+{
     if (color)
         return posWhiteKingMoves(b);
     else
@@ -37,7 +37,7 @@ uint64_t posKnightMoves(Board* b, const int color, int index)
 
 uint64_t posPawnMoves(Board* b, const int color, int index)
 {
-    uint64_t pos = (color)?b->wPawns:b->bPawns;
+    uint64_t pos = (color)?b->wPawn:b->bPawn;
     while(index--) pos &= (pos - 1);
 
     int i = LSB_INDEX(pos);
@@ -310,7 +310,7 @@ int isInCheck(Board* b, const int kingsColor)
     {
         pos = b->wKing;
 
-        if (b->bPawns & kingPawn(pos, 1)) return PAWN;
+        if (b->bPawn & kingPawn(pos, 1)) return PAWN;
 
         if (b->bKnight & kingKnight(pos)) return KNIGHT;
 
@@ -333,7 +333,7 @@ int isInCheck(Board* b, const int kingsColor)
     {
         pos = b->bKing;
 
-        if (b->wPawns & kingPawn(pos, 0)) return PAWN;
+        if (b->wPawn & kingPawn(pos, 0)) return PAWN;
         
         if (b->wKnight & kingKnight(pos)) return KNIGHT;
 
