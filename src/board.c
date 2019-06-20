@@ -163,22 +163,7 @@ Board defaultBoard()
     return b;
 }
 
-/*
-prev is incremented by 1, so the first call has to be made with prev = -1
-It begins from h1, so that the wking index = 1 and bking index = 59
-*/
-unsigned int index(const uint64_t bitboard, int prev)
-{
-    uint64_t pos = POW2[++prev];
-    
-    while(prev < 64 && !(pos & bitboard))
-    {
-        pos <<= 1;
-        ++prev;
-    }
 
-    return prev;
-}
 //Get the piece in the respective coord
 unsigned int pieceAt(Board* const b, const unsigned int coord)
 {
@@ -266,29 +251,25 @@ unsigned int captureWhitePiece(Board* b, const uint64_t pos)
 //TODO: finish implementing using the coords
 unsigned int whitePieceAt(Board* const b, const uint64_t pos)
 {
-    unsigned int res = 0;
+    if (pos & b->wPawn)     return PAWN;
+    else if (pos & b->wRook) return ROOK;
+    else if (pos & b->wBish) return BISH;
+    else if (pos & b->wKnight) return KNIGHT;
+    else if (pos & b->wQueen) return QUEEN;
+    else if (pos & b->wKing) return KING;
 
-    if (pos & b->wPawn)     res = PAWN;
-    else if (pos & b->wRook) res = ROOK;
-    else if (pos & b->wBish) res = BISH;
-    else if (pos & b->wKnight) res = KNIGHT;
-    else if (pos & b->wQueen) res = QUEEN;
-    else if (pos & b->wKing) res = KING;
-
-    return res;
+    return 0;
 }
 unsigned int blackPieceAt(Board* const b, const uint64_t pos)
 {
-    unsigned int res = 0;
-
-    if (pos & b->bPawn)     res = PAWN;
-    else if (pos & b->bRook) res = ROOK;
-    else if (pos & b->bBish) res = BISH;
-    else if (pos & b->bKnight) res = KNIGHT;
-    else if (pos & b->bQueen) res = QUEEN;
-    else if (pos & b->bKing) res = KING;
+    if (pos & b->bPawn)     return PAWN;
+    else if (pos & b->bRook) return ROOK;
+    else if (pos & b->bBish) return BISH;
+    else if (pos & b->bKnight) return KNIGHT;
+    else if (pos & b->bQueen) return QUEEN;
+    else if (pos & b->bKing) return KING;
     
-    return res;
+    return 0;
 }
 
 int equal(Board* a, Board* b)

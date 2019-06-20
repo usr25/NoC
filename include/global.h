@@ -1,6 +1,7 @@
 #define ALL 0xffffffffffffffff
 
 #define BOOL(x) ((x)?"true":"false")
+#define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll((ll))
 #define LSB_INDEX(ll) __builtin_ctzll((ll))
 #define MSB_INDEX(ll) 63 - __builtin_clzll((ll))

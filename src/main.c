@@ -13,6 +13,7 @@
 #include "../include/node.h"
 #include "../include/memoization.h"
 #include "../include/moves.h"
+#include "../include/boardmoves.h"
 
 #include "../include/evaluation.h"
 
@@ -49,6 +50,6 @@ int main(const int argc, char* const argv[])
     printf("[+] Pieces are valid: %s\n", BOOL(validPieces(start)));
 
     runTests();
-
+    
     return 0;
 }

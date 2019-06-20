@@ -1,7 +1,7 @@
 #include "../include/global.h"
 #include "../include/board.h"
+#include "../include/moves.h"
 #include "../include/boardmoves.h"
-#include "../include/node.h"
 
 //This file makes changes to the board, moves.c generates the moves
 
@@ -9,10 +9,10 @@
 
 //returns the piece CAPTURED and its color
 //returns 0 otherwise
-unsigned int makeMoveWhite(Board* b, const unsigned int piece, const int from, const int to)
+void makeMoveWhite(Board* b, Move* move, int* history)
 {
-    uint64_t fromBit = POW2[from], toBit = POW2[to];
-    switch (piece)
+    uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
+    switch (move->pieceThatMoves)
     {
         case KING:
         b->wKing ^= fromBit;
@@ -48,19 +48,19 @@ unsigned int makeMoveWhite(Board* b, const unsigned int piece, const int from, c
     b->avWhite |= fromBit;
     b->white |= toBit;
     b->avWhite ^= toBit;
+    b->pieces ^= fromBit;
 
-    unsigned int capturedPiece = captureBlackPiece(b, toBit);
-    if (piece) 
+    move->pieceCaptured = captureBlackPiece(b, toBit);
+    if (move->pieceCaptured)
     {
         b->black ^= toBit;
         b->avBlack |= toBit;
     }
-    return piece;
 }
-unsigned int makeMoveBlack(Board* b, const unsigned int piece, const int from, const int to)
+void makeMoveBlack(Board* b, Move* move, int* history)
 {
-    uint64_t fromBit = POW2[from], toBit = POW2[to];
-    switch (piece)
+    uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
+    switch (move->pieceThatMoves)
     {
         case KING:
         b->bKing ^= fromBit;
@@ -97,21 +97,20 @@ unsigned int makeMoveBlack(Board* b, const unsigned int piece, const int from, c
     b->avBlack |= fromBit;
     b->black |= toBit;
     b->avBlack ^= toBit;
+    b->pieces ^= fromBit;
 
-    unsigned int capturedPiece = captureWhitePiece(b, toBit);
-    if (piece) 
+    move->pieceCaptured = captureWhitePiece(b, toBit);
+    if (move->pieceCaptured)
     {
         b->white ^= toBit;
         b->avWhite |= toBit;
     }
-    
-    return piece;
 }
 //The move was made by white
-void undoMoveWhite(Board* b, const int pieceMoved, const int pieceCaptured, const int from, const int to)
+void undoMoveWhite(Board* b, Move* move, int* history)
 {
-    uint64_t fromBit = POW2[from], toBit = POW2[to];
-    switch (pieceMoved)
+    uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
+    switch (move->pieceThatMoves)
     {
         case KING:
         b->wKing |= fromBit;
@@ -147,11 +146,16 @@ void undoMoveWhite(Board* b, const int pieceMoved, const int pieceCaptured, cons
     b->white ^= toBit;
     b->avWhite |= toBit;
     b->avWhite ^= fromBit;
+    b->pieces |= fromBit;
 
     int change = 1;
 
-    switch (pieceCaptured)
+    switch (move->pieceCaptured)
     {
+        case 0: //To avoid checking against the other cases
+        change = 0;
+        break;
+
         case KING:
         b->bKing |= toBit;
         break;
@@ -181,8 +185,6 @@ void undoMoveWhite(Board* b, const int pieceMoved, const int pieceCaptured, cons
         incrBPawn(b);
         break;
 
-        default:
-        change = 0;
     }
 
     if (change)
@@ -191,10 +193,10 @@ void undoMoveWhite(Board* b, const int pieceMoved, const int pieceCaptured, cons
         b->avBlack ^= toBit;
     }
 }
-void undoMoveBlack(Board* b, const int pieceMoved, const int pieceCaptured, const int from, const int to)
+void undoMoveBlack(Board* b, Move* move, int* history)
 {
-    uint64_t fromBit = POW2[from], toBit = POW2[to];
-    switch (pieceMoved)
+    uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
+    switch (move->pieceThatMoves)
     {
         case KING:
         b->bKing |= fromBit;
@@ -230,11 +232,16 @@ void undoMoveBlack(Board* b, const int pieceMoved, const int pieceCaptured, cons
     b->black ^= toBit;
     b->avBlack |= toBit;
     b->avBlack ^= fromBit;
+    b->pieces |= fromBit;
 
     int change = 1;
 
-    switch (pieceCaptured)
+    switch (move->pieceCaptured)
     {
+        case 0:
+        change = 0;
+        break;
+
         case KING:
         b->wKing |= toBit;
         break;
@@ -263,9 +270,6 @@ void undoMoveBlack(Board* b, const int pieceMoved, const int pieceCaptured, cons
         b->wPawn |= toBit;
         incrWPawn(b);
         break;
-
-        default:
-        change = 0;
     }
 
     if (change)
@@ -273,4 +277,193 @@ void undoMoveBlack(Board* b, const int pieceMoved, const int pieceCaptured, cons
         b->white |= toBit;
         b->avWhite ^= toBit;
     }
+}
+
+//Generates all the moves and returns the number
+int allMovesWhite(Board* b, Move* list, uint64_t prevMovEnPass)
+{
+    int numMoves = 0;
+    int i, j, from, to, popC;
+    uint64_t temp, tempMoves;
+
+    temp = b->wKing;
+    tempMoves = posKingMoves(b, 1);
+    popC = POPCOUNT(tempMoves);
+    for (j = 0; j < popC; ++j)
+    {
+        to = LSB_INDEX(tempMoves);
+        REMOVE_LSB(tempMoves);
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = 1};   
+    }
+
+    temp = b->wPawn;
+    for (i = 0; i < numWPawn(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posPawnMoves(b, 1, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = 1};   
+        }
+    }
+
+    temp = b->wQueen;
+    for (i = 0; i < numWQueen(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posQueenMoves(b, 1, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .color = 1};   
+        }
+    }
+
+    temp = b->wRook;
+    for (i = 0; i < numWRook(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posRookMoves(b, 1, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .color = 1};   
+        }
+    }
+
+    temp = b->wBish;
+    for (i = 0; i < numWBish(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posBishMoves(b, 1, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .color = 1};   
+        }
+    }
+
+    temp = b->wKnight;
+    for (i = 0; i < numWKnight(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posKnightMoves(b, 1, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .color = 1};   
+        }
+    }
+
+    return numMoves;
+}
+int allMovesBlack(Board* b, Move* list, uint64_t prevMovEnPass)
+{
+    int numMoves = 0;
+    int i, j, from, to, popC;
+    uint64_t temp, tempMoves;
+
+    temp = b->bKing;
+    tempMoves = posKingMoves(b, 0);
+    popC = POPCOUNT(tempMoves);
+    for (j = 0; j < popC; ++j)
+    {
+        to = LSB_INDEX(tempMoves);
+        REMOVE_LSB(tempMoves);
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = 0};   
+    }
+    
+
+    temp = b->bPawn;
+    for (i = 0; i < numBPawn(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posPawnMoves(b, 0, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = 0};   
+        }
+    }
+
+    temp = b->bQueen;
+    for (i = 0; i < numBQueen(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posQueenMoves(b, 0, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .color = 0};   
+        }
+    }
+
+    temp = b->bRook;
+    for (i = 0; i < numBRook(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posRookMoves(b, 0, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .color = 0};   
+        }
+    }
+
+    temp = b->bBish;
+    for (i = 0; i < numBBish(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posBishMoves(b, 0, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .color = 0};   
+        }
+    }
+
+    temp = b->bKnight;
+    for (i = 0; i < numBKnight(b->numPieces); ++i)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempMoves = posKnightMoves(b, 0, i);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .color = 0};   
+        }
+    }
+
+    return numMoves;
 }

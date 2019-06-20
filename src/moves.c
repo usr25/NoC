@@ -23,11 +23,11 @@ uint64_t posKingMoves(Board* b, const int color)
         return posBlackKingMoves(b);
 }
 
-
+//TODO: Improve the while() by removing it
 uint64_t posKnightMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wKnight:b->bKnight;
-    while(index--) pos &= (pos - 1);
+    while(index--) REMOVE_LSB(pos);
 
     if (color)
         return getKnightMoves(LSB_INDEX(pos)) & b->avWhite;
@@ -38,16 +38,15 @@ uint64_t posKnightMoves(Board* b, const int color, int index)
 uint64_t posPawnMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wPawn:b->bPawn;
-    while(index--) pos &= (pos - 1);
+    while(index--) REMOVE_LSB(pos);
 
     int i = LSB_INDEX(pos);
     uint64_t forward;
     if (color){
         forward = getWhitePawnMoves(i) & (b->avWhite ^ b->black);
-        
         if (i < 16 && (POW2[8 + i] & b->pieces))
             return getWhitePawnCaptures(i) & b->black;
-        
+
         return forward | (getWhitePawnCaptures(i) & b->black);
     }
     else{
@@ -63,7 +62,7 @@ uint64_t posPawnMoves(Board* b, const int color, int index)
 uint64_t posRookMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wRook:b->bRook;
-    while(index--) pos &= (pos - 1);
+    while(index--) REMOVE_LSB(pos);
     int i = LSB_INDEX(pos);
 
     uint64_t inteUp = getUpMoves(i) & b->pieces;
@@ -106,7 +105,7 @@ uint64_t posRookMoves(Board* b, const int color, int index)
 uint64_t posBishMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wBish:b->bBish;
-    while(index--) pos &= (pos - 1);
+    while(index--) REMOVE_LSB(pos);
     int i = LSB_INDEX(pos);
 
     uint64_t inteUpRight = getUpRightMoves(i) & b->pieces;
@@ -148,7 +147,7 @@ uint64_t posBishMoves(Board* b, const int color, int index)
 uint64_t posQueenMoves(Board* b, const int color, int index)
 {
     uint64_t pos = (color)?b->wQueen:b->bQueen;
-    while(index--) pos &= (pos - 1);
+    while(index--) REMOVE_LSB(pos);
     int i = LSB_INDEX(pos);
 
     uint64_t inteUp = getUpMoves(i) & b->pieces;

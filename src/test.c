@@ -244,16 +244,22 @@ int testChecks()
 
 int testUndoMoves()
 {
+    
     Board b = defaultBoard();
     Board _b = defaultBoard();
     int stays = equal(&b, &_b);
 
-    makeMoveWhite(&b, PAWN, 8, 56);
-    undoMoveWhite(&b, PAWN, ROOK, 8,  56);
+    int temp; //TODO: Remove this
+    Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = 1};
+
+    makeMoveWhite(&b, &w1, &temp);
+    undoMoveWhite(&b, &w1, &temp);
     int white = equal(&b, &_b);
 
-    makeMoveBlack(&b, PAWN, 55, 7);
-    undoMoveBlack(&b, PAWN, ROOK, 55,  7);
+    Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = 0};
+
+    makeMoveBlack(&b, &b1, &temp);
+    undoMoveBlack(&b, &b1, &temp);
     int black = equal(&b, &_b);
 
     return stays && white && black;
@@ -261,17 +267,26 @@ int testUndoMoves()
 
 int testBoardPawnMoves()
 {
+    int temp; //TODO: implement history
     Board b;
+    Move w1, w2, b1, b2;
     int pawnMovesNoCapture = 1;
     for (int i = 0; i < 8; ++i)
     {
-        b = defaultBoard();
-        makeMoveWhite(&b, PAWN, i + 8, i + 16);
-        makeMoveWhite(&b, PAWN, i + 16, i + 32);
-        makeMoveBlack(&b, PAWN, 55 - i, 47 - i);
-        makeMoveBlack(&b, PAWN, 47 - i, 39 - i);
+        w1 = (Move) {.pieceThatMoves= PAWN, .from = i + 8, .to = i + 16, .color = 1};
+        w2 = (Move) {.pieceThatMoves= PAWN, .from = i + 16, .to = i + 24, .color = 1};
+        
+        b1 = (Move) {.pieceThatMoves= PAWN, .from = 55 - i, .to = 47 - i, .color = 0};
+        b2 = (Move) {.pieceThatMoves= PAWN, .from = 47 - i, .to = 39 - i, .color = 0};
 
-        pawnMovesNoCapture &= ((b.wPawn & POW2[i + 16]) == 0) && ((POW2[i + 32] & b.wPawn) == POW2[i + 32]);
+        b = defaultBoard();
+        
+        makeMoveWhite(&b, &w1, &temp);
+        makeMoveWhite(&b, &w2, &temp);
+        makeMoveBlack(&b, &b1, &temp);
+        makeMoveBlack(&b, &b2, &temp);
+
+        pawnMovesNoCapture &= ((b.wPawn & POW2[i + 16]) == 0) && ((POW2[i + 24] & b.wPawn) == POW2[i + 24]);
         pawnMovesNoCapture &= ((b.white | b.wPawn) == b.white) && ((b.white & b.wPawn) == b.wPawn);
         
         pawnMovesNoCapture &= ((b.bPawn & POW2[47 - i]) == 0) && ((POW2[39 - i] & b.bPawn) == POW2[39 - i]);
@@ -284,8 +299,11 @@ int testBoardPawnMoves()
 
     for (int i = 0; i < 8; ++i)
     {
+        w1 = (Move) {.pieceThatMoves= PAWN, .from = i + 8, .to = i + 48, .color = 1};
+        b1 = (Move) {.pieceThatMoves= PAWN, .from = i + 48, .to = i + 8, .color = 0};
+
         b = defaultBoard();
-        makeMoveWhite(&b, PAWN, i + 8, 48 + i);
+        makeMoveWhite(&b, &w1, &temp);
 
         pawnMovesCapture &= ((b.wPawn & POW2[8 + i]) == 0) && ((POW2[48 + i] & b.wPawn) == POW2[48 + i]);
         pawnMovesCapture &= ((b.white | b.wPawn) == b.white) && ((b.white & b.wPawn) == b.wPawn);
@@ -295,7 +313,7 @@ int testBoardPawnMoves()
         pawnMovesCapture &= POPCOUNT(b.black) == 15;
     
         b = defaultBoard();
-        makeMoveBlack(&b, PAWN, 48 + i, 8 + i);
+        makeMoveBlack(&b, &b1, &temp);
 
         pawnMovesCapture &= ((b.bPawn & POW2[48 + i]) == 0) && ((POW2[8 + i] & b.bPawn) == POW2[8 + i]);
         pawnMovesCapture &= ((b.black | b.bPawn) == b.black) && ((b.black & b.bPawn) == b.bPawn);
@@ -306,12 +324,57 @@ int testBoardPawnMoves()
     }
 
     b = defaultBoard();
-    makeMoveWhite(&b, PAWN, 8, 56);
+    w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = 1};
+    b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = 0};
+
+    makeMoveWhite(&b, &w1, &temp);
     int extra = ((b.wPawn & POW2[8]) == 0) && ((b.wPawn & POW2[56]) == POW2[56]) && (b.bRook == POW2[63]);
-    makeMoveBlack(&b, PAWN, 55, 7);
+    makeMoveBlack(&b, &b1, &temp);
     extra &= ((b.bPawn & POW2[57]) == 0) && ((b.bPawn & POW2[7]) == POW2[7]) && (b.wRook == POW2[0]);
-    
+
     return pawnMovesNoCapture && pawnMovesCapture && extra;
+}
+
+int testStartMoveListing()
+{
+    //This may fail if the ordering of the generation is changed
+    Board b = defaultBoard();
+    Move moves[256];
+
+    int sum = 1152;
+
+    int numMovesWhite = allMovesWhite(&b, moves, 0);
+    int whiteMovesAreAccurate = 1;
+    for (int i = 0; i < 8; ++i)
+    {
+        whiteMovesAreAccurate &= (moves[2*i].pieceThatMoves == PAWN) && (moves[2*i].from == i + 8);
+        whiteMovesAreAccurate &= (moves[2*i + 1].pieceThatMoves == PAWN) && (moves[2*i + 1].from == i + 8);
+        whiteMovesAreAccurate &= moves[2*i + 1].to != moves[2*i].to;
+        whiteMovesAreAccurate &= (moves[2*i].to == i + 16) || (moves[2*i + 1].to == i + 16);
+        whiteMovesAreAccurate &= (moves[2*i].to == i + 24) || (moves[2*i + 1].to == i + 24);
+    }
+
+    int whiteKnight = 1;
+    whiteKnight &= (moves[16].pieceThatMoves == KNIGHT) && (moves[17].pieceThatMoves == KNIGHT) && (moves[18].pieceThatMoves == KNIGHT) && (moves[19].pieceThatMoves == KNIGHT);
+    whiteKnight &= (moves[16].from == moves[17].from) && (moves[18].from == moves[19].from);
+
+    int numMovesBlack = allMovesBlack(&b, moves, 0);
+    int blackMovesAreAccurate = 1;
+    for (int i = 0; i < 8; ++i)
+    {
+        blackMovesAreAccurate &= (moves[2*i].pieceThatMoves == PAWN) && (moves[2*i].from == 55 - (7 -i));
+        blackMovesAreAccurate &= (moves[2*i + 1].pieceThatMoves == PAWN) && (moves[2*i + 1].from == 55 - (7 - i));
+        blackMovesAreAccurate &= moves[2*i + 1].to != moves[2*i].to;
+        blackMovesAreAccurate &= (moves[2*i].to == 47 - (7 - i)) || (moves[2*i + 1].to == 47 - (7 - i));
+        blackMovesAreAccurate &= (moves[2*i].to == 39 - (7 - i)) || (moves[2*i + 1].to == 39 - (7 - i));
+    }
+
+    int blackKnight = 1;
+    blackKnight &= (moves[16].pieceThatMoves == KNIGHT) && (moves[17].pieceThatMoves == KNIGHT) && (moves[18].pieceThatMoves == KNIGHT) && (moves[19].pieceThatMoves == KNIGHT);
+    blackKnight &= (moves[16].from == moves[17].from) && (moves[18].from == moves[19].from);
+
+    return 
+        (numMovesWhite == 20) && (numMovesBlack == 20) && whiteMovesAreAccurate && blackMovesAreAccurate && whiteKnight && blackKnight;
 }
 
 void runTests()
@@ -329,7 +392,10 @@ void runTests()
     //Checks
     printf("[+] Checks: %d\n",          testChecks());
 
-    //Moves
+    //Make Moves
     printf("[+] Undo moves: %d\n",      testUndoMoves());
     printf("[+] Board Pawn moves: %d\n",testBoardPawnMoves());
+
+    //All move generation
+    printf("[+] Move listing: %d\n",    testStartMoveListing());
 }

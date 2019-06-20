@@ -1,4 +1,6 @@
-unsigned int makeMoveWhite(Board* b, const unsigned int piece, const int from, const int to);
-unsigned int makeMoveBlack(Board* b, const unsigned int piece, const int from, const int to);
-void undoMoveWhite(Board* b, const int pieceMoved, const int pieceCaptured, const int from, const int to);
-void undoMoveBlack(Board* b, const int pieceMoved, const int pieceCaptured, const int from, const int to);
+void makeMoveWhite(Board* b, Move* move, int* history);
+void makeMoveBlack(Board* b, Move* move, int* history);
+void undoMoveWhite(Board* b, Move* move, int* history);
+void undoMoveBlack(Board* b, Move* move, int* history);
+int allMovesWhite(Board* b, Move* list, uint64_t prevMovEnPass);
+int allMovesBlack(Board* b, Move* list, uint64_t prevMovEnPass);
