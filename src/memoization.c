@@ -33,10 +33,10 @@ void genWhitePawnMoves()
     int i = 8;
 
     for (; i < 16; ++i)
-        whitePawnMoves[i] = ((1ULL << (i + 8)) | (1ULL << i)) << 8;
+        whitePawnMoves[i] = (POW2[i + 8] | POW2[i]) << 8;
 
     for (; i < 56; ++i)
-        whitePawnMoves[i] = 1ULL << (i + 8);
+        whitePawnMoves[i] = POW2[i + 8];
 }
 void genBlackPawnMoves()
 {   
@@ -273,34 +273,34 @@ void initialize()
     genBlackPawnCaptures();
 }
 
-uint64_t getKingMoves(unsigned int index)
+uint64_t getKingMoves(int index)
 {return kingMoves[index];}
-uint64_t getKnightMoves(unsigned int index)
+uint64_t getKnightMoves(int index)
 {return knightMoves[index];}
 
-uint64_t getUpMoves(unsigned int index)
+uint64_t getUpMoves(int index)
 {return upMoves[index];}
-uint64_t getDownMoves(unsigned int index)
+uint64_t getDownMoves(int index)
 {return downMoves[index];}
-uint64_t getRightMoves(unsigned int index)
+uint64_t getRightMoves(int index)
 {return rightMoves[index];}
-uint64_t getLeftMoves(unsigned int index)
+uint64_t getLeftMoves(int index)
 {return leftMoves[index];}
 
-uint64_t getUpRightMoves(unsigned int index)
+uint64_t getUpRightMoves(int index)
 {return uprightMoves[index];}
-uint64_t getUpLeftMoves(unsigned int index)
+uint64_t getUpLeftMoves(int index)
 {return upleftMoves[index];}
-uint64_t getDownRightMoves(unsigned int index)
+uint64_t getDownRightMoves(int index)
 {return downrightMoves[index];}
-uint64_t getDownLeftMoves(unsigned int index)
+uint64_t getDownLeftMoves(int index)
 {return downleftMoves[index];}
 
-uint64_t getWhitePawnMoves(unsigned int index)
+uint64_t getWhitePawnMoves(int index)
 {return whitePawnMoves[index];}
-uint64_t getWhitePawnCaptures(unsigned int index)
+uint64_t getWhitePawnCaptures(int index)
 {return whitePawnCaptures[index];}
-uint64_t getBlackPawnMoves(unsigned int index)
+uint64_t getBlackPawnMoves(int index)
 {return blackPawnMoves[index];}
-uint64_t getBlackPawnCaptures(unsigned int index)
+uint64_t getBlackPawnCaptures(int index)
 {return blackPawnCaptures[index];}

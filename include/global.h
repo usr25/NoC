@@ -2,17 +2,22 @@
 
 #define BOOL(x) ((x)?"true":"false")
 #define REMOVE_LSB(bb) bb &= bb - 1
-#define POPCOUNT(ll) __builtin_popcountll((ll))
-#define LSB_INDEX(ll) __builtin_ctzll((ll))
-#define MSB_INDEX(ll) 63 - __builtin_clzll((ll))
+#define POPCOUNT(ll) __builtin_popcountll(ll)
+#define LSB_INDEX(ll) __builtin_ctzll(ll)
+#define MSB_INDEX(ll) 63 - __builtin_clzll(ll)
 
-//The LSB is used to indicate the color
-#define KING 2
-#define QUEEN 4
-#define ROOK 8
-#define BISH 16
-#define KNIGHT 32
-#define PAWN 64
+#define NO_PIECE -1
+#define KING 0
+#define QUEEN 1
+#define ROOK 2
+#define BISH 3
+#define KNIGHT 4
+#define PAWN 5
+
+#define BLACK 0
+#define WHITE 1
+#define AV_BLACK 2
+#define AV_WHITE 3
 
 #define WCASTLEK 16
 #define WCASTLEQ 8

@@ -1,6 +1,3 @@
-void makeMoveWhite(Board* b, Move* move, int* history);
-void makeMoveBlack(Board* b, Move* move, int* history);
-void undoMoveWhite(Board* b, Move* move, int* history);
-void undoMoveBlack(Board* b, Move* move, int* history);
-int allMovesWhite(Board* b, Move* list, uint64_t prevMovEnPass);
-int allMovesBlack(Board* b, Move* list, uint64_t prevMovEnPass);
+void makeMove(Board* b, Move* move, const int color);
+void undoMove(Board* b, Move* move, const int color);
+int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color);

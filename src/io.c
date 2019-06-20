@@ -10,29 +10,30 @@ void drawPosition(Board b, const int drawCoords){
     {
         for (j = 0; j < 8; ++j)
         {
-            if (pos & b.wPawn)
+            if (pos & b.piece[1][PAWN])
                 printf(" P ");
-            else if (pos & b.wKing)
+            else if (pos & b.piece[1][KING])
                 printf(" K ");
-            else if (pos & b.wQueen)
+            else if (pos & b.piece[1][QUEEN])
                 printf(" Q ");
-            else if (pos & b.wRook)
+            else if (pos & b.piece[1][ROOK])
                 printf(" R ");
-            else if (pos & b.wBish)
+            else if (pos & b.piece[1][BISH])
                 printf(" B ");
-            else if (pos & b.wKnight)
+            else if (pos & b.piece[1][KNIGHT])
                 printf(" N ");
-            else if (pos & b.bPawn)
+
+            else if (pos & b.piece[0][PAWN])
                 printf(" p ");
-            else if (pos & b.bKing)
+            else if (pos & b.piece[0][KING])
                 printf(" k ");
-            else if (pos & b.bQueen)
+            else if (pos & b.piece[0][QUEEN])
                 printf(" q ");
-            else if (pos & b.bRook)
+            else if (pos & b.piece[0][ROOK])
                 printf(" r ");
-            else if (pos & b.bBish)
+            else if (pos & b.piece[0][BISH])
                 printf(" b ");
-            else if (pos & b.bKnight)
+            else if (pos & b.piece[0][KNIGHT])
                 printf(" n ");
             else
                 printf(" - ");

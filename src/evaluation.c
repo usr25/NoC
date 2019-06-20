@@ -118,7 +118,7 @@ int evaluate(Board b)
 int matrices(Board* b)
 {
     int val = 0;
-
+/*
     val += multiply(wPawnMatrix, b->wPawn);
     val -= multiply(bPawnMatrix, b->bPawn);
 
@@ -133,18 +133,18 @@ int matrices(Board* b)
     val -= multiply(rookMatrix, b->bRook);
     val -= multiply(bishMatrix, b->bBish);
     val -= multiply(knightMatrix, b->bKnight);
-
+*/
     return val;
 }
 
 int allPiecesValue(Board* bo)
 {
-    int k = VKING *     (numWKing(bo->numPieces)     - numBKing(bo->numPieces));
-    int q = VQUEEN *    (numWQueen(bo->numPieces)    - numBQueen(bo->numPieces));
-    int r = VROOK *     (numWRook(bo->numPieces)     - numBRook(bo->numPieces));
-    int b = VBISH *     (numWBish(bo->numPieces)     - numBBish(bo->numPieces));
-    int n = VKNIGHT *   (numWKnight(bo->numPieces)   - numBKnight(bo->numPieces));
-    int p = VPAWN *     (numWPawn(bo->numPieces)     - numBPawn(bo->numPieces));
+    int k = VKING *     (POPCOUNT(bo->piece[1][KING])     - POPCOUNT(bo->piece[0][KING]));
+    int q = VQUEEN *    (POPCOUNT(bo->piece[1][QUEEN])    - POPCOUNT(bo->piece[0][QUEEN]));
+    int r = VROOK *     (POPCOUNT(bo->piece[1][ROOK])     - POPCOUNT(bo->piece[0][ROOK]));
+    int b = VBISH *     (POPCOUNT(bo->piece[1][BISH])     - POPCOUNT(bo->piece[0][BISH]));
+    int n = VKNIGHT *   (POPCOUNT(bo->piece[1][KNIGHT])   - POPCOUNT(bo->piece[0][KNIGHT]));
+    int p = VPAWN *     (POPCOUNT(bo->piece[1][PAWN])     - POPCOUNT(bo->piece[0][PAWN]));
 
     return k + q + r + b + n + p;
 }

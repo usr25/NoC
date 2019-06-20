@@ -14,6 +14,7 @@
 #include "../include/memoization.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/perft.h"
 
 #include "../include/evaluation.h"
 

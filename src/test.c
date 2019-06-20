@@ -9,38 +9,24 @@
 int validStartingPos(Board b)
 {
     int correctNumOfPieces = 
-        POPCOUNT(b.wPawn) == 8 &&
-        POPCOUNT(b.bPawn) == 8 &&
-        POPCOUNT(b.wKing) == 1 &&
-        POPCOUNT(b.bKing) == 1 &&
-        POPCOUNT(b.wQueen) == 1 &&
-        POPCOUNT(b.bQueen) == 1 &&
-        POPCOUNT(b.wRook) == 2 &&
-        POPCOUNT(b.bRook) == 2 &&
-        POPCOUNT(b.wBish) == 2 &&
-        POPCOUNT(b.bBish) == 2 &&
-        POPCOUNT(b.wKnight) == 2 &&
-        POPCOUNT(b.bKnight) == 2;
+        POPCOUNT(b.piece[WHITE][PAWN]) == 8 &&
+        POPCOUNT(b.piece[BLACK][PAWN]) == 8 &&
+        POPCOUNT(b.piece[WHITE][KING]) == 1 &&
+        POPCOUNT(b.piece[BLACK][KING]) == 1 &&
+        POPCOUNT(b.piece[WHITE][QUEEN]) == 1 &&
+        POPCOUNT(b.piece[BLACK][QUEEN]) == 1 &&
+        POPCOUNT(b.piece[WHITE][ROOK]) == 2 &&
+        POPCOUNT(b.piece[BLACK][ROOK]) == 2 &&
+        POPCOUNT(b.piece[WHITE][BISH]) == 2 &&
+        POPCOUNT(b.piece[BLACK][BISH]) == 2 &&
+        POPCOUNT(b.piece[WHITE][KNIGHT]) == 2 &&
+        POPCOUNT(b.piece[BLACK][KNIGHT]) == 2;
 
-    int countIsCorrect = 
-        POPCOUNT(b.wPawn) == numWPawn(b.numPieces) &&
-        POPCOUNT(b.bPawn) == numBPawn(b.numPieces) &&
-        POPCOUNT(b.wKing) == numWKing(b.numPieces) &&
-        POPCOUNT(b.bKing) == numBKing(b.numPieces) &&
-        POPCOUNT(b.wQueen) == numWQueen(b.numPieces) &&
-        POPCOUNT(b.bQueen) == numBQueen(b.numPieces) &&
-        POPCOUNT(b.wRook) == numWRook(b.numPieces) &&
-        POPCOUNT(b.bRook) == numBRook(b.numPieces) &&
-        POPCOUNT(b.wBish) == numWBish(b.numPieces) &&
-        POPCOUNT(b.bBish) == numBBish(b.numPieces) &&
-        POPCOUNT(b.wKnight) == numWKnight(b.numPieces) &&
-        POPCOUNT(b.bKnight) == numBKnight(b.numPieces);
-
-    int piecesAddUp = POPCOUNT(b.white) == 16 && POPCOUNT(b.black) == 16;
-    int availableAddUp = POPCOUNT(b.avWhite) == 48 && POPCOUNT(b.avBlack) == 48;
-    int avAreCorrect = (b.white & b.avWhite) == 0 && (b.black & b.avBlack) == 0;
-    int whiteAreInAvBlack = (b.white & b.avBlack) == b.white;
-    int blackAreInAvWhite = (b.black & b.avWhite) == b.black;
+    int piecesAddUp = POPCOUNT(b.color[WHITE]) == 16 && POPCOUNT(b.color[BLACK]) == 16;
+    int availableAddUp = POPCOUNT(b.color[AV_WHITE]) == 48 && POPCOUNT(b.color[AV_BLACK]) == 48;
+    int avAreCorrect = (b.color[WHITE] & b.color[AV_WHITE]) == 0 && (b.color[BLACK] & b.color[AV_BLACK]) == 0;
+    int whiteAreInAvBlack = (b.color[WHITE] & b.color[AV_BLACK]) == b.color[WHITE];
+    int blackAreInAvWhite = (b.color[BLACK] & b.color[AV_WHITE]) == b.color[BLACK];
     int posInfoCorrect = b.posInfo == 0b11111;
 
     return 
@@ -49,9 +35,9 @@ int validStartingPos(Board b)
 
 int validPieces(Board b)
 {
-    int validKings = (POPCOUNT(b.wKing) == 1) && (POPCOUNT(b.bKing) == 1);
-    int totNumPieces = (POPCOUNT(b.white) <= 16) && (POPCOUNT(b.black) <= 16);
-    int validNumPawns = (POPCOUNT(b.wPawn) <= 8) && (POPCOUNT(b.bPawn) <= 8);
+    int validKings = (POPCOUNT(b.piece[WHITE][KING]) == 1) && (POPCOUNT(b.piece[BLACK][KING]) == 1);
+    int totNumPieces = (POPCOUNT(b.color[WHITE]) <= 16) && (POPCOUNT(b.color[BLACK]) <= 16);
+    int validNumPawns = (POPCOUNT(b.piece[WHITE][PAWN]) <= 8) && (POPCOUNT(b.piece[BLACK][PAWN]) <= 8);
 
     return validKings && totNumPieces && validNumPawns;
 }
@@ -205,7 +191,6 @@ int testChecks()
     int white = 1, black = 1;
 
     //White king
-    
     b = generateFromFen("8/8/1q6/8/3K4/8/8/8", "w", "-");
     white &= isInCheck(&b, 1) == QUEEN;
     b = generateFromFen("8/8/8/8/3K4/8/8/3q4", "w", "-");
@@ -220,7 +205,7 @@ int testChecks()
     b = generateFromFen("8/8/8/2p5/3K4/8/8/8", "w", "-");
     white &= isInCheck(&b, 1) == PAWN;
     b = generateFromFen("4r3/8/3k4/1q6/3K4/8/2p2n2/2b5", "w", "-");
-    white &= isInCheck(&b, 1) == 0;
+    white &= isInCheck(&b, 1) == NO_PIECE;
 
     //Black king
     b = generateFromFen("8/8/1Q6/8/3k4/8/8/8", "w", "-");
@@ -237,7 +222,7 @@ int testChecks()
     b = generateFromFen("8/8/8/8/3k4/2P5/8/8", "w", "-");
     black &= isInCheck(&b, 0) == PAWN;
     b = generateFromFen("4R3/8/3K4/1Q6/3k4/8/2P2N2/2B5", "w", "-");
-    black &= isInCheck(&b, 0) == 0;
+    black &= isInCheck(&b, 0) == NO_PIECE;
     
     return white && black;
 }
@@ -252,14 +237,14 @@ int testUndoMoves()
     int temp; //TODO: Remove this
     Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = 1};
 
-    makeMoveWhite(&b, &w1, &temp);
-    undoMoveWhite(&b, &w1, &temp);
+    makeMove(&b, &w1, 1);
+    undoMove(&b, &w1, 1);
     int white = equal(&b, &_b);
 
     Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = 0};
 
-    makeMoveBlack(&b, &b1, &temp);
-    undoMoveBlack(&b, &b1, &temp);
+    makeMove(&b, &b1, 0);
+    undoMove(&b, &b1, 0);
     int black = equal(&b, &_b);
 
     return stays && white && black;
@@ -281,69 +266,70 @@ int testBoardPawnMoves()
 
         b = defaultBoard();
         
-        makeMoveWhite(&b, &w1, &temp);
-        makeMoveWhite(&b, &w2, &temp);
-        makeMoveBlack(&b, &b1, &temp);
-        makeMoveBlack(&b, &b2, &temp);
+        makeMove(&b, &w1, 1);
+        makeMove(&b, &w2, 1);
+        makeMove(&b, &b1, 0);
+        makeMove(&b, &b2, 0);
 
-        pawnMovesNoCapture &= ((b.wPawn & POW2[i + 16]) == 0) && ((POW2[i + 24] & b.wPawn) == POW2[i + 24]);
-        pawnMovesNoCapture &= ((b.white | b.wPawn) == b.white) && ((b.white & b.wPawn) == b.wPawn);
+        pawnMovesNoCapture &= ((b.piece[WHITE][PAWN] & POW2[i + 16]) == 0) && ((POW2[i + 24] & b.piece[WHITE][PAWN]) == POW2[i + 24]);
+        pawnMovesNoCapture &= ((b.color[WHITE] | b.piece[WHITE][PAWN]) == b.color[WHITE]) && ((b.color[WHITE] & b.piece[WHITE][PAWN]) == b.piece[WHITE][PAWN]);
         
-        pawnMovesNoCapture &= ((b.bPawn & POW2[47 - i]) == 0) && ((POW2[39 - i] & b.bPawn) == POW2[39 - i]);
-        pawnMovesNoCapture &= ((b.black | b.bPawn) == b.black) && ((b.black & b.bPawn) == b.bPawn);
+        pawnMovesNoCapture &= ((b.piece[BLACK][PAWN] & POW2[47 - i]) == 0) && ((POW2[39 - i] & b.piece[BLACK][PAWN]) == POW2[39 - i]);
+        pawnMovesNoCapture &= ((b.color[BLACK] | b.piece[BLACK][PAWN]) == b.color[BLACK]) && ((b.color[BLACK] & b.piece[BLACK][PAWN]) == b.piece[BLACK][PAWN]);
 
-        pawnMovesNoCapture &= (POPCOUNT(b.wPawn) == numWPawn(b.numPieces)) && (POPCOUNT(b.bPawn) == numBPawn(b.numPieces));
+        pawnMovesNoCapture &= (POPCOUNT(b.piece[WHITE][PAWN]) == POPCOUNT(b.piece[WHITE][PAWN])) && (POPCOUNT(b.piece[BLACK][PAWN]) == POPCOUNT(b.piece[BLACK][PAWN]));
     }
 
     int pawnMovesCapture = 1;
 
     for (int i = 0; i < 8; ++i)
     {
-        w1 = (Move) {.pieceThatMoves= PAWN, .from = i + 8, .to = i + 48, .color = 1};
-        b1 = (Move) {.pieceThatMoves= PAWN, .from = i + 48, .to = i + 8, .color = 0};
+        w1 = (Move) {.pieceThatMoves= PAWN, .from = 8 + i, .to = 48 + i, .color = 1};
+        b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i, .color = 0};
 
         b = defaultBoard();
-        makeMoveWhite(&b, &w1, &temp);
+        makeMove(&b, &w1, 1);
 
-        pawnMovesCapture &= ((b.wPawn & POW2[8 + i]) == 0) && ((POW2[48 + i] & b.wPawn) == POW2[48 + i]);
-        pawnMovesCapture &= ((b.white | b.wPawn) == b.white) && ((b.white & b.wPawn) == b.wPawn);
+        pawnMovesCapture &= ((b.piece[WHITE][PAWN] & POW2[8 + i]) == 0) && ((POW2[48 + i] & b.piece[WHITE][PAWN]) == POW2[48 + i]);
+        pawnMovesCapture &= ((b.color[WHITE] | b.piece[WHITE][PAWN]) == b.color[WHITE]) && ((b.color[WHITE] & b.piece[WHITE][PAWN]) == b.piece[WHITE][PAWN]);
+   
+        pawnMovesCapture &= (b.piece[BLACK][PAWN] & POW2[48 + i]) == 0;
+        pawnMovesCapture &= (POPCOUNT(b.piece[BLACK][PAWN]) == 7) && (POPCOUNT(b.piece[BLACK][PAWN]) == 7);
+        pawnMovesCapture &= POPCOUNT(b.color[BLACK]) == 15;
 
-        pawnMovesCapture &= (b.bPawn & POW2[48 + i]) == 0;
-        pawnMovesCapture &= (POPCOUNT(b.bPawn) == 7) && (numBPawn(b.numPieces) == 7);
-        pawnMovesCapture &= POPCOUNT(b.black) == 15;
-    
         b = defaultBoard();
-        makeMoveBlack(&b, &b1, &temp);
+        makeMove(&b, &b1, 0);
 
-        pawnMovesCapture &= ((b.bPawn & POW2[48 + i]) == 0) && ((POW2[8 + i] & b.bPawn) == POW2[8 + i]);
-        pawnMovesCapture &= ((b.black | b.bPawn) == b.black) && ((b.black & b.bPawn) == b.bPawn);
+        pawnMovesCapture &= ((b.piece[BLACK][PAWN] & POW2[48 + i]) == 0) && ((POW2[8 + i] & b.piece[BLACK][PAWN]) == POW2[8 + i]);
+        pawnMovesCapture &= ((b.color[BLACK] | b.piece[BLACK][PAWN]) == b.color[BLACK]) && ((b.color[BLACK] & b.piece[BLACK][PAWN]) == b.piece[BLACK][PAWN]);
 
-        pawnMovesCapture &= (b.wPawn & POW2[8 + i]) == 0;
-        pawnMovesCapture &= (POPCOUNT(b.wPawn) == 7) && (numWPawn(b.numPieces) == 7);
-        pawnMovesCapture &= POPCOUNT(b.white) == 15;
+        pawnMovesCapture &= (b.piece[WHITE][PAWN] & POW2[8 + i]) == 0;
+        pawnMovesCapture &= (POPCOUNT(b.piece[WHITE][PAWN]) == 7) && (POPCOUNT(b.piece[WHITE][PAWN]) == 7);
+        pawnMovesCapture &= POPCOUNT(b.color[WHITE]) == 15;
     }
 
     b = defaultBoard();
     w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = 1};
     b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = 0};
 
-    makeMoveWhite(&b, &w1, &temp);
-    int extra = ((b.wPawn & POW2[8]) == 0) && ((b.wPawn & POW2[56]) == POW2[56]) && (b.bRook == POW2[63]);
-    makeMoveBlack(&b, &b1, &temp);
-    extra &= ((b.bPawn & POW2[57]) == 0) && ((b.bPawn & POW2[7]) == POW2[7]) && (b.wRook == POW2[0]);
+    makeMove(&b, &w1, 1);
+    int extra = ((b.piece[WHITE][PAWN] & POW2[8]) == 0) && ((b.piece[WHITE][PAWN] & POW2[56]) == POW2[56]) && (b.piece[BLACK][ROOK] == POW2[63]);
+    makeMove(&b, &b1, 0);
+    extra &= ((b.piece[BLACK][PAWN] & POW2[57]) == 0) && ((b.piece[BLACK][PAWN] & POW2[7]) == POW2[7]) && (b.piece[WHITE][ROOK] == POW2[0]);
 
     return pawnMovesNoCapture && pawnMovesCapture && extra;
 }
 
 int testStartMoveListing()
 {
+    
     //This may fail if the ordering of the generation is changed
     Board b = defaultBoard();
     Move moves[256];
 
-    int sum = 1152;
+    int sum = 1152; //TODO: Implement this
 
-    int numMovesWhite = allMovesWhite(&b, moves, 0);
+    int numMovesWhite = allMoves(&b, moves, 0ULL, 1);
     int whiteMovesAreAccurate = 1;
     for (int i = 0; i < 8; ++i)
     {
@@ -358,7 +344,7 @@ int testStartMoveListing()
     whiteKnight &= (moves[16].pieceThatMoves == KNIGHT) && (moves[17].pieceThatMoves == KNIGHT) && (moves[18].pieceThatMoves == KNIGHT) && (moves[19].pieceThatMoves == KNIGHT);
     whiteKnight &= (moves[16].from == moves[17].from) && (moves[18].from == moves[19].from);
 
-    int numMovesBlack = allMovesBlack(&b, moves, 0);
+    int numMovesBlack = allMoves(&b, moves, 0ULL, 0);
     int blackMovesAreAccurate = 1;
     for (int i = 0; i < 8; ++i)
     {
