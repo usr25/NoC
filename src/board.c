@@ -178,7 +178,6 @@ int capturePiece(Board* b, const uint64_t pos, const int colorToCapture)
     return targetPiece;
 }
 
-
 int pieceAt(Board* const b, const uint64_t pos, const int color)
 {
     if (pos & b->piece[color][PAWN])     return PAWN;
@@ -200,7 +199,7 @@ int equal(Board* a, Board* b)
 
     for (int i = 0; i < 2; ++i)
     {
-        for (int j = 0; j < 12 && pieces; ++j)
+        for (int j = 0; j < 6 && pieces; ++j)
         {
             pieces &= a->piece[i][j] == b->piece[i][j];
         }
@@ -208,21 +207,23 @@ int equal(Board* a, Board* b)
 
     return data && pieces;
 }
-/*
-Board duplicate(Board* b)
+
+Board duplicate(Board b)
 {
-    Board a = (Board) 
+    
+    Board a = (Board) {};
+
+    for (int i = 0; i < 6; ++i)
     {
-    .white = b->white, .avWhite = b->avWhite, .wPawn = b->wPawn, 
-    .wKing = b->wKing, .wQueen = b->wQueen, .wRook = b->wRook, .wBish = b->wBish, .wKnight = b->wKnight,
-    
-    .black = b->black, .avBlack = b->avBlack, .bPawn = b->bPawn, 
-    .bKing = b->bKing, .bQueen = b->bQueen, .bRook = b->bRook, .bBish = b->bBish, .bKnight = b->bKnight,
-    
-    .posInfo = b->posInfo, .pieces = b->pieces, .numPieces = b->numPieces
-    
-    };
+        a.piece[0][i] = b.piece[0][i];
+        a.piece[1][i] = b.piece[1][i];
+    }
+    for (int i = 0; i < 4; ++i)
+        a.color[i] = b.color[i];
+
+    a.posInfo = b.posInfo;
+    a.allPieces = b.allPieces;
 
     return a;
+
 }
-*/

@@ -198,7 +198,6 @@ uint64_t posQueenMoves(Board* b, const int color, int index)
         res ^= POW2[obstacle] & b->color[color];
     } else res |= getDownLeftMoves(i);
 
-
     return res;
 }
 
@@ -298,13 +297,13 @@ int isInCheck(Board* b, const int kingsColor)
     if (b->piece[1 ^ kingsColor][KNIGHT] & kingKnight(pos)) return KNIGHT;
 
     //TODO: Simplify this
-    if (POPCOUNT(b->piece[1 ^ kingsColor][QUEEN]) || POPCOUNT(b->piece[1 ^ kingsColor][ROOK]))
+    if (b->piece[1 ^ kingsColor][QUEEN] || b->piece[1 ^ kingsColor][ROOK])
     {
         straight = kingStraight(pos, b->allPieces);
         if (b->piece[1 ^ kingsColor][ROOK] & straight) return ROOK;
         if (b->piece[1 ^ kingsColor][QUEEN] & straight) return QUEEN;
     }
-    if (POPCOUNT(b->piece[1 ^ kingsColor][QUEEN]) || POPCOUNT(b->piece[1 ^ kingsColor][BISH]))
+    if (b->piece[1 ^ kingsColor][QUEEN] || b->piece[1 ^ kingsColor][BISH])
     {
         diagonal = kingDiagonal(pos, b->allPieces);
         if (b->piece[1 ^ kingsColor][BISH] & diagonal) return BISH;

@@ -2,7 +2,7 @@
 
 typedef struct
 {
-    uint64_t piece[2][12];
+    uint64_t piece[2][6];
     
     uint64_t color[4];
 
@@ -22,4 +22,4 @@ int pieceAt(Board* const b, const uint64_t coord, const int color);
 int capturePiece(Board* b, const uint64_t pos, const int colorToCapture);
 
 int equal(Board* a, Board* b);
-Board duplicate(Board* b);
+Board duplicate(Board b);

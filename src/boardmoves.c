@@ -10,6 +10,7 @@
 //returns the piece CAPTURED and its color
 //returns 0 otherwise
 //TODO: Add history
+
 void makeMove(Board* b, Move* move, const int colorToMove)
 {
     uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
@@ -23,20 +24,22 @@ void makeMove(Board* b, Move* move, const int colorToMove)
 
     b->color[colorToMove] |= toBit;
     b->color[colorToMove + 2] ^= toBit;
-
+    
     move->pieceCaptured = capturePiece(b, toBit, 1 ^ colorToMove);
     if (move->pieceCaptured != NO_PIECE)
     {
         b->color[1 ^ colorToMove] ^= toBit;
         b->color[3 - colorToMove] |= toBit;
     }
+    else
+        b->allPieces |= toBit;
 }
 
-void undoMove(Board* b, Move* move, const int colorThatPlayed)
+void undoMove(Board* b, Move move, const int colorThatPlayed)
 {
-    uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
-    b->piece[colorThatPlayed][move->pieceThatMoves] |= fromBit;
-    b->piece[colorThatPlayed][move->pieceThatMoves] ^= toBit;
+    uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
+    b->piece[colorThatPlayed][move.pieceThatMoves] |= fromBit;
+    b->piece[colorThatPlayed][move.pieceThatMoves] ^= toBit;
 
     b->allPieces |= fromBit;
 
@@ -45,26 +48,14 @@ void undoMove(Board* b, Move* move, const int colorThatPlayed)
     b->color[colorThatPlayed + 2] |= toBit;
     b->color[colorThatPlayed + 2] ^= fromBit;
 
-    //TODO: Fix this
-    if (colorThatPlayed)
+    if (move.pieceCaptured != NO_PIECE)
     {
-
-        if (move->pieceCaptured != NO_PIECE)
-        {
-            b->piece[1 ^ colorThatPlayed][move->pieceCaptured] |= toBit;
-            b->color[BLACK] |= toBit;
-            b->color[AV_BLACK] ^= toBit;
-        }
+        b->piece[1 ^ colorThatPlayed][move.pieceCaptured] |= toBit;
+        b->color[1 ^ colorThatPlayed] |= toBit;
+        b->color[3 - colorThatPlayed] ^= toBit;
     }
     else
-    {
-        if (move->pieceCaptured != NO_PIECE)
-        {
-            b->piece[1 ^ colorThatPlayed][move->pieceCaptured] |= toBit;
-            b->color[BLACK] |= toBit;
-            b->color[AV_BLACK] ^= toBit;
-        }
-    }
+        b->allPieces ^= toBit;
 }
 
 //Generates all the moves and returns the number
@@ -75,13 +66,16 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
     uint64_t temp, tempMoves;
 
     temp = b->piece[color][KING];
-    tempMoves = posKingMoves(b, color);
-    popC = POPCOUNT(tempMoves);
-    for (j = 0; j < popC; ++j)
+    if (temp)
     {
-        to = LSB_INDEX(tempMoves);
-        REMOVE_LSB(tempMoves);
-        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = color};   
+        tempMoves = posKingMoves(b, color);
+        popC = POPCOUNT(tempMoves);
+        for (j = 0; j < popC; ++j)
+        {
+            to = LSB_INDEX(tempMoves);
+            REMOVE_LSB(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = LSB_INDEX(temp), .to = to, .color = color};;
+        }
     }
 
     temp = b->piece[color][PAWN];
@@ -96,10 +90,10 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
         {
             to = LSB_INDEX(tempMoves);
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color};   
+            list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color};
         }
     }
-
+    
     temp = b->piece[color][QUEEN];
     numPieces = POPCOUNT(temp);
     for (i = 0; i < numPieces; ++i)
@@ -112,7 +106,7 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
         {
             to = LSB_INDEX(tempMoves);
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .color = color};   
+            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .color = color};;
         }
     }
 
@@ -128,7 +122,7 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
         {
             to = LSB_INDEX(tempMoves);
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .color = color};   
+            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .color = color};;
         }
     }
 
@@ -144,7 +138,7 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
         {
             to = LSB_INDEX(tempMoves);
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .color = color};   
+            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .color = color};
         }
     }
 
@@ -160,7 +154,7 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
         {
             to = LSB_INDEX(tempMoves);
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .color = color};   
+            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .color = color};
         }
     }
 

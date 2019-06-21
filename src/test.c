@@ -3,6 +3,7 @@
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 #include "../include/io.h"
+#include "../include/perft.h"
 
 #include <stdio.h>
 
@@ -238,13 +239,13 @@ int testUndoMoves()
     Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = 1};
 
     makeMove(&b, &w1, 1);
-    undoMove(&b, &w1, 1);
+    undoMove(&b, w1, 1);
     int white = equal(&b, &_b);
 
     Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = 0};
 
     makeMove(&b, &b1, 0);
-    undoMove(&b, &b1, 0);
+    undoMove(&b, b1, 0);
     int black = equal(&b, &_b);
 
     return stays && white && black;
@@ -320,6 +321,19 @@ int testBoardPawnMoves()
     return pawnMovesNoCapture && pawnMovesCapture && extra;
 }
 
+int testSimplePerft()
+{
+    Board b = defaultBoard();
+    int startPos = 
+        perft(b, 1, 0) && perft(b, 2, 0) && perft(b, 3, 0);
+
+    b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "w", "KQkq");
+    int other = 
+        (perftRecursive(b, 1, 0) == 50ULL) && (perftRecursive(b, 2, 0) == 2125ULL) && (perftRecursive(b, 3, 0) == 96062ULL);
+
+    return startPos && other;
+}
+
 int testStartMoveListing()
 {
     
@@ -384,4 +398,7 @@ void runTests()
 
     //All move generation
     printf("[+] Move listing: %d\n",    testStartMoveListing());
+
+    //Perft
+    printf("[+] Perft: %d\n",           testSimplePerft());
 }
