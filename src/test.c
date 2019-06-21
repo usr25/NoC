@@ -540,7 +540,10 @@ int testSimplePerft()
     b = generateFromFen("r3k3/8/8/8/8/3b4/8/R3K2R", "b", "KQkq");
     int castle = 
         (perftRecursive(b, 1, 0) == 27ULL) && (perftRecursive(b, 2, 0) == 586ULL); //&& (perftRecursive(b, 3, 0) == 96062ULL);        
+<<<<<<< HEAD
     
+=======
+>>>>>>> 7ee8f5e84b1cd97cad048116681915519a1d2f2e
     return startPos && noPawns && castle;
 }
 
@@ -565,7 +568,11 @@ void runTests()
 
     //Castle
     printf("[+] Castle No Chck: %d\n",  testCastleNoCheck());
+<<<<<<< HEAD
     printf("[+] Castle Chck: %d\n",     testCastleCheck());
+=======
+    printf("[+] Castle Chck: %d\n",  testCastleCheck());
+>>>>>>> 7ee8f5e84b1cd97cad048116681915519a1d2f2e
 
     //All move generation
     printf("[+] Move listing: %d\n",    testStartMoveListing());

@@ -194,6 +194,7 @@ static inline uint64_t kingPawn(const int lsb, const int color)
 //TODO: Maybe use an array to simplify?
 int canCastle(Board* b, const int color)
 {
+<<<<<<< HEAD
     int lsb, canK, canQ;
     uint64_t maskK, maskQ, rookK, rookQ;
 
@@ -217,6 +218,20 @@ int canCastle(Board* b, const int color)
         canK = (b->posInfo & BCASTLEK) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL);
         canQ = (b->posInfo & BCASTLEQ) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL);
     }
+=======
+    int lsb;
+
+    uint64_t maskK = color ? C_MASK_WK : C_MASK_BK;
+    uint64_t maskQ = color ? C_MASK_WQ : C_MASK_BQ;
+
+    uint64_t rookK = color ? POW2[0] : POW2[56];
+    uint64_t rookQ = color ? POW2[7] : POW2[63];
+
+    int canK = 
+        (b->posInfo & (color ? WCASTLEK : BCASTLEK)) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL);
+    int canQ = 
+        (b->posInfo & (color ? WCASTLEQ : BCASTLEQ)) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL);
+>>>>>>> 7ee8f5e84b1cd97cad048116681915519a1d2f2e
 
     if (canK)
     {
@@ -260,6 +275,7 @@ Move castleKSide(const int color)
     }
     
     m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = color, .castle = 1};
+<<<<<<< HEAD
 
     return m;
 }
@@ -289,6 +305,36 @@ int checkInPosition(Board* b, const int lsb, const int kingsColor)
     int inverse = 1 ^ kingsColor;
 
     if (b->piece[inverse][PAWN] & kingPawn(lsb, kingsColor)) return PAWN;
+=======
+
+    return m;
+}
+Move castleQSide(const int color)
+{
+    Move m;
+    uint64_t from, to;
+    if (color)
+    {
+        from = 3;
+        to = 5;
+    }
+    else
+    {
+        from = 59;
+        to = 61;
+    }
+    
+    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = color, .castle = 2};
+
+    return m;
+}
+
+int checkInPosition(Board* b, const int lsb, const int kingsColor)
+{
+    uint64_t straight, diagonal;
+    
+    if (b->piece[1 ^ kingsColor][PAWN] & kingPawn(lsb, kingsColor)) return PAWN;
+>>>>>>> 7ee8f5e84b1cd97cad048116681915519a1d2f2e
 
     if (b->piece[inverse][KNIGHT] & kingKnight(lsb)) return KNIGHT;
 
