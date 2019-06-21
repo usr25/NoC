@@ -10,6 +10,10 @@ uint64_t results[] = {1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 11906
 
 //No pawns
 //50, 2125, 96062, 4200525, 191462298
+//No pawns no castle -> rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w - -
+//50, 2125, 96062, 4200525, 191419375 //WORKS
+//Castle -> r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -
+//27, 586, 13643
 uint64_t perftRecursive(Board b, const int depth, const int color)
 {
     if (depth == 0) return 1;

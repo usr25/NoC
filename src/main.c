@@ -51,8 +51,7 @@ int main(const int argc, char* const argv[])
 
     runTests();
 
-    printf("%d\n", perft(defaultBoard(), 5, 0));
-    printf("%d\n", perft(defaultBoard(), 3, 0));
-    
+    printf("%d\n", perft(defaultBoard(), 6, 0));
+
     return 0;
 }

@@ -191,16 +191,91 @@ static inline uint64_t kingPawn(const int lsb, const int color)
     return color ? getWhitePawnCaptures(lsb) : getBlackPawnCaptures(lsb);
 }
 
-int isInCheck(Board* b, const int kingsColor)
+//TODO: Maybe use an array to simplify?
+int canCastle(Board* b, const int color)
 {
-    int numPawns, lsb;
+    int lsb;
+
+    uint64_t maskK = color ? C_MASK_WK : C_MASK_BK;
+    uint64_t maskQ = color ? C_MASK_WQ : C_MASK_BQ;
+
+    uint64_t rookK = color ? POW2[0] : POW2[56];
+    uint64_t rookQ = color ? POW2[7] : POW2[63];
+
+    int canK = 
+        (b->posInfo & (color ? WCASTLEK : BCASTLEK)) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL);
+    int canQ = 
+        (b->posInfo & (color ? WCASTLEQ : BCASTLEQ)) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL);
+
+    if (canK)
+    {
+        canK = isInCheck(b, color) == NO_PIECE;
+        while(canK && maskK)
+        {
+            lsb = LSB_INDEX(maskK);
+            REMOVE_LSB(maskK);
+            if (checkInPosition(b, lsb, color) != NO_PIECE)
+                canK = 0;
+        }
+    }
+    if (canQ)
+    {
+        uint64_t maskToCastle = color ? 0x30 : 0x3000000000000000; //Squares which the king goes throught, in kingside they are the same as the mask
+        canQ = isInCheck(b, color) == NO_PIECE;
+        while(canQ && maskToCastle)
+        {
+            lsb = LSB_INDEX(maskToCastle);
+            REMOVE_LSB(maskToCastle);
+            if (checkInPosition(b, lsb, color) != NO_PIECE)
+                canQ = 0;
+        }
+    }
+
+    return (canQ << 1) | canK;
+}
+Move castleKSide(const int color)
+{
+    Move m;
+    uint64_t from, to;
+    if (color)
+    {
+        from = 3;
+        to = 1;
+    }
+    else
+    {
+        from = 59;
+        to = 57;
+    }
+    
+    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = color, .castle = 1};
+
+    return m;
+}
+Move castleQSide(const int color)
+{
+    Move m;
+    uint64_t from, to;
+    if (color)
+    {
+        from = 3;
+        to = 5;
+    }
+    else
+    {
+        from = 59;
+        to = 61;
+    }
+    
+    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = color, .castle = 2};
+
+    return m;
+}
+
+int checkInPosition(Board* b, const int lsb, const int kingsColor)
+{
     uint64_t straight, diagonal;
-    uint64_t pos;
-
-    pos = b->piece[kingsColor][KING];
-
-    lsb = LSB_INDEX(pos);
-
+    
     if (b->piece[1 ^ kingsColor][PAWN] & kingPawn(lsb, kingsColor)) return PAWN;
 
     if (b->piece[1 ^ kingsColor][KNIGHT] & kingKnight(lsb)) return KNIGHT;
@@ -220,6 +295,10 @@ int isInCheck(Board* b, const int kingsColor)
     }
 
     return NO_PIECE;
+}
+int isInCheck(Board* b, const int kingsColor)
+{
+    return checkInPosition(b, LSB_INDEX(b->piece[kingsColor][KING]), kingsColor);
 }
 
 /*
