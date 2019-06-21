@@ -2,6 +2,8 @@
 
 #include "../include/global.h"
 #include "../include/board.h"
+#include "../include/moves.h"
+#include "../include/io.h"
 
 void drawPosition(Board b, const int drawCoords){
     uint64_t pos = POW2[63];
@@ -60,6 +62,15 @@ void drawBitboard(uint64_t b)
 
     }
     printf("\n");
+}
+void drawMove(Move m)
+{
+    char a = 'a' + (m.from % 8);
+    char a1 = '1' + (m.from / 8);
+    char b = 'a' + (m.to % 8);
+    char b1 = '1' + (m.to / 8);
+
+    printf("%c%c%c%c", a, a1, b, b1);
 }
 
 int getNextMove()

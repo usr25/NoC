@@ -75,15 +75,15 @@ int testQueenMoves()
 {
     uint64_t movsW, movsB;
     Board b = defaultBoard();
-    movsW = posQueenMoves(&b, 1, 0);
-    movsB = posQueenMoves(&b, 0, 0);
+    movsW = posQueenMoves(&b, 1, LSB_INDEX(b.piece[WHITE][QUEEN]));
+    movsB = posQueenMoves(&b, 0, LSB_INDEX(b.piece[BLACK][QUEEN]));
 
     int defaultMovs = 
         (movsW == 0ULL) && (movsB == 0ULL);
 
     b = generateFromFen("8/2n2N2/8/1br2rb1/n1Q2q1N/1BR2RB1/8/8", "w", "-");
-    movsW = posQueenMoves(&b, 1, 0);
-    movsB = posQueenMoves(&b, 0, 0);
+    movsW = posQueenMoves(&b, 1, LSB_INDEX(b.piece[WHITE][QUEEN]));
+    movsB = posQueenMoves(&b, 0, LSB_INDEX(b.piece[BLACK][QUEEN]));
 
     int otherMovs = 
         (movsW == 9280821397508ULL) && (movsB == 17627536560160ULL);
@@ -93,20 +93,29 @@ int testQueenMoves()
 int testRookMoves()
 {
     uint64_t movsW1, movsW2, movsB1, movsB2;
+    uint64_t posW, posB;
     Board b = defaultBoard();
-    movsW1 = posRookMoves(&b, 1, 0);
-    movsW2 = posRookMoves(&b, 1, 1);
-    movsB1 = posRookMoves(&b, 0, 0);
-    movsB2 = posRookMoves(&b, 0, 1);
+
+    posW = b.piece[WHITE][ROOK];
+    posB = b.piece[BLACK][ROOK];
+    
+    movsW1 = posRookMoves(&b, 1, LSB_INDEX(posW));
+    movsW2 = posRookMoves(&b, 1, MSB_INDEX(posW));
+    movsB1 = posRookMoves(&b, 0, LSB_INDEX(posB));
+    movsB2 = posRookMoves(&b, 0, MSB_INDEX(posB));
 
     int defaultMovs = 
         (movsW1 == 0ULL) && (movsW2 == 0ULL) && (movsB1 == 0ULL) && (movsB2 == 0ULL);
 
     b = generateFromFen("8/8/2Br2R1/8/8/2BR2r1/8/8", "w", "-");
-    movsW1 = posRookMoves(&b, 1, 0);
-    movsW2 = posRookMoves(&b, 1, 1);
-    movsB1 = posRookMoves(&b, 0, 0);
-    movsB2 = posRookMoves(&b, 0, 1);
+
+    posW = b.piece[WHITE][ROOK];
+    posB = b.piece[BLACK][ROOK];
+
+    movsW1 = posRookMoves(&b, 1, LSB_INDEX(posW));
+    movsW2 = posRookMoves(&b, 1, MSB_INDEX(posW));
+    movsB1 = posRookMoves(&b, 0, LSB_INDEX(posB));
+    movsB2 = posRookMoves(&b, 0, MSB_INDEX(posB));
 
     int otherMovs = 
         (movsW1 == 17661174878224ULL) && (movsW2 == 144710032490102784ULL) && (movsB1 == 2207648645634ULL) && (movsB2 == 1157475750758055936ULL);
@@ -116,20 +125,29 @@ int testRookMoves()
 int testBishMoves()
 {
     uint64_t movsW1, movsW2, movsB1, movsB2;
+    uint64_t posW, posB;
     Board b = defaultBoard();
-    movsW1 = posBishMoves(&b, 1, 0);
-    movsW2 = posBishMoves(&b, 1, 1);
-    movsB1 = posBishMoves(&b, 0, 0);
-    movsB2 = posBishMoves(&b, 0, 1);
+
+    posW = b.piece[WHITE][BISH];
+    posB = b.piece[BLACK][BISH];
+
+    movsW1 = posBishMoves(&b, 1, LSB_INDEX(posW));
+    movsW2 = posBishMoves(&b, 1, MSB_INDEX(posW));
+    movsB1 = posBishMoves(&b, 0, LSB_INDEX(posB));
+    movsB2 = posBishMoves(&b, 0, MSB_INDEX(posB));
 
     int defaultMovs = 
         (movsW1 == 0ULL) && (movsW2 == 0ULL) && (movsB1 == 0ULL) && (movsB2 == 0ULL);
 
     b = generateFromFen("8/2r4R/3B2b1/8/8/3B2b1/2R4r/8", "w", "-");
-    movsW1 = posBishMoves(&b, 1, 0);
-    movsW2 = posBishMoves(&b, 1, 1);
-    movsB1 = posBishMoves(&b, 0, 0);
-    movsB2 = posBishMoves(&b, 0, 1);
+
+    posW = b.piece[WHITE][BISH];
+    posB = b.piece[BLACK][BISH];
+
+    movsW1 = posBishMoves(&b, 1, LSB_INDEX(posW));
+    movsW2 = posBishMoves(&b, 1, MSB_INDEX(posW));
+    movsB1 = posBishMoves(&b, 0, LSB_INDEX(posB));
+    movsB2 = posBishMoves(&b, 0, MSB_INDEX(posB));
 
     int otherMovs = 
         (movsW1 == 143229240477700ULL) && (movsW2 == 299489548168200192ULL) && (movsB1 == 17626629669896ULL) && (movsB2 == 577868148797079552ULL);
@@ -139,20 +157,29 @@ int testBishMoves()
 int testKnightMoves()
 {
     uint64_t movsW1, movsW2, movsB1, movsB2;
+    uint64_t posW, posB;
     Board b = defaultBoard();
-    movsW1 = posKnightMoves(&b, 1, 0);
-    movsW2 = posKnightMoves(&b, 1, 1);
-    movsB1 = posKnightMoves(&b, 0, 0);
-    movsB2 = posKnightMoves(&b, 0, 1);
+
+    posW = b.piece[WHITE][KNIGHT];
+    posB = b.piece[BLACK][KNIGHT];
+
+    movsW1 = posKnightMoves(&b, 1, LSB_INDEX(posW));
+    movsW2 = posKnightMoves(&b, 1, MSB_INDEX(posW));
+    movsB1 = posKnightMoves(&b, 0, LSB_INDEX(posB));
+    movsB2 = posKnightMoves(&b, 0, MSB_INDEX(posB));
 
     int defaultMovs = 
         (movsW1 == 327680ULL) && (movsW2 == 10485760ULL) && (movsB1 == 5497558138880ULL) && (movsB2 == 175921860444160ULL);
 
     b = generateFromFen("8/1p1p1Pk1/2N3K1/n3N3/2n3p1/qP1PQ3/8/8", "w", "-");
-    movsW1 = posKnightMoves(&b, 1, 0);
-    movsW2 = posKnightMoves(&b, 1, 1);
-    movsB1 = posKnightMoves(&b, 0, 0);
-    movsB2 = posKnightMoves(&b, 0, 1);
+    
+    posW = b.piece[WHITE][KNIGHT];
+    posB = b.piece[BLACK][KNIGHT];
+
+    movsW1 = posKnightMoves(&b, 1, LSB_INDEX(posW));
+    movsW2 = posKnightMoves(&b, 1, MSB_INDEX(posW));
+    movsB1 = posKnightMoves(&b, 0, LSB_INDEX(posB));
+    movsB2 = posKnightMoves(&b, 0, MSB_INDEX(posB));
 
     int otherMovs = 
         (movsW1 == 4503600198057984ULL) && (movsW2 == 5802888670964875264ULL) && (movsB1 == 87995290505216ULL) && (movsB2 == 35184376283136ULL);
@@ -163,22 +190,32 @@ int testKnightMoves()
 int testPawnMoves()
 {
     uint64_t movsW1, movsW2, movsW3, movsB1, movsB2, movsB3;
+    uint64_t posW, posB;
     Board b = defaultBoard();
+
+    posW = b.piece[WHITE][PAWN];
+    posB = b.piece[BLACK][PAWN];
+
     int defaultMovs = 1;
     for (int i = 0; i < 8 && defaultMovs; ++i)
     {
-        defaultMovs &= posPawnMoves(&b, 1, i) == (POW2[i + 8] | POW2[i]) << 16;
-        defaultMovs &= posPawnMoves(&b, 0, i) == (POW2[i] | POW2[i + 8]) << 32;
+        defaultMovs &= posPawnMoves(&b, 1, LSB_INDEX(posW)) == (POW2[i + 8] | POW2[i]) << 16;
+        defaultMovs &= posPawnMoves(&b, 0, LSB_INDEX(posB)) == (POW2[i] | POW2[i + 8]) << 32;
+        REMOVE_LSB(posW);
+        REMOVE_LSB(posB);
     }
 
     b = generateFromFen("8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8", "w", "-");
 
-    movsW1 = posPawnMoves(&b, 1, 0);
-    movsW2 = posPawnMoves(&b, 1, 1);
-    movsW3 = posPawnMoves(&b, 1, 2);
-    movsB1 = posPawnMoves(&b, 0, 0);
-    movsB2 = posPawnMoves(&b, 0, 1);
-    movsB3 = posPawnMoves(&b, 0, 2);
+    posW = b.piece[WHITE][PAWN];
+    posB = b.piece[BLACK][PAWN];
+
+    movsW1 = posPawnMoves(&b, 1, LSB_INDEX(posW)); REMOVE_LSB(posW);
+    movsW2 = posPawnMoves(&b, 1, LSB_INDEX(posW)); REMOVE_LSB(posW);
+    movsW3 = posPawnMoves(&b, 1, LSB_INDEX(posW)); REMOVE_LSB(posW);
+    movsB1 = posPawnMoves(&b, 0, LSB_INDEX(posB)); REMOVE_LSB(posB);
+    movsB2 = posPawnMoves(&b, 0, LSB_INDEX(posB)); REMOVE_LSB(posB);
+    movsB3 = posPawnMoves(&b, 0, LSB_INDEX(posB)); REMOVE_LSB(posB);
 
     int otherMovs = 
         (movsW1 == 33751040ULL) && (movsW2 == 4194304ULL) && (movsW3 == 201326592ULL) && (movsB1 == 768ULL) && (movsB2 == 0ULL) && (movsB3 == 26388279066624ULL);
@@ -236,16 +273,16 @@ int testUndoMoves()
     int stays = equal(&b, &_b);
 
     int temp; //TODO: Remove this
-    Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = 1};
+    Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = WHITE};
 
-    makeMove(&b, &w1, 1);
-    undoMove(&b, w1, 1);
+    makeMove(&b, &w1);
+    undoMove(&b, w1);
     int white = equal(&b, &_b);
 
-    Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = 0};
+    Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = BLACK};
 
-    makeMove(&b, &b1, 0);
-    undoMove(&b, b1, 0);
+    makeMove(&b, &b1);
+    undoMove(&b, b1);
     int black = equal(&b, &_b);
 
     return stays && white && black;
@@ -259,18 +296,18 @@ int testBoardPawnMoves()
     int pawnMovesNoCapture = 1;
     for (int i = 0; i < 8; ++i)
     {
-        w1 = (Move) {.pieceThatMoves= PAWN, .from = i + 8, .to = i + 16, .color = 1};
-        w2 = (Move) {.pieceThatMoves= PAWN, .from = i + 16, .to = i + 24, .color = 1};
+        w1 = (Move) {.pieceThatMoves= PAWN, .from = i + 8, .to = i + 16, .color = WHITE};
+        w2 = (Move) {.pieceThatMoves= PAWN, .from = i + 16, .to = i + 24, .color = WHITE};
         
-        b1 = (Move) {.pieceThatMoves= PAWN, .from = 55 - i, .to = 47 - i, .color = 0};
-        b2 = (Move) {.pieceThatMoves= PAWN, .from = 47 - i, .to = 39 - i, .color = 0};
+        b1 = (Move) {.pieceThatMoves= PAWN, .from = 55 - i, .to = 47 - i, .color = BLACK};
+        b2 = (Move) {.pieceThatMoves= PAWN, .from = 47 - i, .to = 39 - i, .color = BLACK};
 
         b = defaultBoard();
         
-        makeMove(&b, &w1, 1);
-        makeMove(&b, &w2, 1);
-        makeMove(&b, &b1, 0);
-        makeMove(&b, &b2, 0);
+        makeMove(&b, &w1);
+        makeMove(&b, &w2);
+        makeMove(&b, &b1);
+        makeMove(&b, &b2);
 
         pawnMovesNoCapture &= ((b.piece[WHITE][PAWN] & POW2[i + 16]) == 0) && ((POW2[i + 24] & b.piece[WHITE][PAWN]) == POW2[i + 24]);
         pawnMovesNoCapture &= ((b.color[WHITE] | b.piece[WHITE][PAWN]) == b.color[WHITE]) && ((b.color[WHITE] & b.piece[WHITE][PAWN]) == b.piece[WHITE][PAWN]);
@@ -285,11 +322,11 @@ int testBoardPawnMoves()
 
     for (int i = 0; i < 8; ++i)
     {
-        w1 = (Move) {.pieceThatMoves= PAWN, .from = 8 + i, .to = 48 + i, .color = 1};
-        b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i, .color = 0};
+        w1 = (Move) {.pieceThatMoves= PAWN, .from = 8 + i, .to = 48 + i, .color = WHITE};
+        b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i, .color = BLACK};
 
         b = defaultBoard();
-        makeMove(&b, &w1, 1);
+        makeMove(&b, &w1);
 
         pawnMovesCapture &= ((b.piece[WHITE][PAWN] & POW2[8 + i]) == 0) && ((POW2[48 + i] & b.piece[WHITE][PAWN]) == POW2[48 + i]);
         pawnMovesCapture &= ((b.color[WHITE] | b.piece[WHITE][PAWN]) == b.color[WHITE]) && ((b.color[WHITE] & b.piece[WHITE][PAWN]) == b.piece[WHITE][PAWN]);
@@ -299,7 +336,7 @@ int testBoardPawnMoves()
         pawnMovesCapture &= POPCOUNT(b.color[BLACK]) == 15;
 
         b = defaultBoard();
-        makeMove(&b, &b1, 0);
+        makeMove(&b, &b1);
 
         pawnMovesCapture &= ((b.piece[BLACK][PAWN] & POW2[48 + i]) == 0) && ((POW2[8 + i] & b.piece[BLACK][PAWN]) == POW2[8 + i]);
         pawnMovesCapture &= ((b.color[BLACK] | b.piece[BLACK][PAWN]) == b.color[BLACK]) && ((b.color[BLACK] & b.piece[BLACK][PAWN]) == b.piece[BLACK][PAWN]);
@@ -310,12 +347,12 @@ int testBoardPawnMoves()
     }
 
     b = defaultBoard();
-    w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = 1};
-    b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = 0};
+    w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = WHITE};
+    b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = BLACK};
 
-    makeMove(&b, &w1, 1);
+    makeMove(&b, &w1);
     int extra = ((b.piece[WHITE][PAWN] & POW2[8]) == 0) && ((b.piece[WHITE][PAWN] & POW2[56]) == POW2[56]) && (b.piece[BLACK][ROOK] == POW2[63]);
-    makeMove(&b, &b1, 0);
+    makeMove(&b, &b1);
     extra &= ((b.piece[BLACK][PAWN] & POW2[57]) == 0) && ((b.piece[BLACK][PAWN] & POW2[7]) == POW2[7]) && (b.piece[WHITE][ROOK] == POW2[0]);
 
     return pawnMovesNoCapture && pawnMovesCapture && extra;
@@ -336,12 +373,9 @@ int testSimplePerft()
 
 int testStartMoveListing()
 {
-    
-    //This may fail if the ordering of the generation is changed
+    //WARNING: This will fail if the ordering of the generation is changed
     Board b = defaultBoard();
     Move moves[256];
-
-    int sum = 1152; //TODO: Implement this
 
     int numMovesWhite = allMoves(&b, moves, 0ULL, 1);
     int whiteMovesAreAccurate = 1;

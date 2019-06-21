@@ -14,6 +14,9 @@
 #define KNIGHT 4
 #define PAWN 5
 
+//1 ^ color to change the color
+//2 | color to change to AV
+//3 - color to change to opposite AV
 #define BLACK 0
 #define WHITE 1
 #define AV_BLACK 2

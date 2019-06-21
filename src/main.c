@@ -8,7 +8,6 @@
 
 #include "../include/global.h"
 #include "../include/board.h"
-#include "../include/io.h"
 #include "../include/test.h"
 #include "../include/node.h"
 #include "../include/memoization.h"
@@ -17,7 +16,7 @@
 #include "../include/perft.h"
 
 #include "../include/evaluation.h"
-
+#include "../include/io.h"
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
 //8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns
@@ -51,7 +50,9 @@ int main(const int argc, char* const argv[])
     printf("[+] Pieces are valid: %s\n", BOOL(validPieces(start)));
 
     runTests();
-    
 
+    printf("%d\n", perft(defaultBoard(), 5, 0));
+    printf("%d\n", perft(defaultBoard(), 3, 0));
+    
     return 0;
 }

@@ -167,29 +167,6 @@ Board defaultBoard()
     return b;
 }
 
-
-int capturePiece(Board* b, const uint64_t pos, const int colorToCapture)
-{
-    int targetPiece = pieceAt(b, pos, colorToCapture);
-
-    if (targetPiece != NO_PIECE)
-        b->piece[colorToCapture][targetPiece] ^= pos;
-
-    return targetPiece;
-}
-
-int pieceAt(Board* const b, const uint64_t pos, const int color)
-{
-    if (pos & b->piece[color][PAWN])     return PAWN;
-    else if (pos & b->piece[color][ROOK]) return ROOK;
-    else if (pos & b->piece[color][BISH]) return BISH;
-    else if (pos & b->piece[color][KNIGHT]) return KNIGHT;
-    else if (pos & b->piece[color][QUEEN]) return QUEEN;
-    else if (pos & b->piece[color][KING]) return KING;
-    
-    return NO_PIECE;
-}
-
 int equal(Board* a, Board* b)
 {
     int data = 

@@ -18,8 +18,5 @@ Board defaultBoard();
 
 int index(uint64_t bitboard, int prev);
 
-int pieceAt(Board* const b, const uint64_t coord, const int color);
-int capturePiece(Board* b, const uint64_t pos, const int colorToCapture);
-
 int equal(Board* a, Board* b);
 Board duplicate(Board b);
