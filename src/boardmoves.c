@@ -32,8 +32,82 @@ int capturePiece(Board* b, const uint64_t pos, const int colorToCapture)
     return targetPiece;
 }
 
+//It is assumed that the castling direction has already been decided
+void makeCastle(Board* b, Move move)
+{
+    uint64_t fromRook, toRook;
+
+    uint64_t fromKing = POW2[move.from], toKing = POW2[move.to];
+
+    if (move.castle & 1) //Kingside
+    {
+        b->posInfo ^= move.color ? WCASTLEK : BCASTLEK;
+        fromRook = POW2[move.to - 1];
+        toRook = POW2[move.to + 1];
+    }
+    else //Queenside
+    {
+        b->posInfo ^= move.color ? WCASTLEQ : BCASTLEQ;
+        fromRook = POW2[move.to + 2];
+        toRook = POW2[move.to - 1];
+    }
+
+    b->piece[move.color][KING] = toKing;
+    
+    b->piece[move.color][ROOK] |= toRook;
+    b->piece[move.color][ROOK] ^= fromRook;
+
+    b->color[move.color] |= toKing | toRook;
+    b->color[move.color] ^= fromKing | fromRook;
+    b->color[move.color | 2] |= fromKing | fromRook;
+    b->color[move.color | 2] ^= toKing | toRook;
+
+    b->allPieces |= toKing | toRook;
+    b->allPieces ^= fromKing | fromRook;
+}
+void undoCastle(Board* b, Move move)
+{
+    uint64_t fromRook, toRook;
+
+    uint64_t fromKing = POW2[move.from], toKing = POW2[move.to];
+
+    if (move.castle & 1) //Kingside
+    {
+        b->posInfo |= move.color ? WCASTLEK : BCASTLEK;
+        fromRook = POW2[move.to - 1];
+        toRook = POW2[move.to + 1];
+    }
+    else //Queenside
+    {
+        b->posInfo |= move.color ? WCASTLEQ : BCASTLEQ;
+        fromRook = POW2[move.to + 2];
+        toRook = POW2[move.to - 1];
+    }
+
+    b->piece[move.color][KING] = fromKing;
+    
+    b->piece[move.color][ROOK] |= fromRook;
+    b->piece[move.color][ROOK] ^= toRook;
+
+    b->color[move.color] |= fromKing | fromRook;
+    b->color[move.color] ^= toKing | toRook;
+    b->color[move.color | 2] |= toKing | toRook;
+    b->color[move.color | 2] ^= fromKing | fromRook;
+
+    b->allPieces |= fromKing | fromRook;
+    b->allPieces ^= toKing | toRook;
+}
+
 void makeMove(Board* b, Move* move)
 {
+    if (move->castle)
+    {
+        makeCastle(b, *move);
+        return;
+    }
+    //TODO: properly implement the undo
+    if (move->pieceThatMoves == KING)
+        b->posInfo &= 0b11111 ^ (move->color ? WCASTLEK | WCASTLEQ : BCASTLEK | BCASTLEQ);
     uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
     b->piece[move->color][move->pieceThatMoves] ^= fromBit;
     b->piece[move->color][move->pieceThatMoves] |= toBit;
@@ -58,6 +132,11 @@ void makeMove(Board* b, Move* move)
 
 void undoMove(Board* b, Move move)
 {
+    if (move.castle)
+    {
+        undoCastle(b, move);
+        return;
+    }
     uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
     b->piece[move.color][move.pieceThatMoves] |= fromBit;
     b->piece[move.color][move.pieceThatMoves] ^= toBit;
@@ -181,6 +260,12 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
             list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .color = color};
         }
     }
+
+    int castle = canCastle(b, color);
+    if (castle & 1)
+        list[numMoves++] = castleKSide(color);
+    if (castle & 2)
+        list[numMoves++] = castleQSide(color);
 
     return numMoves;
 }

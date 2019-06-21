@@ -51,8 +51,7 @@ int main(const int argc, char* const argv[])
 
     runTests();
 
-    printf("%d\n", perft(defaultBoard(), 5, 0));
-    printf("%d\n", perft(defaultBoard(), 3, 0));
-    
+    printf("%d\n", perftRecursive(start, 4, WHITE));
+
     return 0;
 }

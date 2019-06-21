@@ -6,6 +6,7 @@
 #include "../include/perft.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 int validStartingPos(Board b)
 {
@@ -358,17 +359,131 @@ int testBoardPawnMoves()
     return pawnMovesNoCapture && pawnMovesCapture && extra;
 }
 
-int testSimplePerft()
+int testCastleNoCheck()
 {
-    Board b = defaultBoard();
-    int startPos = 
-        perft(b, 1, 0) && perft(b, 2, 0) && perft(b, 3, 0);
+    Move move;
+    Board expected, b;
+    
+    //White kingside
+    b = generateFromFen("8/8/8/8/8/8/8/4K2R", "b", "K");
+    int dataIsOk = b.posInfo == WCASTLEK;
+    int can = (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 1);
 
-    b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "w", "KQkq");
-    int other = 
-        (perftRecursive(b, 1, 0) == 50ULL) && (perftRecursive(b, 2, 0) == 2125ULL) && (perftRecursive(b, 3, 0) == 96062ULL);
+    move = castleKSide(WHITE);
+    makeMove(&b, &move);
+    expected = generateFromFen("8/8/8/8/8/8/8/5RK1", "b", "-");
+    int castleSuccessful = equal(&b, &expected);
+    undoMove(&b, move);
+    expected = generateFromFen("8/8/8/8/8/8/8/4K2R", "b", "K");
+    castleSuccessful &= equal(&b, &expected);
 
-    return startPos && other;
+    //White queenside
+    b = generateFromFen("8/8/8/8/8/8/8/R3K3", "b", "Q");
+    dataIsOk &= b.posInfo == WCASTLEQ;
+    can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
+
+    move = castleQSide(WHITE);
+    makeMove(&b, &move);
+    expected = generateFromFen("8/8/8/8/8/8/8/2KR4", "b", "-");
+    castleSuccessful &= equal(&b, &expected);
+    undoMove(&b, move);
+    expected = generateFromFen("8/8/8/8/8/8/8/R3K3", "b", "Q");
+    castleSuccessful &= equal(&b, &expected);
+
+    //Black kingside
+    b = generateFromFen("4k2r/8/8/8/8/8/8/8", "b", "k");
+    dataIsOk &= b.posInfo == BCASTLEK;
+    can &= (canCastle(&b, BLACK) == 1) && (canCastle(&b, WHITE) == 0);
+
+    move = castleKSide(BLACK);
+    makeMove(&b, &move);
+    expected = generateFromFen("5rk1/8/8/8/8/8/8/8", "b", "-");
+    castleSuccessful &= equal(&b, &expected);
+    undoMove(&b, move);
+    expected = generateFromFen("4k2r/8/8/8/8/8/8/8", "b", "k");
+    castleSuccessful &= equal(&b, &expected);
+
+    //Black queenside
+    b = generateFromFen("r3k3/8/8/8/8/8/8/8", "b", "q");
+    dataIsOk &= b.posInfo == BCASTLEQ;
+    can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
+
+    move = castleQSide(BLACK);
+    makeMove(&b, &move);
+    expected = generateFromFen("2kr4/8/8/8/8/8/8/8", "b", "-");
+    castleSuccessful &= equal(&b, &expected);
+    undoMove(&b, move);
+    expected = generateFromFen("r3k3/8/8/8/8/8/8/8", "b", "q");
+    castleSuccessful &= equal(&b, &expected);
+
+    //Queenside with rook without blocking
+    //White
+    b = generateFromFen("1r6/8/8/8/8/8/8/R3K3", "b", "Q");
+    dataIsOk &= b.posInfo == WCASTLEQ;
+    can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
+
+    move = castleQSide(WHITE);
+    makeMove(&b, &move);
+    expected = generateFromFen("1r6/8/8/8/8/8/8/2KR4", "b", "-");
+    castleSuccessful &= equal(&b, &expected);
+    undoMove(&b, move);
+    expected = generateFromFen("1r6/8/8/8/8/8/8/R3K3", "b", "Q");
+    castleSuccessful &= equal(&b, &expected);
+
+    //Black
+    b = generateFromFen("r3k3/8/8/8/8/8/8/1R6", "b", "q");
+    dataIsOk &= b.posInfo == BCASTLEQ;
+    can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
+
+    move = castleQSide(BLACK);
+    makeMove(&b, &move);
+    expected = generateFromFen("2kr4/8/8/8/8/8/8/1R6", "b", "-");
+    castleSuccessful &= equal(&b, &expected);
+    undoMove(&b, move);
+    expected = generateFromFen("r3k3/8/8/8/8/8/8/1R6", "b", "q");
+    castleSuccessful &= equal(&b, &expected);
+
+    return dataIsOk && can && castleSuccessful;
+}
+int testCastleCheck()
+{
+    Board b;
+    int white = 1;
+
+    //Kingside
+    b = generateFromFen("8/8/8/8/8/8/8/4KP1R", "b", "KQkq");
+    white &= canCastle(&b, WHITE) == 0;
+    b = generateFromFen("4r3/8/8/8/8/8/8/4K2R", "b", "KQkq");
+    white &= canCastle(&b, WHITE) == 0;
+    b = generateFromFen("5r2/8/8/8/8/8/8/4K2R", "b", "KQkq");
+    white &= canCastle(&b, WHITE) == 0;
+
+    //Queenside
+    b = generateFromFen("8/8/8/8/8/8/8/RP2K3", "b", "KQkq");
+    white &= canCastle(&b, WHITE) == 0;
+    b = generateFromFen("4r3/8/8/8/8/8/8/R3K3", "b", "KQkq");
+    white &= canCastle(&b, WHITE) == 0;
+    b = generateFromFen("2r5/8/8/8/8/8/8/R3K3", "b", "KQkq");
+    white &= canCastle(&b, WHITE) == 0;
+
+    int black = 1;
+
+    b = generateFromFen("4k1pr/8/8/8/8/8/8/8", "b", "KQkq");
+    white &= canCastle(&b, BLACK) == 0;
+    b = generateFromFen("4k2r/8/8/8/8/8/8/4R3", "b", "KQkq");
+    white &= canCastle(&b, BLACK) == 0;
+    b = generateFromFen("4k2r/8/8/8/8/8/8/6R1", "b", "KQkq");
+    white &= canCastle(&b, BLACK) == 0;
+
+    //Queenside
+    b = generateFromFen("r1P1k3/8/8/8/8/8/8/8", "b", "KQkq");
+    white &= canCastle(&b, BLACK) == 0;
+    b = generateFromFen("r3k3/8/8/8/8/8/8/4R3", "b", "KQkq");
+    white &= canCastle(&b, BLACK) == 0;
+    b = generateFromFen("r3k3/8/8/8/8/8/8/2R5", "b", "KQkq");
+    white &= canCastle(&b, BLACK) == 0;
+
+    return white && black;
 }
 
 int testStartMoveListing()
@@ -411,6 +526,24 @@ int testStartMoveListing()
         (numMovesWhite == 20) && (numMovesBlack == 20) && whiteMovesAreAccurate && blackMovesAreAccurate && whiteKnight && blackKnight;
 }
 
+int testSimplePerft()
+{
+    Board b = defaultBoard();
+    int startPos = 
+        perft(b, 1, 0) && perft(b, 2, 0) && perft(b, 3, 0);
+
+    b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "w", "KQkq");
+    int noPawns = 
+        (perftRecursive(b, 1, 0) == 50ULL) && (perftRecursive(b, 2, 0) == 2125ULL) && (perftRecursive(b, 3, 0) == 96062ULL);
+
+    //TODO: Fix it as to implement depth 3
+    b = generateFromFen("r3k3/8/8/8/8/3b4/8/R3K2R", "b", "KQkq");
+    int castle = 
+        (perftRecursive(b, 1, 0) == 27ULL) && (perftRecursive(b, 2, 0) == 586ULL); //&& (perftRecursive(b, 3, 0) == 96062ULL);        
+    
+    return startPos && noPawns && castle;
+}
+
 void runTests()
 {
     //Generation
@@ -429,6 +562,10 @@ void runTests()
     //Make Moves
     printf("[+] Undo moves: %d\n",      testUndoMoves());
     printf("[+] Board Pawn moves: %d\n",testBoardPawnMoves());
+
+    //Castle
+    printf("[+] Castle No Chck: %d\n",  testCastleNoCheck());
+    printf("[+] Castle Chck: %d\n",     testCastleCheck());
 
     //All move generation
     printf("[+] Move listing: %d\n",    testStartMoveListing());

@@ -22,10 +22,15 @@
 #define AV_BLACK 2
 #define AV_WHITE 3
 
-#define WCASTLEK 16
-#define WCASTLEQ 8
-#define BCASTLEK 4
-#define BCASTLEQ 2
+#define BCASTLEK 2
+#define BCASTLEQ 4
+#define WCASTLEK 8
+#define WCASTLEQ 16
+
+#define C_MASK_WK 0x6
+#define C_MASK_WQ 0x70
+#define C_MASK_BK 0x600000000000000
+#define C_MASK_BQ 0x7000000000000000
 
 #include <inttypes.h>
 
