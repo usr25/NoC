@@ -8,6 +8,12 @@ typedef struct
     int castle;
 }Move;
 
+typedef struct
+{
+    uint64_t allPieces;
+    int posInfo;
+}History;
+
 uint64_t posKingMoves(Board* b, const int color);
 uint64_t posKnightMoves(Board* b, const int color, const int lsb);
 uint64_t posPawnMoves(Board* b, const int color, const int lsb);

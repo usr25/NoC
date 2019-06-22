@@ -271,19 +271,20 @@ int testUndoMoves()
     
     Board b = defaultBoard();
     Board _b = defaultBoard();
+    History h;
     int stays = equal(&b, &_b);
 
     int temp; //TODO: Remove this
     Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = WHITE};
 
-    makeMove(&b, &w1);
-    undoMove(&b, w1);
+    makeMove(&b, &w1, &h);
+    undoMove(&b, w1, &h);
     int white = equal(&b, &_b);
 
     Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = BLACK};
 
-    makeMove(&b, &b1);
-    undoMove(&b, b1);
+    makeMove(&b, &b1, &h);
+    undoMove(&b, b1, &h);
     int black = equal(&b, &_b);
 
     return stays && white && black;
@@ -291,7 +292,8 @@ int testUndoMoves()
 
 int testBoardPawnMoves()
 {
-    int temp; //TODO: implement history
+    int temp;
+    History h;
     Board b;
     Move w1, w2, b1, b2;
     int pawnMovesNoCapture = 1;
@@ -305,10 +307,10 @@ int testBoardPawnMoves()
 
         b = defaultBoard();
         
-        makeMove(&b, &w1);
-        makeMove(&b, &w2);
-        makeMove(&b, &b1);
-        makeMove(&b, &b2);
+        makeMove(&b, &w1, &h);
+        makeMove(&b, &w2, &h);
+        makeMove(&b, &b1, &h);
+        makeMove(&b, &b2, &h);
 
         pawnMovesNoCapture &= ((b.piece[WHITE][PAWN] & POW2[i + 16]) == 0) && ((POW2[i + 24] & b.piece[WHITE][PAWN]) == POW2[i + 24]);
         pawnMovesNoCapture &= ((b.color[WHITE] | b.piece[WHITE][PAWN]) == b.color[WHITE]) && ((b.color[WHITE] & b.piece[WHITE][PAWN]) == b.piece[WHITE][PAWN]);
@@ -327,7 +329,7 @@ int testBoardPawnMoves()
         b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i, .color = BLACK};
 
         b = defaultBoard();
-        makeMove(&b, &w1);
+        makeMove(&b, &w1, &h);
 
         pawnMovesCapture &= ((b.piece[WHITE][PAWN] & POW2[8 + i]) == 0) && ((POW2[48 + i] & b.piece[WHITE][PAWN]) == POW2[48 + i]);
         pawnMovesCapture &= ((b.color[WHITE] | b.piece[WHITE][PAWN]) == b.color[WHITE]) && ((b.color[WHITE] & b.piece[WHITE][PAWN]) == b.piece[WHITE][PAWN]);
@@ -337,7 +339,7 @@ int testBoardPawnMoves()
         pawnMovesCapture &= POPCOUNT(b.color[BLACK]) == 15;
 
         b = defaultBoard();
-        makeMove(&b, &b1);
+        makeMove(&b, &b1, &h);
 
         pawnMovesCapture &= ((b.piece[BLACK][PAWN] & POW2[48 + i]) == 0) && ((POW2[8 + i] & b.piece[BLACK][PAWN]) == POW2[8 + i]);
         pawnMovesCapture &= ((b.color[BLACK] | b.piece[BLACK][PAWN]) == b.color[BLACK]) && ((b.color[BLACK] & b.piece[BLACK][PAWN]) == b.piece[BLACK][PAWN]);
@@ -351,9 +353,9 @@ int testBoardPawnMoves()
     w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .color = WHITE};
     b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .color = BLACK};
 
-    makeMove(&b, &w1);
+    makeMove(&b, &w1, &h);
     int extra = ((b.piece[WHITE][PAWN] & POW2[8]) == 0) && ((b.piece[WHITE][PAWN] & POW2[56]) == POW2[56]) && (b.piece[BLACK][ROOK] == POW2[63]);
-    makeMove(&b, &b1);
+    makeMove(&b, &b1, &h);
     extra &= ((b.piece[BLACK][PAWN] & POW2[57]) == 0) && ((b.piece[BLACK][PAWN] & POW2[7]) == POW2[7]) && (b.piece[WHITE][ROOK] == POW2[0]);
 
     return pawnMovesNoCapture && pawnMovesCapture && extra;
@@ -362,6 +364,7 @@ int testBoardPawnMoves()
 int testCastleNoCheck()
 {
     Move move;
+    History h;
     Board expected, b;
     
     //White kingside
@@ -370,10 +373,10 @@ int testCastleNoCheck()
     int can = (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 1);
 
     move = castleKSide(WHITE);
-    makeMove(&b, &move);
+    makeMove(&b, &move, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/5RK1", "b", "-");
     int castleSuccessful = equal(&b, &expected);
-    undoMove(&b, move);
+    undoMove(&b, move, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/4K2R", "b", "K");
     castleSuccessful &= equal(&b, &expected);
 
@@ -383,10 +386,10 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
 
     move = castleQSide(WHITE);
-    makeMove(&b, &move);
+    makeMove(&b, &move, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/2KR4", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move);
+    undoMove(&b, move, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/R3K3", "b", "Q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -396,10 +399,10 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 1) && (canCastle(&b, WHITE) == 0);
 
     move = castleKSide(BLACK);
-    makeMove(&b, &move);
+    makeMove(&b, &move, &h);
     expected = generateFromFen("5rk1/8/8/8/8/8/8/8", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move);
+    undoMove(&b, move, &h);
     expected = generateFromFen("4k2r/8/8/8/8/8/8/8", "b", "k");
     castleSuccessful &= equal(&b, &expected);
 
@@ -409,10 +412,10 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
 
     move = castleQSide(BLACK);
-    makeMove(&b, &move);
+    makeMove(&b, &move, &h);
     expected = generateFromFen("2kr4/8/8/8/8/8/8/8", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move);
+    undoMove(&b, move, &h);
     expected = generateFromFen("r3k3/8/8/8/8/8/8/8", "b", "q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -423,10 +426,10 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
 
     move = castleQSide(WHITE);
-    makeMove(&b, &move);
+    makeMove(&b, &move, &h);
     expected = generateFromFen("1r6/8/8/8/8/8/8/2KR4", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move);
+    undoMove(&b, move, &h);
     expected = generateFromFen("1r6/8/8/8/8/8/8/R3K3", "b", "Q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -436,10 +439,10 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
 
     move = castleQSide(BLACK);
-    makeMove(&b, &move);
+    makeMove(&b, &move, &h);
     expected = generateFromFen("2kr4/8/8/8/8/8/8/1R6", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move);
+    undoMove(&b, move, &h);
     expected = generateFromFen("r3k3/8/8/8/8/8/8/1R6", "b", "q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -539,11 +542,8 @@ int testSimplePerft()
     //TODO: Fix it as to implement depth 3
     b = generateFromFen("r3k3/8/8/8/8/3b4/8/R3K2R", "b", "KQkq");
     int castle = 
-        (perftRecursive(b, 1, 0) == 27ULL) && (perftRecursive(b, 2, 0) == 586ULL); //&& (perftRecursive(b, 3, 0) == 96062ULL);        
-<<<<<<< HEAD
-    
-=======
->>>>>>> 7ee8f5e84b1cd97cad048116681915519a1d2f2e
+        (perftRecursive(b, 1, 0) == 27ULL) && (perftRecursive(b, 2, 0) == 586ULL);// && (perftRecursive(b, 3, 0) == 96062ULL);
+
     return startPos && noPawns && castle;
 }
 
@@ -568,11 +568,8 @@ void runTests()
 
     //Castle
     printf("[+] Castle No Chck: %d\n",  testCastleNoCheck());
-<<<<<<< HEAD
+
     printf("[+] Castle Chck: %d\n",     testCastleCheck());
-=======
-    printf("[+] Castle Chck: %d\n",  testCastleCheck());
->>>>>>> 7ee8f5e84b1cd97cad048116681915519a1d2f2e
 
     //All move generation
     printf("[+] Move listing: %d\n",    testStartMoveListing());
