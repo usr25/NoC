@@ -535,16 +535,23 @@ int testSimplePerft()
     int startPos = 
         perft(b, 1, 0) && perft(b, 2, 0) && perft(b, 3, 0);
 
-    b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "w", "KQkq");
+    b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "b", "KQkq");
     int noPawns = 
-        (perftRecursive(b, 1, 0) == 50ULL) && (perftRecursive(b, 2, 0) == 2125ULL) && (perftRecursive(b, 3, 0) == 96062ULL);
+        (perftRecursive(b, 1, BLACK) == 50ULL) && (perftRecursive(b, 2, BLACK) == 2125ULL) && (perftRecursive(b, 3, BLACK) == 96062ULL);
 
-    //TODO: Fix it as to implement depth 3
     b = generateFromFen("r3k3/8/8/8/8/3b4/8/R3K2R", "b", "KQkq");
     int castle = 
-        (perftRecursive(b, 1, 0) == 27ULL) && (perftRecursive(b, 2, 0) == 586ULL);// && (perftRecursive(b, 3, 0) == 96062ULL);
+        (perftRecursive(b, 1, BLACK) == 27ULL) && (perftRecursive(b, 2, BLACK) == 586ULL) && (perftRecursive(b, 3, BLACK) == 13643ULL);
 
-    return startPos && noPawns && castle;
+    b = generateFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3", "w", "-");
+    int bishAndKnight =
+        (perftRecursive(b, 1, WHITE) == 35ULL) && (perftRecursive(b, 2, WHITE) == 1252ULL) && (perftRecursive(b, 3, WHITE) == 42180ULL);
+
+    b = generateFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3", "w", "-");
+    int queen =
+        (perftRecursive(b, 1, WHITE) == 4ULL) && (perftRecursive(b, 2, WHITE) == 105ULL) && (perftRecursive(b, 3, WHITE) == 2532ULL);
+
+    return startPos && noPawns && castle && bishAndKnight && queen;
 }
 
 void runTests()

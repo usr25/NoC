@@ -15,7 +15,13 @@ uint64_t results[] = {1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 11906
 //50, 2125, 96062, 4200525, 191419375 //WORKS ALL
 
 //Castle -> r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -
-//27, 586, 13643 //WORKS 586
+//27, 586, 13643, 322232, 7288108 //WORKS ALL
+
+//Bish & Knight -> 4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3 w -
+//35, 1252, 42180
+
+//Queen -> 4kq2/4q3/8/8/8/8/1Q6/Q3K3 w - -
+//4, 105, 2532, 79266
 
 uint64_t perftRecursive(Board b, const int depth, const int color)
 {
@@ -47,13 +53,13 @@ int perft(Board b, int depth, int tree)
     History h;
     int numMoves, tot = 0;
 
-    numMoves = allMoves(&b, moves, 0, WHITE);
+    numMoves = allMoves(&b, moves, 0, b.posInfo & 1);
     for (int i = 0; i < numMoves; ++i)
     {        
         makeMove(&b, &moves[i], &h);
 
         if (isInCheck(&b, 1) == NO_PIECE){
-            int temp = perftRecursive(b, depth - 1, 0);
+            int temp = perftRecursive(b, depth - 1, 1 ^ (b.posInfo & 1));
 
             if (tree)
             {

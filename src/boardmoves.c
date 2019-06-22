@@ -41,11 +41,11 @@ static inline int rookMoved(const int color, const int from)
 {
     if (from == 56 * (1 ^ color))
     {
-        return 0b111111 ^ (color ? WCASTLEK : BCASTLEK);
+        return 0b111111 ^ (1 << ((color << 1) + 1));
     }
     else if (from == 56 * (1 ^ color) + 7)
     {
-        return 0b111111 ^ (color ? WCASTLEQ : BCASTLEQ);
+        return 0b111111 ^ (2 << ((color << 1) + 1));
     }
 
     return 0b111111;
@@ -57,15 +57,15 @@ void makeCastle(Board* b, Move move)
     uint64_t fromRook, toRook;
     uint64_t fromKing = POW2[move.from], toKing = POW2[move.to];
 
+    b->posInfo &= kingMoved(move.color);
+
     if (move.castle & 1) //Kingside
     {
-        b->posInfo ^= move.color ? WCASTLEK : BCASTLEK;
         fromRook = POW2[move.to - 1];
         toRook = POW2[move.to + 1];
     }
     else //Queenside
     {
-        b->posInfo ^= move.color ? WCASTLEQ : BCASTLEQ;
         fromRook = POW2[move.to + 2];
         toRook = POW2[move.to - 1];
     }
@@ -165,8 +165,6 @@ void undoMove(Board* b, Move move, History* h)
     b->piece[move.color][move.pieceThatMoves] |= fromBit;
     b->piece[move.color][move.pieceThatMoves] ^= toBit;
 
-    //b->allPieces |= fromBit;
-
     b->color[move.color] |= fromBit;
     b->color[move.color] ^= toBit;
     b->color[move.color | 2] |= toBit;
@@ -178,10 +176,6 @@ void undoMove(Board* b, Move move, History* h)
         b->color[1 ^ move.color] |= toBit;
         b->color[3 - move.color] ^= toBit;
     }
-    /*
-    else
-        b->allPieces ^= toBit;
-    */
 }
 
 //Generates all the moves and returns the number

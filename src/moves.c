@@ -232,7 +232,7 @@ int canCastle(Board* b, const int color)
     }
     if (canQ)
     {
-        uint64_t maskToCastle = color ? 0x30 : 0x3000000000000000; //Squares which the king goes throught, in kingside they are the same as the mask
+        uint64_t maskToCastle = 0x30 * POW2[(1 ^ color) * 56]; //Squares which the king goes throught, in kingside they are the same as the mask
         canQ = isInCheck(b, color) == NO_PIECE;
         while(canQ && maskToCastle)
         {
@@ -289,6 +289,7 @@ int checkInPosition(Board* b, const int lsb, const int kingsColor)
 {
     uint64_t straight, diagonal;
     const int inverse = 1 ^ kingsColor;
+    
     if (b->piece[inverse][PAWN] & kingPawn(lsb, kingsColor)) return PAWN;
 
     if (b->piece[inverse][KNIGHT] & kingKnight(lsb)) return KNIGHT;

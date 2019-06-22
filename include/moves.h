@@ -11,6 +11,7 @@ typedef struct
 typedef struct
 {
     uint64_t allPieces;
+    uint64_t promotion; //The position where the promotion occurs
     int posInfo;
 }History;
 
