@@ -263,7 +263,7 @@ Move castleKSide(const int color)
         to = 57;
     }
     
-    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = color, .castle = 1};
+    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 1};
 
     return m;
 }
@@ -282,7 +282,7 @@ Move castleQSide(const int color)
         to = 61;
     }
     
-    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .color = color, .castle = 2};
+    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 2};
 
     return m;
 }

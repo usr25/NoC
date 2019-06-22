@@ -1,17 +1,19 @@
 typedef struct 
 {
-    unsigned int pieceThatMoves;
-    unsigned int pieceCaptured;
+    int pieceThatMoves;
     int from;
     int to;
-    int color;
     int castle;
     int promotion;
 }Move;
 
 typedef struct
 {
-    uint64_t allPieces; //The position where the promotion occurs
+    int pieceCaptured;
+    int color;
+
+    //Data regarding the Board struct, to make it easier to save
+    uint64_t allPieces;
     int posInfo;
 }History;
 
