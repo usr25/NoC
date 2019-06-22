@@ -44,52 +44,52 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
         {
             case 'K':
                 b.color[WHITE] |= pos;
-                b.piece[1][KING] |= pos;
+                b.piece[WHITE][KING] |= pos;
                 break;
             case 'Q':
                 b.color[WHITE] |= pos;
-                b.piece[1][QUEEN] |= pos;
+                b.piece[WHITE][QUEEN] |= pos;
                 break;
             case 'R':
                 b.color[WHITE] |= pos;
-                b.piece[1][ROOK] |= pos;
+                b.piece[WHITE][ROOK] |= pos;
                 break;
             case 'B':
                 b.color[WHITE] |= pos;
-                b.piece[1][BISH] |= pos;
+                b.piece[WHITE][BISH] |= pos;
                 break;
             case 'N':
                 b.color[WHITE] |= pos;
-                b.piece[1][KNIGHT] |= pos;
+                b.piece[WHITE][KNIGHT] |= pos;
                 break;
             case 'P':
                 b.color[WHITE] |= pos;
-                b.piece[1][PAWN] |= pos;
+                b.piece[WHITE][PAWN] |= pos;
                 break;
 
             case 'k':
                 b.color[BLACK] |= pos;
-                b.piece[0][KING] |= pos;
+                b.piece[BLACK][KING] |= pos;
                 break;
             case 'q':
                 b.color[BLACK] |= pos;
-                b.piece[0][QUEEN] |= pos;
+                b.piece[BLACK][QUEEN] |= pos;
                 break;
             case 'r':
                 b.color[BLACK] |= pos;
-                b.piece[0][ROOK] |= pos;
+                b.piece[BLACK][ROOK] |= pos;
                 break;
             case 'b':
                 b.color[BLACK] |= pos;
-                b.piece[0][BISH] |= pos;
+                b.piece[BLACK][BISH] |= pos;
                 break;
             case 'n':
                 b.color[BLACK] |= pos;
-                b.piece[0][KNIGHT] |= pos;
+                b.piece[BLACK][KNIGHT] |= pos;
                 break;
             case 'p':
                 b.color[BLACK] |= pos;
-                b.piece[0][PAWN] |= pos;
+                b.piece[BLACK][PAWN] |= pos;
                 break;
             case '/': 
                 shift = 0;
@@ -142,19 +142,19 @@ Board defaultBoard()
 {
     Board b = (Board) {};
     
-    b.piece[0][KING] = INITIAL_BKING;
-    b.piece[0][QUEEN] = INITIAL_BQUEEN;
-    b.piece[0][ROOK] = INITIAL_BROOK;
-    b.piece[0][BISH] = INITIAL_BBISH;
-    b.piece[0][KNIGHT] = INITIAL_BKNIGHT;
-    b.piece[0][PAWN] = INITIAL_BPAWN;
+    b.piece[BLACK][KING] = INITIAL_BKING;
+    b.piece[BLACK][QUEEN] = INITIAL_BQUEEN;
+    b.piece[BLACK][ROOK] = INITIAL_BROOK;
+    b.piece[BLACK][BISH] = INITIAL_BBISH;
+    b.piece[BLACK][KNIGHT] = INITIAL_BKNIGHT;
+    b.piece[BLACK][PAWN] = INITIAL_BPAWN;
 
-    b.piece[1][KING] = INITIAL_WKING;
-    b.piece[1][QUEEN] = INITIAL_WQUEEN;
-    b.piece[1][ROOK] = INITIAL_WROOK;
-    b.piece[1][BISH] = INITIAL_WBISH;
-    b.piece[1][KNIGHT] = INITIAL_WKNIGHT;
-    b.piece[1][PAWN] = INITIAL_WPAWN;
+    b.piece[WHITE][KING] = INITIAL_WKING;
+    b.piece[WHITE][QUEEN] = INITIAL_WQUEEN;
+    b.piece[WHITE][ROOK] = INITIAL_WROOK;
+    b.piece[WHITE][BISH] = INITIAL_WBISH;
+    b.piece[WHITE][KNIGHT] = INITIAL_WKNIGHT;
+    b.piece[WHITE][PAWN] = INITIAL_WPAWN;
 
     b.color[BLACK] = INITIAL_BPIECES;
     b.color[WHITE] = INITIAL_WPIECES;

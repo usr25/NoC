@@ -495,7 +495,7 @@ int testStartMoveListing()
     Board b = defaultBoard();
     Move moves[256];
 
-    int numMovesWhite = allMoves(&b, moves, 0ULL, 1);
+    int numMovesWhite = allMoves(&b, moves, 1);
     int whiteMovesAreAccurate = 1;
     for (int i = 0; i < 8; ++i)
     {
@@ -510,7 +510,7 @@ int testStartMoveListing()
     whiteKnight &= (moves[16].pieceThatMoves == KNIGHT) && (moves[17].pieceThatMoves == KNIGHT) && (moves[18].pieceThatMoves == KNIGHT) && (moves[19].pieceThatMoves == KNIGHT);
     whiteKnight &= (moves[16].from == moves[17].from) && (moves[18].from == moves[19].from);
 
-    int numMovesBlack = allMoves(&b, moves, 0ULL, 0);
+    int numMovesBlack = allMoves(&b, moves, 0);
     int blackMovesAreAccurate = 1;
     for (int i = 0; i < 8; ++i)
     {
@@ -527,6 +527,33 @@ int testStartMoveListing()
 
     return 
         (numMovesWhite == 20) && (numMovesBlack == 20) && whiteMovesAreAccurate && blackMovesAreAccurate && whiteKnight && blackKnight;
+}
+
+int testPromotion()
+{
+    Board b;
+    Move moves[13];
+    History h;
+
+    b = generateFromFen("8/4P1K1/8/8/8/1k6/3p4/8", "w" ,"-");
+
+    int numMovesB = allMoves(&b, moves, BLACK);
+    int numMovesW = allMoves(&b, moves, WHITE);
+
+    int correctNum = (numMovesW == 12) && (numMovesB == 12);
+    int piecesAddUp = 1;
+
+    for (int i = 0; i < 4; ++i)
+    {
+        piecesAddUp &= (moves[8 + i].promotion != KING);
+        makeMove(&b, &moves[8 + i], &h);
+        undoMove(&b, moves[8 + i], &h);
+    }
+    Board cp = generateFromFen("8/4P1K1/8/8/8/1k6/3p4/8", "w" ,"-");
+    
+    int eq = equal(&cp, &b);
+
+    return correctNum && eq && piecesAddUp;
 }
 
 int testSimplePerft()
@@ -551,7 +578,11 @@ int testSimplePerft()
     int queen =
         (perftRecursive(b, 1, WHITE) == 4ULL) && (perftRecursive(b, 2, WHITE) == 105ULL) && (perftRecursive(b, 3, WHITE) == 2532ULL);
 
-    return startPos && noPawns && castle && bishAndKnight && queen;
+    b = generateFromFen("8/4P1K1/8/8/8/1k6/3p4/8", "w" ,"-");
+    int promotion = 
+        (perftRecursive(b, 1, WHITE) == 12ULL) && (perftRecursive(b, 2, WHITE) == 142ULL) && (perftRecursive(b, 3, WHITE) == 1788ULL);
+
+    return startPos && noPawns && castle && bishAndKnight && queen && promotion;
 }
 
 void runTests()
@@ -573,13 +604,11 @@ void runTests()
     printf("[+] Undo moves: %d\n",      testUndoMoves());
     printf("[+] Board Pawn moves: %d\n",testBoardPawnMoves());
 
-    //Castle
-    printf("[+] Castle No Chck: %d\n",  testCastleNoCheck());
-
-    printf("[+] Castle Chck: %d\n",     testCastleCheck());
-
     //All move generation
+    printf("[+] Castle No Chck: %d\n",  testCastleNoCheck());
+    printf("[+] Castle Chck: %d\n",     testCastleCheck());
     printf("[+] Move listing: %d\n",    testStartMoveListing());
+    printf("[+] Promotion: %d\n",       testPromotion());
 
     //Perft
     printf("[+] Perft: %d\n",           testSimplePerft());

@@ -129,8 +129,13 @@ void makeMove(Board* b, Move* move, History* h)
         b->posInfo &= rookMoved(move->color, move->from);
 
     uint64_t fromBit = POW2[move->from], toBit = POW2[move->to];
+
+    if (move->promotion && move->pieceThatMoves == PAWN)
+        b->piece[move->color][move->promotion] |= toBit;
+    else
+        b->piece[move->color][move->pieceThatMoves] |= toBit;
+
     b->piece[move->color][move->pieceThatMoves] ^= fromBit;
-    b->piece[move->color][move->pieceThatMoves] |= toBit;
     
     b->allPieces ^= fromBit;
 
@@ -162,8 +167,13 @@ void undoMove(Board* b, Move move, History* h)
         return;
     }
     uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
+
+    if (move.promotion && move.pieceThatMoves == PAWN)
+        b->piece[move.color][move.promotion] ^= toBit;
+    else
+        b->piece[move.color][move.pieceThatMoves] ^= toBit;
+
     b->piece[move.color][move.pieceThatMoves] |= fromBit;
-    b->piece[move.color][move.pieceThatMoves] ^= toBit;
 
     b->color[move.color] |= fromBit;
     b->color[move.color] ^= toBit;
@@ -179,7 +189,7 @@ void undoMove(Board* b, Move move, History* h)
 }
 
 //Generates all the moves and returns the number
-int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
+int allMoves(Board* b, Move* list, const int color)
 {
     int numMoves = 0;
     int i, j, from, to, numPieces, popC;
@@ -213,7 +223,15 @@ int allMoves(Board* b, Move* list, uint64_t prevMovEnPass, const int color)
         {
             to = LSB_INDEX(tempMoves);
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color};
+            if (to < 8 || to > 55)
+            {
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color, .promotion = KNIGHT};
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color, .promotion = BISH};
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color, .promotion = ROOK};
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color, .promotion = QUEEN};
+            }
+            else
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .color = color};
         }
     }
     

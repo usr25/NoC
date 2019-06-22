@@ -116,9 +116,15 @@ uint64_t posQueenMoves(Board* b, const int color, const int lsb)
 }
 
 
-//TODO: Improve this function
 uint64_t kingStraight(const int lsb, const uint64_t allPieces)
 {
+    /*
+    const uint64_t upMoves = getUpMoves(lsb);
+    const uint64_t downMoves = getDownMoves(lsb);
+    const uint64_t rightMoves = getRightMoves(lsb);
+    const uint64_t leftMoves = getLeftMoves(lsb);
+    */
+
     const uint64_t inteUp = getUpMoves(lsb) & allPieces;
     const uint64_t inteDown = getDownMoves(lsb) & allPieces;
     const uint64_t inteRight = getRightMoves(lsb) & allPieces;
@@ -182,10 +188,7 @@ uint64_t kingDiagonal(const int lsb, const uint64_t allPieces)
 
     return res;
 }
-static inline uint64_t kingKnight(const int lsb)
-{
-    return getKnightMoves(lsb);
-}
+
 static inline uint64_t kingPawn(const int lsb, const int color)
 {
     return color ? getWhitePawnCaptures(lsb) : getBlackPawnCaptures(lsb);
@@ -289,21 +292,24 @@ int checkInPosition(Board* b, const int lsb, const int kingsColor)
 {
     uint64_t straight, diagonal;
     const int inverse = 1 ^ kingsColor;
+
+    if (b->piece[inverse][KING] & getKingMoves(lsb)) return KING;
     
     if (b->piece[inverse][PAWN] & kingPawn(lsb, kingsColor)) return PAWN;
 
-    if (b->piece[inverse][KNIGHT] & kingKnight(lsb)) return KNIGHT;
-
-    //TODO: Simplify this
+    if (b->piece[inverse][KNIGHT] & getKnightMoves(lsb)) return KNIGHT;
+    //TODO: Simplify this?
     if (b->piece[inverse][QUEEN] || b->piece[inverse][ROOK])
     {
         straight = kingStraight(lsb, b->allPieces);
+
         if (b->piece[inverse][ROOK] & straight) return ROOK;
         if (b->piece[inverse][QUEEN] & straight) return QUEEN;
     }
     if (b->piece[inverse][QUEEN] || b->piece[inverse][BISH])
     {
         diagonal = kingDiagonal(lsb, b->allPieces);
+        
         if (b->piece[inverse][BISH] & diagonal) return BISH;
         if (b->piece[inverse][QUEEN] & diagonal) return QUEEN;
     }

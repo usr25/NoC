@@ -6,12 +6,12 @@ typedef struct
     int to;
     int color;
     int castle;
+    int promotion;
 }Move;
 
 typedef struct
 {
-    uint64_t allPieces;
-    uint64_t promotion; //The position where the promotion occurs
+    uint64_t allPieces; //The position where the promotion occurs
     int posInfo;
 }History;
 
