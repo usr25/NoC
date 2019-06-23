@@ -9,6 +9,7 @@ typedef struct
     uint64_t allPieces;
 
     int posInfo;
+    int enPass; //0 by default, otherwise it is the index of the pawn that just moved
 } Board;
 
 

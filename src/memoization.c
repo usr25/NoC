@@ -50,8 +50,7 @@ void genBlackPawnMoves()
 }
 void genWhitePawnCaptures()
 {
-    int i = 8;
-    for (; i < 56; ++i)
+    for (int i = 0; i < 56; ++i)
     {
         if (i % 8 == 0)
             whitePawnCaptures[i] = 1ULL << (i + 9);
@@ -63,8 +62,7 @@ void genWhitePawnCaptures()
 }
 void genBlackPawnCaptures()
 {
-    int i = 55;
-    for (; i > 7; --i)
+    for (int i = 63; i > 7; --i)
     {
         if (i % 8 == 0)
             blackPawnCaptures[i] = 1ULL << (i - 7);

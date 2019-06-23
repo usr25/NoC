@@ -8,6 +8,15 @@
 #include <stdio.h>
 #include <assert.h>
 
+//rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
+//8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns
+//5N2/5Pkq/5p2/3P4/3pKQ2/3n4/8/8 w - -                      King moves
+//8/2n2N2/8/1br2rb1/n1Q2q1N/1BR2RB1/8/8 w - -               Queen moves
+//8/8/2Br2R1/8/8/2BR2r1/8/8 w - -                           Rook moves
+//8/2r4R/3B2b1/8/8/3B2b1/2R4r/8 w - -                       Bish moves
+//8/1p1p1Pk1/2N3K1/n3N3/2n3p1/qP1PQ3/8/8 w - -              Knight moves
+//8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8 w - -                   Pawn moves
+
 int validStartingPos(Board b)
 {
     int correctNumOfPieces = 
@@ -576,17 +585,25 @@ int testEnPass()
 
     b = generateFromFen("8/1p3k2/7K/8/2P5/8/8/8", "w", "-");
 
-    int perft = 
+    int perft1 = 
         (perftRecursive(b, 1, WHITE) == 4ULL) && (perftRecursive(b, 2, WHITE) == 32ULL) && (perftRecursive(b, 3, WHITE) == 185ULL) && (perftRecursive(b, 4, WHITE) == 1382ULL);
 
-    return perft;
+    b = generateFromFen("3k4/1p6/8/2P5/6p1/3K4/5P1P/8", "w", "-");
+    int perft2 = 
+        (perftRecursive(b, 1, WHITE) == 13ULL) && (perftRecursive(b, 2, WHITE) == 108ULL) && (perftRecursive(b, 3, WHITE) == 1360ULL);        
+
+    b = generateFromFen("k7/pp5p/8/2P5/8/8/P6P/K7", "w", "-");
+    int perft3 = 
+        (perftRecursive(b, 3, WHITE) == 400ULL) && (perftRecursive(b, 4, WHITE) == 2824ULL) && (perftRecursive(b, 6, WHITE) == 177792ULL);
+
+    return perft1 && perft2 && perft3;
 }
 
 int testSimplePerft()
 {
-    Board b = defaultBoard();
+    Board b;
     int startPos = 
-        perft(b, 1, 0) && perft(b, 2, 0) && perft(b, 3, 0);
+        perft(1, 0) && perft(2, 0) && perft(3, 0);
 
     b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "b", "KQkq");
     int noPawns = 
@@ -609,6 +626,30 @@ int testSimplePerft()
         (perftRecursive(b, 1, WHITE) == 12ULL) && (perftRecursive(b, 2, WHITE) == 142ULL) && (perftRecursive(b, 3, WHITE) == 1788ULL);
 
     return startPos && noPawns && castle && bishAndKnight && queen && promotion;
+}
+
+//This are deep perfts to ensure that everything is working, use this as well to benchmark
+void slowTests()
+{
+    printf("\n---= This will take a long time =---\n");
+    Board b;
+    printf("\n");
+    printf("Start depth 4: %d\n", perft(4, 0));
+    printf("Start depth 5: %d\n", perft(5, 0));
+    printf("Start depth 6: %d\n", perft(6, 0));
+
+    b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "b", "KQkq");
+    printf("No pawns depth 5: %d\n", perftRecursive(b, 5, BLACK) == 191462298ULL);
+    b = generateFromFen("8/1p3k2/7K/8/2P5/8/8/8", "w", "-");
+    printf("En passand + promotion: %d\n", perftRecursive(b, 8, WHITE) == 3558853ULL);
+    b = generateFromFen("r3k3/8/8/8/8/3b4/8/R3K2R", "b", "KQkq");
+    printf("Castle: %d\n", perftRecursive(b, 5, BLACK) == 7288108ULL);
+    b = generateFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3", "w", "-");
+    printf("Bish & Knight: %d\n", perftRecursive(b, 5, WHITE) == 48483119ULL);
+    b = generateFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3", "w", "-");
+    printf("Queen: %d\n", perftRecursive(b, 6, WHITE) == 71878391ULL);
+    b = generateFromFen("8/8/8/3k1K3/8/8/8/8", "w", "-");
+    printf("King: %d\n", perftRecursive(b, 9, WHITE) == 31356171ULL);
 }
 
 void runTests()
@@ -635,9 +676,10 @@ void runTests()
     printf("[+] Castle Chck: %d\n",     testCastleCheck());
     printf("[+] Move listing: %d\n",    testStartMoveListing());
     printf("[+] Promotion: %d\n",       testPromotion());
+    printf("[+] En Passand: %d\n",      testEnPass());
 
     //Perft
     printf("[+] Perft: %d\n",           testSimplePerft());
 
-    printf("\n[+] En Passand: %d\n",    testEnPass());
+    //slowTests();
 }

@@ -2,6 +2,7 @@
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/io.h"
 
 //This file makes changes to the board, moves.c generates the moves themselves
 
@@ -107,7 +108,48 @@ void undoCastle(Board* b, Move move, const int color)
     b->color[color] ^= toKing | toRook;
     b->color[color | 2] |= toKing | toRook;
     b->color[color | 2] ^= fromKing | fromRook;
+}
 
+void makePassand(Board* b, Move move, const int color)
+{
+    uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
+    uint64_t pawnPos = POW2[move.enPass];
+    //Move pawn
+    b->piece[color][PAWN] |= toBit;
+    b->piece[color][PAWN] ^= fromBit;
+
+    b->color[color] |= toBit;
+    b->color[color] ^= fromBit;
+    b->color[color | 2] |= fromBit;
+    b->color[color | 2] ^= toBit;
+
+    //Remove pawn
+    b->piece[1 ^ color][PAWN] ^= pawnPos;
+    
+    b->color[1 ^ color] ^= pawnPos;
+    b->color[3 - color] |= pawnPos;
+
+    b->allPieces ^= pawnPos | fromBit;
+    b->allPieces |= toBit;
+}
+void undoPassand(Board* b, Move move, const int color)
+{
+    uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
+    uint64_t pawnPos = POW2[move.enPass];
+    //Move pawn
+    b->piece[color][PAWN] ^= toBit;
+    b->piece[color][PAWN] |= fromBit;
+
+    b->color[color] ^= toBit;
+    b->color[color] |= fromBit;
+    b->color[color | 2] ^= fromBit;
+    b->color[color | 2] |= toBit;
+
+    //Remove pawn
+    b->piece[1 ^ color][PAWN] |= pawnPos;
+    
+    b->color[1 ^ color] |= pawnPos;
+    b->color[3 - color] ^= pawnPos;
 }
 
 void makeMove(Board* b, Move move, History* h)
@@ -115,13 +157,27 @@ void makeMove(Board* b, Move move, History* h)
     //Save the data
     h->posInfo = b->posInfo;
     h->allPieces = b->allPieces;
+    h->enPass = b->enPass;
 
-    if (move.castle)
+    if (move.pieceThatMoves == PAWN && move.to - move.from == (2 * h->color - 1) * 16)
+        b->enPass = move.to;
+    else
+        b->enPass = 0;
+
+    //En pass
+    if (move.enPass)
+    {
+        makePassand(b, move, h->color);
+        return;
+    }
+    //Castling
+    else if (move.castle)
     {
         makeCastle(b, move, h->color);
         return;
     }
 
+    //To remove ability to castle
     if (move.pieceThatMoves == KING)
         b->posInfo &= kingMoved(h->color);
     if (move.pieceThatMoves == ROOK)
@@ -129,6 +185,7 @@ void makeMove(Board* b, Move move, History* h)
 
     uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
+    //Promotion
     if (move.promotion && move.pieceThatMoves == PAWN)
         b->piece[h->color][move.promotion] |= toBit;
     else
@@ -159,10 +216,16 @@ void undoMove(Board* b, Move move, History* h)
     //Unload the data
     b->posInfo = h->posInfo;
     b->allPieces = h->allPieces;
+    b->enPass = h->enPass;
     
     if (move.castle)
     {
         undoCastle(b, move, h->color);
+        return;
+    }
+    else if(move.enPass)
+    {
+        undoPassand(b, move, h->color);
         return;
     }
     uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
@@ -232,6 +295,13 @@ int allMoves(Board* b, Move* list, const int color)
             else
                 list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to};
         }
+
+
+        if ((b->enPass - from == 1) && ((from & 7) != 7) && (b->piece[1 ^ color][PAWN] & POW2[b->enPass]))
+            list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass};
+        
+        else if ((b->enPass - from == -1) && ((from & 7) != 0) && (b->piece[1 ^ color][PAWN] & POW2[b->enPass]))
+            list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
     }
     
     temp = b->piece[color][QUEEN];

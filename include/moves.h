@@ -5,6 +5,7 @@ typedef struct
     int to;
     int castle;
     int promotion;
+    int enPass;
 }Move;
 
 typedef struct
@@ -15,6 +16,7 @@ typedef struct
     //Data regarding the Board struct, to make it easier to save
     uint64_t allPieces;
     int posInfo;
+    int enPass;
 }History;
 
 uint64_t posKingMoves(Board* b, const int color);

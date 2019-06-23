@@ -21,14 +21,14 @@ uint64_t posPawnMoves(Board* b, const int color, const int lsb)
 {
     uint64_t forward;
     if (color){
-        forward = getWhitePawnMoves(lsb) & (b->color[AV_WHITE] ^ b->color[BLACK]);
+        forward = getWhitePawnMoves(lsb) & (ALL ^ b->color[WHITE] ^ b->color[BLACK]);
         if (lsb < 16 && (POW2[8 + lsb] & b->allPieces))
             return getWhitePawnCaptures(lsb) & b->color[BLACK];
 
         return forward | (getWhitePawnCaptures(lsb) & b->color[BLACK]);
     }
     else{
-        forward = getBlackPawnMoves(lsb) & (b->color[AV_BLACK] ^ b->color[WHITE]);
+        forward = getBlackPawnMoves(lsb) & (ALL ^ b->color[BLACK] ^ b->color[WHITE]);
         
         if (lsb > 47 && (POW2[lsb - 8] & b->allPieces))
             return getBlackPawnCaptures(lsb) & b->color[WHITE];
