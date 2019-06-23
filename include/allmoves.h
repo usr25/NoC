@@ -1,0 +1,1 @@
+int allMoves(Board* b, Move* list, const int color);

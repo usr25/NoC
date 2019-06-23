@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 
-
 uint64_t posKingMoves(Board* b, const int color)
 {
     return getKingMoves(LSB_INDEX(b->piece[color][KING])) & b->color[color | 2];
@@ -250,41 +249,15 @@ int canCastle(Board* b, const int color)
 }
 Move castleKSide(const int color)
 {
-    Move m;
-    uint64_t from, to;
-    if (color)
-    {
-        from = 3;
-        to = 1;
-    }
-    else
-    {
-        from = 59;
-        to = 57;
-    }
-    
-    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 1};
+    const uint64_t from = 56 * (1 ^ color) + 3, to = 56 * (1 ^ color) + 1;
 
-    return m;
+    return (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 1};
 }
 Move castleQSide(const int color)
-{
-    Move m;
-    uint64_t from, to;
-    if (color)
-    {
-        from = 3;
-        to = 5;
-    }
-    else
-    {
-        from = 59;
-        to = 61;
-    }
-    
-    m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 2};
+{ 
+    const uint64_t from = 56 * (1 ^ color) + 3, to = 56 * (1 ^ color) + 5;
 
-    return m;
+    return (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 2};
 }
 
 
@@ -298,6 +271,7 @@ int checkInPosition(Board* b, const int lsb, const int kingsColor)
     if (b->piece[inverse][PAWN] & kingPawn(lsb, kingsColor)) return PAWN;
 
     if (b->piece[inverse][KNIGHT] & getKnightMoves(lsb)) return KNIGHT;
+    
     //TODO: Simplify this?
     if (b->piece[inverse][QUEEN] || b->piece[inverse][ROOK])
     {
@@ -320,18 +294,3 @@ int isInCheck(Board* b, const int kingsColor)
 {
     return checkInPosition(b, LSB_INDEX(b->piece[kingsColor][KING]), kingsColor);
 }
-
-/*
-//It is assumed that the king is in check
-//TODO: Not fully implemented, so far it kind of only detects available sqrs
-int isMate(Board* b, const int kingsColor)
-{
-    uint64_t posEscapes, numPawn, numQueen, numRook, numBish, numKnight;
-
-    if (kingsColor){
-        posEscapes = posWhiteKingMoves(b);
-        posEscapes &= ALL ^ posBlackKingMoves(b);
-        //Get each pow2 in pos escapes and see if it is in check
-    } 
-}
-*/

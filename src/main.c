@@ -43,5 +43,7 @@ int main(const int argc, char* const argv[])
 
     runTests();
 
+    printf("%llu\n", perftRecursive(defaultBoard(), 6, BLACK));
+
     return 0;
 }

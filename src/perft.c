@@ -2,6 +2,7 @@
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/allmoves.h"
 #include "../include/io.h"
 
 #include <stdio.h>

@@ -2,6 +2,7 @@
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/allmoves.h"
 #include "../include/io.h"
 #include "../include/perft.h"
 
@@ -305,15 +306,14 @@ int testBoardPawnMoves()
     int temp;
     History h;
     Board b;
-    Move w1, w2, b1, b2;
     int pawnMovesNoCapture = 1;
     for (int i = 0; i < 8; ++i)
     {
-        w1 = (Move) {.pieceThatMoves= PAWN, .from = i + 8, .to = i + 16};
-        w2 = (Move) {.pieceThatMoves= PAWN, .from = i + 16, .to = i + 24};
+        Move w1 = (Move) {.pieceThatMoves= PAWN, .from = i + 8, .to = i + 16};
+        Move w2 = (Move) {.pieceThatMoves= PAWN, .from = i + 16, .to = i + 24};
         
-        b1 = (Move) {.pieceThatMoves= PAWN, .from = 55 - i, .to = 47 - i};
-        b2 = (Move) {.pieceThatMoves= PAWN, .from = 47 - i, .to = 39 - i};
+        Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55 - i, .to = 47 - i};
+        Move b2 = (Move) {.pieceThatMoves= PAWN, .from = 47 - i, .to = 39 - i};
 
         b = defaultBoard();
         
@@ -337,8 +337,8 @@ int testBoardPawnMoves()
 
     for (int i = 0; i < 8; ++i)
     {
-        w1 = (Move) {.pieceThatMoves= PAWN, .from = 8 + i, .to = 48 + i};
-        b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i};
+        Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8 + i, .to = 48 + i};
+        Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i};
 
         b = defaultBoard();
         h = (History) {.color = WHITE};
@@ -364,8 +364,8 @@ int testBoardPawnMoves()
     }
 
     b = defaultBoard();
-    w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56};
-    b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7};
+    Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56};
+    Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7};
 
     h = (History) {.color = WHITE};
     makeMove(&b, w1, &h);
@@ -379,7 +379,6 @@ int testBoardPawnMoves()
 
 int testCastleNoCheck()
 {
-    Move move;
     History h;
     Board expected, b;
     
@@ -389,11 +388,11 @@ int testCastleNoCheck()
     int can = (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 1);
 
     h = (History) {.color = WHITE};
-    move = castleKSide(WHITE);
-    makeMove(&b, move, &h);
+    Move moveWK = castleKSide(WHITE);
+    makeMove(&b, moveWK, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/5RK1", "b", "-");
     int castleSuccessful = equal(&b, &expected);
-    undoMove(&b, move, &h);
+    undoMove(&b, moveWK, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/4K2R", "b", "K");
     castleSuccessful &= equal(&b, &expected);
 
@@ -403,11 +402,11 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
 
     h = (History) {.color = WHITE};
-    move = castleQSide(WHITE);
-    makeMove(&b, move, &h);
+    Move moveWQ = castleQSide(WHITE);
+    makeMove(&b, moveWQ, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/2KR4", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move, &h);
+    undoMove(&b, moveWQ, &h);
     expected = generateFromFen("8/8/8/8/8/8/8/R3K3", "b", "Q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -417,11 +416,11 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 1) && (canCastle(&b, WHITE) == 0);
 
     h = (History) {.color = BLACK};
-    move = castleKSide(BLACK);
-    makeMove(&b, move, &h);
+    Move moveBK = castleKSide(BLACK);
+    makeMove(&b, moveBK, &h);
     expected = generateFromFen("5rk1/8/8/8/8/8/8/8", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move, &h);
+    undoMove(&b, moveBK, &h);
     expected = generateFromFen("4k2r/8/8/8/8/8/8/8", "b", "k");
     castleSuccessful &= equal(&b, &expected);
 
@@ -431,11 +430,11 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
 
     h = (History) {.color = BLACK};
-    move = castleQSide(BLACK);
-    makeMove(&b, move, &h);
+    Move moveBQ = castleQSide(BLACK);
+    makeMove(&b, moveBQ, &h);
     expected = generateFromFen("2kr4/8/8/8/8/8/8/8", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move, &h);
+    undoMove(&b, moveBQ, &h);
     expected = generateFromFen("r3k3/8/8/8/8/8/8/8", "b", "q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -446,11 +445,11 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
 
     h = (History) {.color = WHITE};
-    move = castleQSide(WHITE);
-    makeMove(&b, move, &h);
+    Move moveWQ2 = castleQSide(WHITE);
+    makeMove(&b, moveWQ2, &h);
     expected = generateFromFen("1r6/8/8/8/8/8/8/2KR4", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move, &h);
+    undoMove(&b, moveWQ2, &h);
     expected = generateFromFen("1r6/8/8/8/8/8/8/R3K3", "b", "Q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -460,11 +459,11 @@ int testCastleNoCheck()
     can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
 
     h = (History) {.color = BLACK};
-    move = castleQSide(BLACK);
-    makeMove(&b, move, &h);
+    Move moveBQ2 = castleQSide(BLACK);
+    makeMove(&b, moveBQ2, &h);
     expected = generateFromFen("2kr4/8/8/8/8/8/8/1R6", "b", "-");
     castleSuccessful &= equal(&b, &expected);
-    undoMove(&b, move, &h);
+    undoMove(&b, moveBQ2, &h);
     expected = generateFromFen("r3k3/8/8/8/8/8/8/1R6", "b", "q");
     castleSuccessful &= equal(&b, &expected);
 
@@ -638,18 +637,40 @@ void slowTests()
     printf("Start depth 5: %d\n", perft(5, 0));
     printf("Start depth 6: %d\n", perft(6, 0));
 
+
     b = generateFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR", "b", "KQkq");
     printf("No pawns depth 5: %d\n", perftRecursive(b, 5, BLACK) == 191462298ULL);
+    
     b = generateFromFen("8/1p3k2/7K/8/2P5/8/8/8", "w", "-");
     printf("En passand + promotion: %d\n", perftRecursive(b, 8, WHITE) == 3558853ULL);
+    
     b = generateFromFen("r3k3/8/8/8/8/3b4/8/R3K2R", "b", "KQkq");
     printf("Castle: %d\n", perftRecursive(b, 5, BLACK) == 7288108ULL);
+    
     b = generateFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3", "w", "-");
     printf("Bish & Knight: %d\n", perftRecursive(b, 5, WHITE) == 48483119ULL);
+    
     b = generateFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3", "w", "-");
     printf("Queen: %d\n", perftRecursive(b, 6, WHITE) == 71878391ULL);
+    
     b = generateFromFen("8/8/8/3k1K3/8/8/8/8", "w", "-");
     printf("King: %d\n", perftRecursive(b, 9, WHITE) == 31356171ULL);
+
+
+    b = generateFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "w", "KQkq");
+    printf("Perfect 1: %d\n", perftRecursive(b, 6, WHITE) == 119060324ULL);
+    
+    b = generateFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R", "w", "KQkq");
+    printf("Perfect 2: %d\n", perftRecursive(b, 5, WHITE) == 193690690ULL);
+
+    b = generateFromFen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8", "w", "-");
+    printf("Perfect 3: %d\n", perftRecursive(b, 7, WHITE) == 178633661ULL);
+
+    b = generateFromFen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1", "w", "kq");
+    printf("Perfect 4: %d\n", perftRecursive(b, 6, WHITE) == 706045033ULL);
+
+    b = generateFromFen("1k6/1b6/8/8/7R/8/8/4K2R", "b", "K");
+    printf("Perfect 5: %d\n", perftRecursive(b, 5, BLACK) == 1063513ULL);
 }
 
 void runTests()
