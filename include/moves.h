@@ -26,7 +26,8 @@ uint64_t posRookMoves(Board* b, const int color, const int lsb);
 uint64_t posBishMoves(Board* b, const int color, const int lsb);
 uint64_t posQueenMoves(Board* b, const int color, const int lsb);
 
-int canCastle(Board* b, const int color);
+int canCastle(Board* b, const int color, const uint64_t forbidden);
+int canCastleCheck(Board* b, const int color); //Slower version if forbidden hasnt been calculated
 Move castleKSide(const int color);
 Move castleQSide(const int color);
 

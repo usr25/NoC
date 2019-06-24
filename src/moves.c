@@ -193,12 +193,14 @@ static inline uint64_t kingPawn(const int lsb, const int color)
     return color ? getWhitePawnCaptures(lsb) : getBlackPawnCaptures(lsb);
 }
 
-//TODO: Maybe use an array to simplify?
-int canCastle(Board* b, const int color)
+int canCastleCheck(Board* b, const int color)
 {
 
     int lsb, canK, canQ;
     uint64_t maskK, maskQ, rookK, rookQ;
+
+    //rookK = POW2[(1 ^ color) * 56  + 1];
+    //rookQ = POW2[(1 ^ color) * 56  + 7];
 
     if (color)
     {
@@ -243,6 +245,39 @@ int canCastle(Board* b, const int color)
             if (checkInPosition(b, lsb, color) != NO_PIECE)
                 canQ = 0;
         }
+    }
+
+    return (canQ << 1) | canK;
+}
+int canCastle(Board* b, const int color, const uint64_t forbidden)
+{
+    int lsb, canK, canQ;
+    uint64_t maskK, maskQ, rookK, rookQ;
+
+    uint64_t maskCheck = 0x30 * POW2[(1 ^ color) * 56];
+
+    //rookK = POW2[(1 ^ color) * 56];
+    //rookQ = POW2[(1 ^ color) * 56  + 7];
+
+    if (color)
+    {
+        maskK = C_MASK_WK;
+        maskQ = C_MASK_WQ;
+        rookK = 1;
+        rookQ = 128;
+
+        canK = (b->posInfo & WCASTLEK) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL) && ((maskK & forbidden) == 0ULL);
+        canQ = (b->posInfo & WCASTLEQ) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL) && ((maskCheck & forbidden) == 0ULL);
+    }
+    else
+    {
+        maskK = C_MASK_BK;
+        maskQ = C_MASK_BQ;
+        rookK = POW2[56];
+        rookQ = POW2[63];
+
+        canK = (b->posInfo & BCASTLEK) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL) && ((maskK & forbidden) == 0ULL);
+        canQ = (b->posInfo & BCASTLEQ) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL) && ((maskCheck & forbidden) == 0ULL);
     }
 
     return (canQ << 1) | canK;

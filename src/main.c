@@ -43,12 +43,7 @@ int main(const int argc, char* const argv[])
 
     runTests();
 
-    printf("%llu\n", perftTest(defaultBoard(), 1, WHITE));
-    printf("%llu\n", perftTest(defaultBoard(), 2, WHITE));
-    printf("%llu\n", perftTest(defaultBoard(), 3, WHITE));
-    printf("%llu\n", perftTest(defaultBoard(), 4, WHITE));
-    printf("%llu\n", perftTest(defaultBoard(), 5, WHITE));
-    printf("%llu\n", perftTest(defaultBoard(), 6, WHITE));
+    printf("%d\n", perftRecursive(defaultBoard(), 6, WHITE));
 
     return 0;
 }

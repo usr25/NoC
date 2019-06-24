@@ -385,7 +385,7 @@ int testCastleNoCheck()
     //White kingside
     b = generateFromFen("8/8/8/8/8/8/8/4K2R", "b", "K");
     int dataIsOk = b.posInfo == WCASTLEK;
-    int can = (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 1);
+    int can = (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 1);
 
     h = (History) {.color = WHITE};
     Move moveWK = castleKSide(WHITE);
@@ -399,7 +399,7 @@ int testCastleNoCheck()
     //White queenside
     b = generateFromFen("8/8/8/8/8/8/8/R3K3", "b", "Q");
     dataIsOk &= b.posInfo == WCASTLEQ;
-    can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
+    can &= (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 2);
 
     h = (History) {.color = WHITE};
     Move moveWQ = castleQSide(WHITE);
@@ -413,7 +413,7 @@ int testCastleNoCheck()
     //Black kingside
     b = generateFromFen("4k2r/8/8/8/8/8/8/8", "b", "k");
     dataIsOk &= b.posInfo == BCASTLEK;
-    can &= (canCastle(&b, BLACK) == 1) && (canCastle(&b, WHITE) == 0);
+    can &= (canCastleCheck(&b, BLACK) == 1) && (canCastleCheck(&b, WHITE) == 0);
 
     h = (History) {.color = BLACK};
     Move moveBK = castleKSide(BLACK);
@@ -427,7 +427,7 @@ int testCastleNoCheck()
     //Black queenside
     b = generateFromFen("r3k3/8/8/8/8/8/8/8", "b", "q");
     dataIsOk &= b.posInfo == BCASTLEQ;
-    can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
+    can &= (canCastleCheck(&b, BLACK) == 2) && (canCastleCheck(&b, WHITE) == 0);
 
     h = (History) {.color = BLACK};
     Move moveBQ = castleQSide(BLACK);
@@ -442,7 +442,7 @@ int testCastleNoCheck()
     //White
     b = generateFromFen("1r6/8/8/8/8/8/8/R3K3", "b", "Q");
     dataIsOk &= b.posInfo == WCASTLEQ;
-    can &= (canCastle(&b, BLACK) == 0) && (canCastle(&b, WHITE) == 2);
+    can &= (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 2);
 
     h = (History) {.color = WHITE};
     Move moveWQ2 = castleQSide(WHITE);
@@ -456,7 +456,7 @@ int testCastleNoCheck()
     //Black
     b = generateFromFen("r3k3/8/8/8/8/8/8/1R6", "b", "q");
     dataIsOk &= b.posInfo == BCASTLEQ;
-    can &= (canCastle(&b, BLACK) == 2) && (canCastle(&b, WHITE) == 0);
+    can &= (canCastleCheck(&b, BLACK) == 2) && (canCastleCheck(&b, WHITE) == 0);
 
     h = (History) {.color = BLACK};
     Move moveBQ2 = castleQSide(BLACK);
@@ -476,36 +476,36 @@ int testCastleCheck()
 
     //Kingside
     b = generateFromFen("8/8/8/8/8/8/8/4KP1R", "b", "KQkq");
-    white &= canCastle(&b, WHITE) == 0;
+    white &= canCastleCheck(&b, WHITE) == 0;
     b = generateFromFen("4r3/8/8/8/8/8/8/4K2R", "b", "KQkq");
-    white &= canCastle(&b, WHITE) == 0;
+    white &= canCastleCheck(&b, WHITE) == 0;
     b = generateFromFen("5r2/8/8/8/8/8/8/4K2R", "b", "KQkq");
-    white &= canCastle(&b, WHITE) == 0;
+    white &= canCastleCheck(&b, WHITE) == 0;
 
     //Queenside
     b = generateFromFen("8/8/8/8/8/8/8/RP2K3", "b", "KQkq");
-    white &= canCastle(&b, WHITE) == 0;
+    white &= canCastleCheck(&b, WHITE) == 0;
     b = generateFromFen("4r3/8/8/8/8/8/8/R3K3", "b", "KQkq");
-    white &= canCastle(&b, WHITE) == 0;
+    white &= canCastleCheck(&b, WHITE) == 0;
     b = generateFromFen("2r5/8/8/8/8/8/8/R3K3", "b", "KQkq");
-    white &= canCastle(&b, WHITE) == 0;
+    white &= canCastleCheck(&b, WHITE) == 0;
 
     int black = 1;
 
     b = generateFromFen("4k1pr/8/8/8/8/8/8/8", "b", "KQkq");
-    white &= canCastle(&b, BLACK) == 0;
+    white &= canCastleCheck(&b, BLACK) == 0;
     b = generateFromFen("4k2r/8/8/8/8/8/8/4R3", "b", "KQkq");
-    white &= canCastle(&b, BLACK) == 0;
+    white &= canCastleCheck(&b, BLACK) == 0;
     b = generateFromFen("4k2r/8/8/8/8/8/8/6R1", "b", "KQkq");
-    white &= canCastle(&b, BLACK) == 0;
+    white &= canCastleCheck(&b, BLACK) == 0;
 
     //Queenside
     b = generateFromFen("r1P1k3/8/8/8/8/8/8/8", "b", "KQkq");
-    white &= canCastle(&b, BLACK) == 0;
+    white &= canCastleCheck(&b, BLACK) == 0;
     b = generateFromFen("r3k3/8/8/8/8/8/8/4R3", "b", "KQkq");
-    white &= canCastle(&b, BLACK) == 0;
+    white &= canCastleCheck(&b, BLACK) == 0;
     b = generateFromFen("r3k3/8/8/8/8/8/8/2R5", "b", "KQkq");
-    white &= canCastle(&b, BLACK) == 0;
+    white &= canCastleCheck(&b, BLACK) == 0;
 
     return white && black;
 }
@@ -623,6 +623,7 @@ int testSimplePerft()
     b = generateFromFen("8/4P1K1/8/8/8/1k6/3p4/8", "w" ,"-");
     int promotion = 
         (perftRecursive(b, 1, WHITE) == 12ULL) && (perftRecursive(b, 2, WHITE) == 142ULL) && (perftRecursive(b, 3, WHITE) == 1788ULL);
+
 
     return startPos && noPawns && castle && bishAndKnight && queen && promotion;
 }

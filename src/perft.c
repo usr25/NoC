@@ -33,45 +33,25 @@ uint64_t results[] = {1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 11906
 //En passant -> 8/1p3k2/7K/8/2P5/8/8/8 w - -
 //4, 32, 185, 1382, 9120, 67430, 482124, 3558853 //WORKS ALL
 
-uint64_t perftTest(Board b, const int depth, const int color)
-{
-    Move moves[200];
-    if (depth == 1) return legalMoves(&b, moves, color);
-
-    History h = (History) {.color = color};
-    int numMoves, tot = 0;
-
-    numMoves = legalMoves(&b, moves, color);
-    
-    for (int i = 0; i < numMoves; ++i)
-    {        
-        makeMove(&b, moves[i], &h);
-        tot += perftTest(b, depth - 1, 1 ^ color);
-
-        undoMove(&b, moves[i], &h);
-    }
-    
-    return tot;
-}
-
 uint64_t perftRecursive(Board b, const int depth, const int color)
 {
-    if (depth == 0) return 1;
-
     Move moves[200];
     History h = (History) {.color = color};
     int numMoves, tot = 0;
+    numMoves = legalMoves(&b, moves, color);
 
-    numMoves = allMoves(&b, moves, color);
-    
-    for (int i = 0; i < numMoves; ++i)
-    {        
-        makeMove(&b, moves[i], &h);
-        if (isInCheck(&b, color) == NO_PIECE){
+    if (depth == 1)
+        tot = numMoves;
+    else if (depth == 0)
+        tot = 1;
+    else
+    {
+        for (int i = 0; i < numMoves; ++i)
+        {        
+            makeMove(&b, moves[i], &h);
             tot += perftRecursive(b, depth - 1, 1 ^ color);
+            undoMove(&b, moves[i], &h);
         }
-
-        undoMove(&b, moves[i], &h);
     }
     
     return tot;
@@ -82,8 +62,8 @@ int perft(int depth, int tree)
     if (depth == 0) return 1;
     
     Move moves[200];
-    History h = (History) {.color = WHITE};
-    Board b = defaultBoard();//generateFromFen("4k3/8/8/2P5/8/4K3/8/8", "w", "-");
+    Board b = defaultBoard();
+    History h = (History) {.color = b.posInfo & 1};
     int numMoves, tot = 0;
 
     numMoves = allMoves(&b, moves, b.posInfo & 1);
