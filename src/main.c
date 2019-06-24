@@ -13,11 +13,11 @@
 #include "../include/memoization.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/allmoves.h"
 #include "../include/perft.h"
 
 #include "../include/evaluation.h"
 #include "../include/io.h"
-
 
 void initializePOW2()
 {
@@ -43,7 +43,12 @@ int main(const int argc, char* const argv[])
 
     runTests();
 
-    printf("%llu\n", perftRecursive(defaultBoard(), 6, BLACK));
+    printf("%llu\n", perftTest(defaultBoard(), 1, WHITE));
+    printf("%llu\n", perftTest(defaultBoard(), 2, WHITE));
+    printf("%llu\n", perftTest(defaultBoard(), 3, WHITE));
+    printf("%llu\n", perftTest(defaultBoard(), 4, WHITE));
+    printf("%llu\n", perftTest(defaultBoard(), 5, WHITE));
+    printf("%llu\n", perftTest(defaultBoard(), 6, WHITE));
 
     return 0;
 }

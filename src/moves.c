@@ -249,17 +249,97 @@ int canCastle(Board* b, const int color)
 }
 Move castleKSide(const int color)
 {
-    const uint64_t from = 56 * (1 ^ color) + 3, to = 56 * (1 ^ color) + 1;
-
-    return (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 1};
+    return (Move) {.pieceThatMoves = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1};
 }
 Move castleQSide(const int color)
 { 
-    const uint64_t from = 56 * (1 ^ color) + 3, to = 56 * (1 ^ color) + 5;
-
-    return (Move) {.pieceThatMoves = KING, .from = from, .to = to, .castle = 2};
+    return (Move) {.pieceThatMoves = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2};
 }
 
+uint64_t controlledKingPawnKnight(Board* b, const int inverse)
+{
+    uint64_t temp, res = 0ULL;
+    int lsb;
+
+    res = getKingMoves(LSB_INDEX(b->piece[inverse][KING]));
+
+    temp = b->piece[inverse][PAWN];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= inverse ? getWhitePawnCaptures(lsb) : getBlackPawnCaptures(lsb);
+    }
+    temp = b->piece[inverse][KNIGHT];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= getKnightMoves(lsb);
+    }
+
+    return res;
+}
+
+uint64_t forbiddenSquares(Board* b, const int inverse)
+{
+    uint64_t temp, res = 0ULL;
+    int lsb;
+    
+    temp = b->piece[inverse][QUEEN];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= kingStraight(lsb, b->allPieces) | kingDiagonal(lsb, b->allPieces);
+    }
+    temp = b->piece[inverse][ROOK];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= kingStraight(lsb, b->allPieces);
+    }
+    temp = b->piece[inverse][BISH];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= kingDiagonal(lsb, b->allPieces);
+    }
+
+    return res;
+}
+//All the squares the pieces of color attack if they could xray through the opposite pieces
+uint64_t xRaySquares(Board* b, const int inverse)
+{
+    uint64_t temp, res = 0ULL;
+    int lsb;
+    
+    temp = b->piece[inverse][QUEEN];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= kingStraight(lsb, b->color[inverse]) | kingDiagonal(lsb, b->color[inverse]);
+    }
+    temp = b->piece[inverse][ROOK];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= kingStraight(lsb, b->color[inverse]);
+    }
+    temp = b->piece[inverse][BISH];
+    while(temp)
+    {
+        lsb = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        res |= kingDiagonal(lsb, b->color[inverse]);
+    }
+
+    return res;
+}
 
 int checkInPosition(Board* b, const int lsb, const int kingsColor)
 {

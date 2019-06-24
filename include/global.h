@@ -1,4 +1,4 @@
-#define ALL 0xffffffffffffffff
+#define ALL 0xffffffffffffffffULL
 
 #define BOOL(x) ((x)?"true":"false")
 #define REMOVE_LSB(bb) bb &= bb - 1
