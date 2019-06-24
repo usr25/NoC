@@ -63,14 +63,102 @@ void drawBitboard(uint64_t b)
     }
     printf("\n");
 }
+//TODO: Fix this
 void drawMove(Move m)
 {
-    char a = 'a' + (m.from % 8);
+    char a = 'h' - (m.from % 8);
     char a1 = '1' + (m.from / 8);
-    char b = 'a' + (m.to % 8);
+    char b = 'h' - (m.to % 8);
     char b1 = '1' + (m.to / 8);
 
     printf("%c%c%c%c", a, a1, b, b1);
+}
+
+void generateFen(Board b, char* c)
+{
+    int counter = 0;
+    for (int i = 7; i >= 0; --i)
+    {
+        int blankSquares = 0;
+
+        for (int j = 7; j >= 0; --j)
+        {
+            uint64_t pos = 1ULL << ((i << 3) + j);
+            if (b.color[WHITE] & pos)
+            {
+                if (blankSquares){
+                    c[counter++] = '0' + blankSquares;
+                    blankSquares = 0;
+                }
+
+                if (b.piece[WHITE][KING] & pos)
+                    c[counter++] = 'K';
+                else if (b.piece[WHITE][QUEEN] & pos)
+                    c[counter++] = 'Q';
+                else if (b.piece[WHITE][ROOK] & pos)
+                    c[counter++] = 'R';
+                else if (b.piece[WHITE][BISH] & pos)
+                    c[counter++] = 'B';
+                else if (b.piece[WHITE][KNIGHT] & pos)
+                    c[counter++] = 'N';
+                else if (b.piece[WHITE][PAWN] & pos)
+                    c[counter++] = 'P';
+            }
+            else if(b.color[BLACK] & pos)
+            {
+                if(blankSquares){
+                    c[counter++] = '0' + blankSquares;
+                    blankSquares = 0;
+                }
+
+                if (b.piece[BLACK][KING] & pos)
+                    c[counter++] = 'k';
+                else if (b.piece[BLACK][QUEEN] & pos)
+                    c[counter++] = 'q';
+                else if (b.piece[BLACK][ROOK] & pos)
+                    c[counter++] = 'r';
+                else if (b.piece[BLACK][BISH] & pos)
+                    c[counter++] = 'b';
+                else if (b.piece[BLACK][KNIGHT] & pos)
+                    c[counter++] = 'n';
+                else if (b.piece[BLACK][PAWN] & pos)
+                    c[counter++] = 'p';
+            }
+            else
+                blankSquares++;
+        }
+        if (blankSquares){
+            c[counter++] = '0' + blankSquares;
+            blankSquares = 0;
+        }
+
+        if (i != 0)
+            c[counter++] = '/';
+    }
+
+    c[counter++] = ' ';
+    c[counter++] = (b.posInfo & 1) ? 'w' : 'b';
+    c[counter++] = ' ';
+
+    if(b.posInfo & 0b11110)
+    {
+        if(b.posInfo & WCASTLEK) c[counter++] = 'K';
+        if(b.posInfo & WCASTLEQ) c[counter++] = 'Q';
+        if(b.posInfo & BCASTLEK) c[counter++] = 'k';
+        if(b.posInfo & BCASTLEQ) c[counter++] = 'q';
+    }
+    else
+        c[counter++] = '-';
+
+    c[counter++] = ' ';
+
+    if (b.enPass)
+    {
+        c[counter++] = 'h' - (b.enPass % 8);
+        c[counter++] = '1' + (b.enPass / 8);
+    }
+    else
+        c[counter++] = '-';
 }
 
 int getNextMove()

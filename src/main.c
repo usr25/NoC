@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -44,6 +45,12 @@ int main(const int argc, char* const argv[])
     runTests();
 
     printf("%d\n", perftRecursive(defaultBoard(), 6, WHITE));
+
+    char* c = malloc(256);
+    Board b = generateFromFen("rn3b1r/p1pppp1p/1N4p1/2qkNK2/8/3Q4/PPP3PP/R4B1R", "w", "KQkq");
+    b.enPass = 8;
+    generateFen(b, c);
+    printf("%s\n", c);
 
     return 0;
 }

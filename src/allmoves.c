@@ -134,7 +134,7 @@ uint64_t pinnedPieces(Board* b, const int color)
     1- Trace moves from the queen as if it were a queen but separating each dir
     2- Only pay attention to the lines that the first intersection is with a piece of the king's color
     3- Retrace from that piece in the direction and detect if there is a Rook / Bish / Queen
-    4- Return a bitboard of 1s where each 1 is a pinned piece, this will be used as a mask
+    4- Return a bitboard of 1s where each 1 is a pinned piece
     */
     uint64_t res = 0;
     uint64_t retrace;
