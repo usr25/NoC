@@ -702,6 +702,4 @@ void runTests()
 
     //Perft
     printf("[+] Perft: %d\n",           testSimplePerft());
-
-    //slowTests();
 }

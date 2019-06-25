@@ -43,14 +43,10 @@ int main(const int argc, char* const argv[])
     printf("[+] Pieces are valid: %s\n", BOOL(validPieces(start)));
 
     runTests();
+    //slowTests();
 
-    printf("%d\n", perftRecursive(defaultBoard(), 6, WHITE));
-
-    char* c = malloc(256);
-    Board b = generateFromFen("rn3b1r/p1pppp1p/1N4p1/2qkNK2/8/3Q4/PPP3PP/R4B1R", "w", "KQkq");
-    b.enPass = 8;
-    generateFen(b, c);
-    printf("%s\n", c);
+    //printf("%d\n", perft(5, 0));
+    //printf("%d\n", perft(6, 0));
 
     return 0;
 }

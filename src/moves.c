@@ -48,26 +48,22 @@ uint64_t posRookMoves(Board* b, const int color, const int lsb)
 
     if (inteUp){
         obstacle = LSB_INDEX(inteUp);
-        res |= getUpMoves(lsb) ^ getUpMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getUpMoves(lsb) ^ getUpMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getUpMoves(lsb);
     
     if (inteDown){
         obstacle = MSB_INDEX(inteDown);
-        res |= getDownMoves(lsb) ^ getDownMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getDownMoves(lsb) ^ getDownMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getDownMoves(lsb);
     
     if (inteRight){
         obstacle = MSB_INDEX(inteRight);
-        res |= getRightMoves(lsb) ^ getRightMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getRightMoves(lsb) ^ getRightMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getRightMoves(lsb);
     
     if (inteLeft){
         obstacle = LSB_INDEX(inteLeft);
-        res |= getLeftMoves(lsb) ^ getLeftMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getLeftMoves(lsb) ^ getLeftMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getLeftMoves(lsb);
 
     return res;
@@ -85,31 +81,27 @@ uint64_t posBishMoves(Board* b, const int color, const int lsb)
 
     if (inteUpRight){
         obstacle = LSB_INDEX(inteUpRight);
-        res |= getUpRightMoves(lsb) ^ getUpRightMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getUpRightMoves(lsb) ^ getUpRightMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getUpRightMoves(lsb);
     
     if (inteUpLeft){
         obstacle = LSB_INDEX(inteUpLeft);
-        res |= getUpLeftMoves(lsb) ^ getUpLeftMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getUpLeftMoves(lsb) ^ getUpLeftMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getUpLeftMoves(lsb);
     
     if (inteDownRight){
         obstacle = MSB_INDEX(inteDownRight);
-        res |= getDownRightMoves(lsb) ^ getDownRightMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getDownRightMoves(lsb) ^ getDownRightMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getDownRightMoves(lsb);
     
     if (inteDownLeft){
         obstacle = MSB_INDEX(inteDownLeft);
-        res |= getDownLeftMoves(lsb) ^ getDownLeftMoves(obstacle);
-        res ^= POW2[obstacle] & b->color[color];
+        res |= getDownLeftMoves(lsb) ^ getDownLeftMoves(obstacle) ^ (POW2[obstacle] & b->color[color]);
     } else res |= getDownLeftMoves(lsb);
 
     return res;
 }
-uint64_t posQueenMoves(Board* b, const int color, const int lsb)
+inline uint64_t posQueenMoves(Board* b, const int color, const int lsb)
 {
     return posBishMoves(b, color, lsb) | posRookMoves(b, color, lsb);
 }
@@ -117,13 +109,6 @@ uint64_t posQueenMoves(Board* b, const int color, const int lsb)
 
 uint64_t kingStraight(const int lsb, const uint64_t allPieces)
 {
-    /*
-    const uint64_t upMoves = getUpMoves(lsb);
-    const uint64_t downMoves = getDownMoves(lsb);
-    const uint64_t rightMoves = getRightMoves(lsb);
-    const uint64_t leftMoves = getLeftMoves(lsb);
-    */
-
     const uint64_t inteUp = getUpMoves(lsb) & allPieces;
     const uint64_t inteDown = getDownMoves(lsb) & allPieces;
     const uint64_t inteRight = getRightMoves(lsb) & allPieces;
@@ -164,7 +149,6 @@ uint64_t kingDiagonal(const int lsb, const uint64_t allPieces)
     uint64_t res = 0;
     int obstacle;
 
-
     if (inteUpRight){
         obstacle = LSB_INDEX(inteUpRight);
         res |= getUpRightMoves(lsb) ^ getUpRightMoves(obstacle);
@@ -198,9 +182,6 @@ int canCastleCheck(Board* b, const int color)
 
     int lsb, canK, canQ;
     uint64_t maskK, maskQ, rookK, rookQ;
-
-    //rookK = POW2[(1 ^ color) * 56  + 1];
-    //rookQ = POW2[(1 ^ color) * 56  + 7];
 
     if (color)
     {
@@ -249,15 +230,12 @@ int canCastleCheck(Board* b, const int color)
 
     return (canQ << 1) | canK;
 }
-int canCastle(Board* b, const int color, const uint64_t forbidden)
+int canCastle(Board* b, const int color, const uint64_t forbidden) //Faster version, but forbidden has to be calculated
 {
     int lsb, canK, canQ;
     uint64_t maskK, maskQ, rookK, rookQ;
 
     uint64_t maskCheck = 0x30 * POW2[(1 ^ color) * 56];
-
-    //rookK = POW2[(1 ^ color) * 56];
-    //rookQ = POW2[(1 ^ color) * 56  + 7];
 
     if (color)
     {
@@ -282,11 +260,11 @@ int canCastle(Board* b, const int color, const uint64_t forbidden)
 
     return (canQ << 1) | canK;
 }
-Move castleKSide(const int color)
+inline Move castleKSide(const int color)
 {
     return (Move) {.pieceThatMoves = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1};
 }
-Move castleQSide(const int color)
+inline Move castleQSide(const int color)
 { 
     return (Move) {.pieceThatMoves = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2};
 }
@@ -382,9 +360,7 @@ int checkInPosition(Board* b, const int lsb, const int kingsColor)
     const int inverse = 1 ^ kingsColor;
 
     if (b->piece[inverse][KING] & getKingMoves(lsb)) return KING;
-    
     if (b->piece[inverse][PAWN] & kingPawn(lsb, kingsColor)) return PAWN;
-
     if (b->piece[inverse][KNIGHT] & getKnightMoves(lsb)) return KNIGHT;
     
     //TODO: Simplify this?
@@ -405,7 +381,7 @@ int checkInPosition(Board* b, const int lsb, const int kingsColor)
 
     return NO_PIECE;
 }
-int isInCheck(Board* b, const int kingsColor)
+inline int isInCheck(Board* b, const int kingsColor)
 {
     return checkInPosition(b, LSB_INDEX(b->piece[kingsColor][KING]), kingsColor);
 }
