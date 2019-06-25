@@ -11,7 +11,6 @@ typedef struct
 typedef struct
 {
     int pieceCaptured;
-    int color;
 
     //Data regarding the Board struct, to make it easier to save
     uint64_t allPieces;

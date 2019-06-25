@@ -236,10 +236,10 @@ uint64_t pinnedPieces(Board* b, const int color)
     return res;
 }
 
-static inline int moveIsValid(Board* b, Move m, History h)
+inline int moveIsValid(Board* b, Move m, History h)
 {
     makeMove(b, m, &h);
-    int chk = isInCheck(b, h.color);
+    int chk = isInCheck(b, 1 ^ b->turn);
     undoMove(b, m, &h);
     return chk == NO_PIECE;
 }
@@ -248,7 +248,7 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
 {
     int numMoves = 0, from, to;
     uint64_t temp, tempMoves;
-    History h = (History) {.color = color};
+    History h;
     Move m;
 
     tempMoves = posKingMoves(b, color) & (ALL ^ forbidden);
@@ -369,7 +369,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
 {
     int numMoves = 0, from, to;
     uint64_t temp, tempMoves, isPinned;
-    History h = (History) {.color = color};
+    History h;
     
     const uint64_t pinned = pinnedPieces(b, color);
 
@@ -547,7 +547,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
 int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
 {
     int numMoves = 0;
-    History h = (History) {.color = color};
+    History h;
     Move moves[200];
 
     int numAllMoves = allMoves(b, moves, color);
@@ -562,17 +562,17 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
 
 int legalMoves(Board* b, Move* list, const int color)
 {
-    int kingIndex = LSB_INDEX(b->piece[color][KING]);
+    int kingIndex = LSB_INDEX(b->piece[b->turn][KING]);
     uint64_t temp, tempMoves;
-    uint64_t kingPawnKnight = controlledKingPawnKnight(b, 1 ^ color);
-    uint64_t xRay = xRaySquares(b, 1 ^ color) | kingPawnKnight;
-    uint64_t forbidden = forbiddenSquares(b, 1 ^ color) | kingPawnKnight;
+    uint64_t kingPawnKnight = controlledKingPawnKnight(b, 1 ^ b->turn);
+    uint64_t xRay = xRaySquares(b, 1 ^ b->turn) | kingPawnKnight;
+    uint64_t forbidden = forbiddenSquares(b, 1 ^ b->turn) | kingPawnKnight;
 
     
-    if ((xRay & b->piece[color][KING]) == 0ULL)//The king isnt in check and even if a piece moves he wont be
-        return movesKingFree(b, list, color, forbidden);
-    else if((forbidden & b->piece[color][KING]) == 0ULL) //The king isnt in check but if a piece moves he will be
-        return movesPinnedPiece(b, list, color, forbidden);
+    if ((xRay & b->piece[b->turn][KING]) == 0ULL)//The king isnt in check and even if a piece moves he wont be
+        return movesKingFree(b, list, b->turn, forbidden);
+    else if((forbidden & b->piece[b->turn][KING]) == 0ULL) //The king isnt in check but if a piece moves he will be
+        return movesPinnedPiece(b, list, b->turn, forbidden);
     else
-        return movesCheck(b, list, color, forbidden);
+        return movesCheck(b, list, b->turn, forbidden);
 }

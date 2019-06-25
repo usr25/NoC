@@ -26,13 +26,10 @@ static inline int kingMoved(const int color)
 static inline int rookMoved(const int color, const int from)
 {
     if (from == 56 * (1 ^ color))
-    {
         return 0b111111 ^ (1 << ((color << 1) + 1));
-    }
+
     else if (from == 56 * (1 ^ color) + 7)
-    {
         return 0b111111 ^ (2 << ((color << 1) + 1));
-    }
 
     return 0b111111;
 }
@@ -102,52 +99,53 @@ void makeMove(Board* b, Move move, History* h)
     h->allPieces = b->allPieces;
     h->enPass = b->enPass;
 
-    if (move.pieceThatMoves == PAWN && move.to - move.from == (2 * h->color - 1) * 16)
+    if (move.pieceThatMoves == PAWN && move.to - move.from == (2 * b->turn - 1) * 16)
         b->enPass = move.to;
     else
         b->enPass = 0;
 
     if (move.enPass)
     {
-        moveFrom(b, POW2[move.from], PAWN, h->color);
-        moveTo(b, POW2[move.to], PAWN, h->color);
+        moveFrom(b, POW2[move.from], PAWN, b->turn);
+        moveTo(b, POW2[move.to], PAWN, b->turn);
         
-        moveFrom(b, POW2[move.enPass], PAWN, 1 ^ h->color);
+        moveFrom(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
     }
     else if (move.castle)
     {
-        makeCastle(b, move, h->color);
+        makeCastle(b, move, b->turn);
     }
     else
     {
         //To remove ability to castle
         if (move.pieceThatMoves == KING)
-            b->posInfo &= kingMoved(h->color);
+            b->posInfo &= kingMoved(b->turn);
         if (move.pieceThatMoves == ROOK)
-            b->posInfo &= rookMoved(h->color, move.from);
+            b->posInfo &= rookMoved(b->turn, move.from);
 
         const uint64_t toBit = POW2[move.to];
 
-        moveFrom(b, POW2[move.from], move.pieceThatMoves, h->color);
+        moveFrom(b, POW2[move.from], move.pieceThatMoves, b->turn);
 
         if (move.promotion && move.pieceThatMoves == PAWN)
-            moveTo(b, toBit, move.promotion, h->color);
+            moveTo(b, toBit, move.promotion, b->turn);
         else
-            moveTo(b, toBit, move.pieceThatMoves, h->color);
+            moveTo(b, toBit, move.pieceThatMoves, b->turn);
 
-        h->pieceCaptured = pieceAt(b, toBit, 1 ^ h->color);
+        h->pieceCaptured = pieceAt(b, toBit, 1 ^ b->turn);
         if (h->pieceCaptured != NO_PIECE)
         {
-            moveFrom(b, toBit, h->pieceCaptured, 1 ^ h->color);
+            moveFrom(b, toBit, h->pieceCaptured, 1 ^ b->turn);
 
-            if (h->pieceCaptured == ROOK && move.to == 56 * h->color)
-                b->posInfo &= 0b111111 ^ (1 << ((h->color << 1) + 1));
-            else if (h->pieceCaptured == ROOK && move.to == 56 * h->color + 7)
-                b->posInfo &= 0b111111 ^ (2 << ((h->color << 1) + 1));
+            if (h->pieceCaptured == ROOK && move.to == 56 * b->turn)
+                b->posInfo &= 0b111110 ^ (1 << (((1 ^ b->turn) << 1) + 1));
+            else if (h->pieceCaptured == ROOK && move.to == 56 * b->turn + 7)
+                b->posInfo &= 0b111110 ^ (2 << (((1 ^ b->turn) << 1) + 1));
         }
     }
     
     b->allPieces = b->color[WHITE] | b->color[BLACK];
+    b->turn ^= 1;
 }
 
 void undoMove(Board* b, Move move, History* h)
@@ -157,30 +155,31 @@ void undoMove(Board* b, Move move, History* h)
     b->allPieces = h->allPieces;
     b->enPass = h->enPass;
     
+    b->turn ^= 1;
+    
     if (move.castle)
     {
-        undoCastle(b, move, h->color);
-        return;
+        undoCastle(b, move, b->turn);
     }
     else if(move.enPass)
     {
-        moveFrom(b, POW2[move.to], PAWN, h->color);
-        moveTo(b, POW2[move.from], PAWN, h->color);
+        moveFrom(b, POW2[move.to], PAWN, b->turn);
+        moveTo(b, POW2[move.from], PAWN, b->turn);
 
-        moveTo(b, POW2[move.enPass], PAWN, 1 ^ h->color);
+        moveTo(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
     }
     else
     {
         const uint64_t toBit = POW2[move.to];
 
-        moveTo(b, POW2[move.from], move.pieceThatMoves, h->color);
+        moveTo(b, POW2[move.from], move.pieceThatMoves, b->turn);
 
         if (move.promotion && move.pieceThatMoves == PAWN)
-            moveFrom(b, toBit, move.promotion, h->color);
+            moveFrom(b, toBit, move.promotion, b->turn);
         else
-            moveFrom(b, toBit, move.pieceThatMoves, h->color);
+            moveFrom(b, toBit, move.pieceThatMoves, b->turn);
 
         if (h->pieceCaptured != NO_PIECE)
-            moveTo(b, toBit, h->pieceCaptured, 1 ^ h->color);
+            moveTo(b, toBit, h->pieceCaptured, 1 ^ b->turn);
     }
 }

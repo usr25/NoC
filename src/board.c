@@ -133,7 +133,8 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
         }
     }
 
-    b.posInfo = castleInfo | (toPlay[0] == 'w');
+    b.posInfo = castleInfo;
+    b.turn = toPlay[0] == 'w';
 
     return b;
 }
@@ -161,8 +162,9 @@ Board defaultBoard()
     b.color[AV_BLACK] = ALL ^ INITIAL_BPIECES;
     b.color[AV_WHITE] = ALL ^ INITIAL_WPIECES;
 
-    b.posInfo =  0b11111;
+    b.posInfo =  0b11110;
     b.allPieces = INITIAL_WPIECES | INITIAL_BPIECES;
+    b.turn = WHITE;
 
     return b;
 }
@@ -182,7 +184,9 @@ int equal(Board* a, Board* b)
         }
     }
 
-    return data && pieces;
+    int turn = a->turn == b->turn;
+
+    return data && pieces && turn;
 }
 
 Board duplicate(Board b)
@@ -200,6 +204,7 @@ Board duplicate(Board b)
 
     a.posInfo = b.posInfo;
     a.allPieces = b.allPieces;
+    a.turn = b.turn;
 
     return a;
 

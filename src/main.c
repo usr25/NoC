@@ -5,7 +5,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -45,8 +44,7 @@ int main(const int argc, char* const argv[])
     runTests();
     //slowTests();
 
-    //printf("%d\n", perft(5, 0));
-    //printf("%d\n", perft(6, 0));
+    printf("%d\n", perft(6, 1));
 
     return 0;
 }

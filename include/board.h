@@ -8,10 +8,10 @@ typedef struct
 
     uint64_t allPieces;
 
+    int turn;
     int posInfo;
     int enPass; //0 by default, otherwise it is the index of the pawn that just moved
 } Board;
-
 
 
 Board generateFromFen(char* const fen, char* const toPlay, char* const castle);
