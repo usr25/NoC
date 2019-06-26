@@ -277,6 +277,58 @@ int testChecks()
     return white && black;
 }
 
+int testCheckInterfTiles()
+{
+    Board b;
+    AttacksOnK att;
+    uint64_t expected;
+
+    int emptyBoard = 1;
+    b = generateFromFen("8/8/2Q3Q1/8/2R1K1B1/8/2R3B1/8", "w", "-");
+    att = getCheckTiles(&b, WHITE);
+    emptyBoard &= att.tiles == 0ULL && att.num == 0;
+    b = generateFromFen("8/8/2q3q1/8/2r1k1b1/8/2r3b1/8", "b", "-");
+    att = getCheckTiles(&b, BLACK);
+    emptyBoard &= att.tiles == 0ULL && att.num == 0;
+
+    int slidingPieces = 1;
+    expected = 37470100259328ULL;
+
+    b = generateFromFen("8/8/2q3q1/8/2r1K1b1/8/2r3b1/8", "w", "-");
+    att = getCheckTiles(&b, WHITE);
+    slidingPieces &= att.tiles == expected && att.num == 4;
+    b = generateFromFen("8/8/2Q3Q1/8/2R1k1B1/8/2R3B1/8", "b", "-");
+    att = getCheckTiles(&b, BLACK);
+    slidingPieces &= att.tiles == expected && att.num == 4;
+
+    int pawns = 1;
+    b = generateFromFen("8/8/8/3P1p2/4K3/3p1P2/8/8", "w", "-");
+    att = getCheckTiles(&b, WHITE);
+    pawns &= att.tiles == 17179869184ULL && att.num == 1;
+    b = generateFromFen("8/8/8/3p1P2/4k3/3P1p2/8/8", "b", "-");
+    att = getCheckTiles(&b, BLACK);
+    pawns &= att.tiles == 1048576ULL && att.num == 1;
+
+    int knights = 1;
+    expected = 4535485469696ULL;
+    b = generateFromFen("8/8/3N1n2/2n3N1/4K3/2N3N1/3n1n2/8", "w", "-");
+    att = getCheckTiles(&b, WHITE);
+    knights &= att.tiles == expected && att.num == 4;
+    b = generateFromFen("8/8/3n1N2/2N3n1/4k3/2n3n1/3N1N2/8", "b", "-");
+    att = getCheckTiles(&b, BLACK);
+    knights &= att.tiles == expected && att.num == 4;
+
+    int misc = 1;
+    b = generateFromFen("q7/1b5b/2Qq4/5P2/1bb1K1Qr/3r4/2rp1qQ1/7b", "w", "-");
+    att = getCheckTiles(&b, WHITE);
+    misc &= att.tiles == 0ULL && att.num == 0;
+    b = generateFromFen("q7/1B5B/2qQ4/5p2/1BB1k1qR/3R4/2RP1Qq1/7B", "b", "-");
+    att = getCheckTiles(&b, BLACK);
+    misc &= att.tiles == 0ULL && att.num == 0;
+
+    return 1;
+}
+
 int testUndoMoves()
 {
     
@@ -513,7 +565,7 @@ int testStartMoveListing()
     Board b = defaultBoard();
     Move moves[100];
 
-    int numMovesWhite = allMoves(&b, moves, 1);
+    int numMovesWhite = legalMoves(&b, moves, WHITE);
     int whiteMovesAreAccurate = 1;
     for (int i = 0; i < 8; ++i)
     {
@@ -528,11 +580,13 @@ int testStartMoveListing()
     whiteKnight &= (moves[16].pieceThatMoves == KNIGHT) && (moves[17].pieceThatMoves == KNIGHT) && (moves[18].pieceThatMoves == KNIGHT) && (moves[19].pieceThatMoves == KNIGHT);
     whiteKnight &= (moves[16].from == moves[17].from) && (moves[18].from == moves[19].from);
 
-    int numMovesBlack = allMoves(&b, moves, 0);
+    b.turn ^= 1;
+    int numMovesBlack = legalMoves(&b, moves, BLACK);
     int blackMovesAreAccurate = 1;
+    
     for (int i = 0; i < 8; ++i)
     {
-        blackMovesAreAccurate &= (moves[2*i].pieceThatMoves == PAWN) && (moves[2*i].from == 55 - (7 -i));
+        blackMovesAreAccurate &= (moves[2*i].pieceThatMoves == PAWN) && (moves[2*i].from == 55 - (7 - i));
         blackMovesAreAccurate &= (moves[2*i + 1].pieceThatMoves == PAWN) && (moves[2*i + 1].from == 55 - (7 - i));
         blackMovesAreAccurate &= moves[2*i + 1].to != moves[2*i].to;
         blackMovesAreAccurate &= (moves[2*i].to == 47 - (7 - i)) || (moves[2*i + 1].to == 47 - (7 - i));
@@ -555,8 +609,8 @@ int testPromotion()
 
     b = generateFromFen("8/4P1K1/8/8/8/1k6/3p4/8", "w" ,"-");
 
-    int numMovesB = allMoves(&b, moves, BLACK);
-    int numMovesW = allMoves(&b, moves, WHITE);
+    int numMovesB = legalMoves(&b, moves, BLACK);
+    int numMovesW = legalMoves(&b, moves, WHITE);
 
     int correctNum = (numMovesW == 12) && (numMovesB == 12);
     int piecesAddUp = 1;
@@ -685,6 +739,7 @@ void runTests()
     
     //Checks
     printf("[+] Checks: %d\n",          testChecks());
+    printf("[+] CheckInterfTiles: %d\n",testCheckInterfTiles());
 
     //Make Moves
     printf("[+] Undo moves: %d\n",      testUndoMoves());

@@ -18,6 +18,12 @@ typedef struct
     int enPass;
 }History;
 
+typedef struct
+{
+    uint64_t tiles;
+    int num;
+}AttacksOnK;
+
 uint64_t posKingMoves(Board* b, const int color);
 uint64_t posKnightMoves(Board* b, const int color, const int lsb);
 uint64_t posPawnMoves(Board* b, const int color, const int lsb);
@@ -33,5 +39,6 @@ Move castleQSide(const int color);
 uint64_t controlledKingPawnKnight(Board* b, const int inverse);
 uint64_t forbiddenSquares(Board* b, const int inverse);
 uint64_t xRaySquares(Board* b, const int inverse);
+AttacksOnK getCheckTiles(Board* b, const int color);
 int isInCheck(Board* b, const int kingsColor);
 int checkInPosition(Board* b, const int lsb, const int kingsColor);
