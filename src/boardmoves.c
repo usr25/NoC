@@ -1,3 +1,8 @@
+/* boardmoves.c
+ * In charge of making changes to the actual board.
+ * makeMove, undoMove are the most important functions
+ */
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -34,13 +39,13 @@ static inline int rookMoved(const int color, const int from)
     return 0b111111;
 }
 
-static inline void moveTo(Board* b, const uint64_t to, const int piece, const int color)
+static inline void setBit(Board* b, const uint64_t to, const int piece, const int color)
 {
     b->piece[color][piece] |= to;
     b->color[color] |= to;
     b->color[color | 2] ^= to;
 }
-static inline void moveFrom(Board* b, const uint64_t from, const int piece, const int color)
+static inline void unsetBit(Board* b, const uint64_t from, const int piece, const int color)
 {
     b->piece[color][piece] ^= from;
     b->color[color] ^= from;
@@ -51,8 +56,6 @@ static inline void moveFrom(Board* b, const uint64_t from, const int piece, cons
 static void makeCastle(Board* b, Move move, const int color)
 {
     uint64_t fromRook, toRook;
-
-    b->posInfo &= kingMoved(color);
 
     if (move.castle & 1) //Kingside
     {
@@ -65,10 +68,9 @@ static void makeCastle(Board* b, Move move, const int color)
         toRook = POW2[move.to - 1];
     }
 
-    moveFrom(b, POW2[move.from], KING, color);
-    moveFrom(b, fromRook, ROOK, color);
-    moveTo(b, POW2[move.to], KING, color);
-    moveTo(b, toRook, ROOK, color);
+    unsetBit(b, fromRook, ROOK, color);
+    setBit(b, POW2[move.to], KING, color);
+    setBit(b, toRook, ROOK, color);
 }
 static void undoCastle(Board* b, Move move, const int color)
 {
@@ -86,100 +88,113 @@ static void undoCastle(Board* b, Move move, const int color)
         toRook = POW2[move.to - 1];
     }
 
-    moveFrom(b, toKing, KING, color);
-    moveFrom(b, toRook, ROOK, color);
-    moveTo(b, fromKing, KING, color);
-    moveTo(b, fromRook, ROOK, color);
+    unsetBit(b, toKing, KING, color);
+    unsetBit(b, toRook, ROOK, color);
+    setBit(b, fromRook, ROOK, color);
 }
 
+//Alters the board to make a move
 void makeMove(Board* b, Move move, History* h)
 {
+    const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
+
     //Save the data
     h->posInfo = b->posInfo;
     h->allPieces = b->allPieces;
     h->enPass = b->enPass;
 
-    if (move.pieceThatMoves == PAWN && move.to - move.from == (2 * b->turn - 1) * 16)
-        b->enPass = move.to;
-    else
-        b->enPass = 0;
-
-    if (move.enPass)
+    unsetBit(b, fromBit, move.pieceThatMoves, b->turn);
+    b->enPass = 0;
+    switch(move.pieceThatMoves)
     {
-        moveFrom(b, POW2[move.from], PAWN, b->turn);
-        moveTo(b, POW2[move.to], PAWN, b->turn);
-        
-        moveFrom(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
-    }
-    else if (move.castle)
-    {
-        makeCastle(b, move, b->turn);
-    }
-    else
-    {
-        //To remove ability to castle
-        if (move.pieceThatMoves == KING)
-            b->posInfo &= kingMoved(b->turn);
-        if (move.pieceThatMoves == ROOK)
-            b->posInfo &= rookMoved(b->turn, move.from);
-
-        const uint64_t toBit = POW2[move.to];
-
-        moveFrom(b, POW2[move.from], move.pieceThatMoves, b->turn);
-
-        if (move.promotion && move.pieceThatMoves == PAWN)
-            moveTo(b, toBit, move.promotion, b->turn);
-        else
-            moveTo(b, toBit, move.pieceThatMoves, b->turn);
-
-        h->pieceCaptured = pieceAt(b, toBit, 1 ^ b->turn);
-        if (h->pieceCaptured != NO_PIECE)
+        case PAWN:
+        if (move.to - move.from == ((2 * b->turn - 1) << 4))
+            b->enPass = move.to;
+        if (move.enPass)
         {
-            moveFrom(b, toBit, h->pieceCaptured, 1 ^ b->turn);
-
-            if (h->pieceCaptured == ROOK && move.to == 56 * b->turn)
-                b->posInfo &= 0b111110 ^ (1 << (((1 ^ b->turn) << 1) + 1));
-            else if (h->pieceCaptured == ROOK && move.to == 56 * b->turn + 7)
-                b->posInfo &= 0b111110 ^ (2 << (((1 ^ b->turn) << 1) + 1));
+            setBit(b, toBit, PAWN, b->turn);
+            
+            unsetBit(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
         }
+        else
+        {
+            if (move.promotion)
+                setBit(b, toBit, move.promotion, b->turn);
+            else
+                setBit(b, toBit, PAWN, b->turn);
+        }
+        break;
+
+        case KING:
+        if (move.castle)
+            makeCastle(b, move, b->turn);
+        else
+            setBit(b, toBit, KING, b->turn);
+
+        b->posInfo &= kingMoved(b->turn);
+        break;
+        
+        case ROOK:
+        b->posInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
+
+        setBit(b, toBit, ROOK, b->turn);
+        break;
+
+        default:
+        setBit(b, toBit, move.pieceThatMoves, b->turn);
+        break;
     }
+
+    h->pieceCaptured = pieceAt(b, toBit, 1 ^ b->turn);
+    if (h->pieceCaptured != NO_PIECE)
+        unsetBit(b, toBit, h->pieceCaptured, 1 ^ b->turn);
     
     b->allPieces = b->color[WHITE] | b->color[BLACK];
     b->turn ^= 1;
 }
 
+//Alters the board to undo a move, (undo . make) should be the identity function 
 void undoMove(Board* b, Move move, History* h)
 {
-    //Unload the data
+    const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
+
     b->posInfo = h->posInfo;
     b->allPieces = h->allPieces;
     b->enPass = h->enPass;
     
     b->turn ^= 1;
-    
-    if (move.castle)
-    {
-        undoCastle(b, move, b->turn);
-    }
-    else if(move.enPass)
-    {
-        moveFrom(b, POW2[move.to], PAWN, b->turn);
-        moveTo(b, POW2[move.from], PAWN, b->turn);
 
-        moveTo(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
-    }
-    else
+    setBit(b, fromBit, move.pieceThatMoves, b->turn);
+    switch(move.pieceThatMoves)
     {
-        const uint64_t toBit = POW2[move.to];
-
-        moveTo(b, POW2[move.from], move.pieceThatMoves, b->turn);
-
-        if (move.promotion && move.pieceThatMoves == PAWN)
-            moveFrom(b, toBit, move.promotion, b->turn);
+        case PAWN:
+        if (move.enPass)
+        {
+            unsetBit(b, toBit, PAWN, b->turn);
+            
+            setBit(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
+        }
         else
-            moveFrom(b, toBit, move.pieceThatMoves, b->turn);
+        {
+            if (move.promotion)
+                unsetBit(b, toBit, move.promotion, b->turn);
+            else
+                unsetBit(b, toBit, PAWN, b->turn);
+        }
+        break;
 
-        if (h->pieceCaptured != NO_PIECE)
-            moveTo(b, toBit, h->pieceCaptured, 1 ^ b->turn);
+        case KING:
+        if (move.castle)
+            undoCastle(b, move, b->turn);
+        else
+            unsetBit(b, toBit, KING, b->turn);
+        break;
+
+        default:
+        unsetBit(b, toBit, move.pieceThatMoves, b->turn);
+        break;
     }
+
+    if (h->pieceCaptured != NO_PIECE)
+        setBit(b, toBit, h->pieceCaptured, 1 ^ b->turn);  
 }

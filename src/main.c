@@ -9,14 +9,9 @@
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/test.h"
-#include "../include/node.h"
 #include "../include/memoization.h"
-#include "../include/moves.h"
-#include "../include/boardmoves.h"
-#include "../include/allmoves.h"
 #include "../include/perft.h"
 
-#include "../include/evaluation.h"
 #include "../include/io.h"
 
 void initializePOW2()

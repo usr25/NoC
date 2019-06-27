@@ -242,37 +242,37 @@ int testChecks()
 
     //White king
     b = generateFromFen("8/8/1q6/8/3K4/8/8/8", "w", "-");
-    white &= isInCheck(&b, 1) == QUEEN;
+    white &= isInCheck(&b, 1);
     b = generateFromFen("8/8/8/8/3K4/8/8/3q4", "w", "-");
-    white &= isInCheck(&b, 1) == QUEEN;
+    white &= isInCheck(&b, 1);
 
     b = generateFromFen("8/8/8/8/3K3r/8/8/8", "w", "-");
-    white &= isInCheck(&b, 1) == ROOK;    
+    white &= isInCheck(&b, 1);    
     b = generateFromFen("8/8/8/2b5/3K4/8/8/8", "w", "-");
-    white &= isInCheck(&b, 1) == BISH;
+    white &= isInCheck(&b, 1);
     b = generateFromFen("8/8/8/5n2/3K4/8/8/8", "w", "-");
-    white &= isInCheck(&b, 1) == KNIGHT;
+    white &= isInCheck(&b, 1);
     b = generateFromFen("8/8/8/2p5/3K4/8/8/8", "w", "-");
-    white &= isInCheck(&b, 1) == PAWN;
+    white &= isInCheck(&b, 1);
     b = generateFromFen("4r3/8/3k4/1q6/3K4/8/2p2n2/2b5", "w", "-");
-    white &= isInCheck(&b, 1) == NO_PIECE;
+    white &= ! isInCheck(&b, 1);
 
     //Black king
     b = generateFromFen("8/8/1Q6/8/3k4/8/8/8", "w", "-");
-    black &= isInCheck(&b, 0) == QUEEN;
+    black &= isInCheck(&b, 0);
     b = generateFromFen("8/8/8/8/3k4/8/8/3Q4", "w", "-");
-    black &= isInCheck(&b, 0) == QUEEN;
+    black &= isInCheck(&b, 0);
 
     b = generateFromFen("8/8/8/8/3k3R/8/8/8", "w", "-");
-    black &= isInCheck(&b, 0) == ROOK;
+    black &= isInCheck(&b, 0);
     b = generateFromFen("8/8/8/2B5/3k4/8/8/8", "w", "-");
-    black &= isInCheck(&b, 0) == BISH;
+    black &= isInCheck(&b, 0);
     b = generateFromFen("8/8/8/5N2/3k4/8/8/8", "w", "-");
-    black &= isInCheck(&b, 0) == KNIGHT;
+    black &= isInCheck(&b, 0);
     b = generateFromFen("8/8/8/8/3k4/2P5/8/8", "w", "-");
-    black &= isInCheck(&b, 0) == PAWN;
+    black &= isInCheck(&b, 0);
     b = generateFromFen("4R3/8/3K4/1Q6/3k4/8/2P2N2/2B5", "w", "-");
-    black &= isInCheck(&b, 0) == NO_PIECE;
+    black &= ! isInCheck(&b, 0);
     
     return white && black;
 }

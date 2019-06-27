@@ -1,6 +1,7 @@
 /*
  * allmoves.c
  * Its job is to generate all possible moves for a given position and color
+ * legalMoves is the main function.
  */
 
 #include "../include/global.h"
@@ -132,7 +133,7 @@ inline int moveIsValid(Board* b, Move m, History h)
     makeMove(b, m, &h);
     int chk = isInCheck(b, 1 ^ b->turn);
     undoMove(b, m, &h);
-    return chk == NO_PIECE;
+    return ! chk;
 }
 
 //Returns all legal moves if the king isnt in check nor is there a pinned piece
@@ -143,7 +144,7 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
     History h;
     Move m;
 
-    tempMoves = posKingMoves(b, color) & (ALL ^ forbidden);
+    tempMoves = posKingMoves(b, color) & (~forbidden);
     temp = b->piece[color][KING];
     from = LSB_INDEX(temp);
     while(tempMoves)
@@ -268,7 +269,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
 
     Move m;
     temp = b->piece[color][KING];
-    tempMoves = posKingMoves(b, color) & (ALL ^ forbidden);
+    tempMoves = posKingMoves(b, color) & (~forbidden);
     from = LSB_INDEX(temp);
     while(tempMoves)
     {
@@ -447,9 +448,9 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
 
     AttacksOnK att = getCheckTiles(b, color); //TODO: Improve getCheckTiles by not having to calculate pawn / knight since it is already done in legalMoves, .num is the popcount
     uint64_t interfere = att.tiles;
-    uint64_t pinnedMask = ALL ^ pinnedPieces(b, color);
+    uint64_t pinnedMask = ~ pinnedPieces(b, color);
 
-    tempMoves = posKingMoves(b, color) & (ALL ^ forbidden);
+    tempMoves = posKingMoves(b, color) & (~forbidden);
     temp = b->piece[color][KING];
     from = LSB_INDEX(temp);
     while(tempMoves)
