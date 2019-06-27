@@ -708,7 +708,10 @@ void slowTests()
     b = generateFromFen("8/8/8/3k1K3/8/8/8/8", "w", "-");
     printf("King: %d\n", perftRecursive(b, 9) == 31356171ULL);
 
-    
+    b = generateFromFen("8/5K2/5PR1/7k/7p/5P2/6P1/8", "w", "-");
+    printf("Check enP: %d\n", perftRecursive(b, 8) == 7991633ULL);
+
+
     b = generateFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "w", "KQkq");
     printf("Perfect 1: %d\n", perftRecursive(b, 6) == 119060324ULL);
     

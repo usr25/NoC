@@ -207,5 +207,4 @@ Board duplicate(Board b)
     a.turn = b.turn;
 
     return a;
-
 }

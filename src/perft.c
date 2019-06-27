@@ -31,7 +31,7 @@ uint64_t perftRecursive(Board b, const int depth)
     return tot;
 }
 
-
+//Returns 1 if the perft of the starting position at a given depth is the number it should be
 int perft(int depth, int tree)
 {
     if (depth == 0) return 1;
