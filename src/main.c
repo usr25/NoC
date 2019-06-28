@@ -9,6 +9,7 @@
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/test.h"
+#include "../include/moves.h"
 #include "../include/memoization.h"
 #include "../include/perft.h"
 

@@ -37,8 +37,7 @@ Move castleKSide(const int color);
 Move castleQSide(const int color);
 
 uint64_t controlledKingPawnKnight(Board* b, const int inverse);
-uint64_t forbiddenSquares(Board* b, const int inverse);
-uint64_t xRaySquares(Board* b, const int inverse);
+uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles);
 AttacksOnK getCheckTiles(Board* b, const int color);
 int isInCheck(Board* b, const int kingsColor);
 int checkInPosition(Board* b, const int lsb, const int kingsColor);

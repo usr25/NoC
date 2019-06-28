@@ -11,6 +11,9 @@ uint64_t getUpLeftMoves(int index);
 uint64_t getDownRightMoves(int index);
 uint64_t getDownLeftMoves(int index);
 
+uint64_t getStraMoves(int index);
+uint64_t getDiagMoves(int index);
+
 uint64_t getWhitePawnMoves(int index);
 uint64_t getWhitePawnCaptures(int index);
 uint64_t getBlackPawnMoves(int index);

@@ -1,3 +1,6 @@
+/* board.c
+ * Generates the board in which the game is played along with useful functionality
+ */
 /*
 Black pieces
 Black pawns
@@ -10,8 +13,6 @@ White pieces
 */
 #include "../include/global.h"
 #include "../include/board.h"
-
-#include <stdio.h>
 
 #define INITIAL_WPIECES 0xffff
 #define INITIAL_WPAWN 0xff00
@@ -104,8 +105,8 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
         pos >>= shift;
     }
 
-    b.color[AV_WHITE] = ALL ^ b.color[WHITE];
-    b.color[AV_BLACK] = ALL ^ b.color[BLACK];
+    b.color[AV_WHITE] = ~b.color[WHITE];
+    b.color[AV_BLACK] = ~b.color[BLACK];
 
     b.allPieces = b.color[WHITE] | b.color[BLACK];
 
@@ -159,8 +160,8 @@ Board defaultBoard()
 
     b.color[BLACK] = INITIAL_BPIECES;
     b.color[WHITE] = INITIAL_WPIECES;
-    b.color[AV_BLACK] = ALL ^ INITIAL_BPIECES;
-    b.color[AV_WHITE] = ALL ^ INITIAL_WPIECES;
+    b.color[AV_BLACK] = ~ INITIAL_BPIECES;
+    b.color[AV_WHITE] = ~ INITIAL_WPIECES;
 
     b.posInfo =  0b11110;
     b.allPieces = INITIAL_WPIECES | INITIAL_BPIECES;

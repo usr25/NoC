@@ -1,3 +1,7 @@
+/* memoization.c
+ * Pregenerates all the arrays with the movements to make it easier to access later
+ */
+
 #include "../include/global.h"
 #include "../include/memoization.h"
 
@@ -13,7 +17,11 @@ uint64_t uprightMoves[64];
 uint64_t downrightMoves[64];
 uint64_t upleftMoves[64];
 uint64_t downleftMoves[64];
-//It can be made to be 64 - 8 but the impact in memory is tiny
+
+uint64_t straMoves[64];
+uint64_t diagMoves[64];
+
+//It can be made to be 64 - 8 but the impact in memory is tiny and the runtime performance would worsen
 uint64_t whitePawnMoves[64];
 uint64_t whitePawnCaptures[64];
 uint64_t blackPawnMoves[64];
@@ -21,9 +29,9 @@ uint64_t blackPawnCaptures[64];
 
 
 static inline int GETX(int i)
-{return i % 8;}
+{return i & 7;} //i % 8
 static inline int GETY(int i)
-{return i / 8;}
+{return i >> 3;}//i / 8
 
 static inline int ISVALID(int x, int y)
 {return x >= 0 && x < 8 && y >= 0 && y < 8;}
@@ -203,6 +211,15 @@ void genDownRightMoves()
     }
 }
 
+void genStraDiagMoves()
+{
+    for (int i = 0; i < 64; ++i)
+    {
+        straMoves[i] = upMoves[i] | downMoves[i] | rightMoves[i] | leftMoves[i];
+        diagMoves[i] = uprightMoves[i] | upleftMoves[i] | downrightMoves[i] | downleftMoves[i];
+    }
+}
+
 //Generates the king moves, it does NOT implement castling
 void genKingMoves()
 {
@@ -262,6 +279,8 @@ void initialize()
     genDownRightMoves();
     genDownLeftMoves();
 
+    genStraDiagMoves();
+
     genKingMoves();
     genKnightMoves();
 
@@ -293,6 +312,11 @@ uint64_t getDownRightMoves(int index)
 {return downrightMoves[index];}
 uint64_t getDownLeftMoves(int index)
 {return downleftMoves[index];}
+
+inline uint64_t getStraMoves(int index)
+{return straMoves[index];}
+inline uint64_t getDiagMoves(int index)
+{return diagMoves[index];}
 
 uint64_t getWhitePawnMoves(int index)
 {return whitePawnMoves[index];}

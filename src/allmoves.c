@@ -12,8 +12,6 @@
 #include "../include/allmoves.h"
 #include "../include/io.h"
 
-#include <stdio.h>
-
 //Returns a bitboard with a 1 for every pinned piece, works similarly to isInCheck
 uint64_t pinnedPieces(Board* b, const int color)
 {
@@ -149,9 +147,8 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
     from = LSB_INDEX(temp);
     while(tempMoves)
     {
-        to = LSB_INDEX(tempMoves);
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = LSB_INDEX(tempMoves)};
         REMOVE_LSB(tempMoves);
-        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to};
     }
 
     temp = b->piece[color][PAWN];
@@ -198,9 +195,8 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         tempMoves = posQueenMoves(b, color, from);
         while(tempMoves)
         {
-            to = LSB_INDEX(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to};
         }
     }
 
@@ -212,9 +208,8 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         tempMoves = posRookMoves(b, color, from);
         while(tempMoves)
         {
-            to = LSB_INDEX(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to};
         }
     }
 
@@ -228,9 +223,8 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
 
         while(tempMoves)
         {
-            to = LSB_INDEX(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = LSB_INDEX(tempMoves)};   
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to};   
         }
     }
 
@@ -243,9 +237,8 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         tempMoves = posKnightMoves(b, color, from);
         while(tempMoves)
         {
-            to = LSB_INDEX(tempMoves);
+            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to};
         }
     }
 
@@ -264,18 +257,17 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
     int numMoves = 0, from, to;
     uint64_t temp, tempMoves, isPinned;
     History h;
+    Move m;
     
     const uint64_t pinned = pinnedPieces(b, color);
 
-    Move m;
     temp = b->piece[color][KING];
     tempMoves = posKingMoves(b, color) & (~forbidden);
     from = LSB_INDEX(temp);
     while(tempMoves)
     {
-        to = LSB_INDEX(tempMoves);
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = LSB_INDEX(tempMoves)};
         REMOVE_LSB(tempMoves);
-        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to};
     }
 
     temp = b->piece[color][PAWN];
@@ -348,9 +340,8 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         tempMoves = posQueenMoves(b, color, from);
         while(tempMoves)
         {
-            to = LSB_INDEX(tempMoves);
+            m = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-            m = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to};
             if (isPinned)
             {
                 if (moveIsValid(b, m, h))
@@ -370,9 +361,8 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         tempMoves = posRookMoves(b, color, from);
         while(tempMoves)
         {
-            to = LSB_INDEX(tempMoves);
+            m = (Move) {.pieceThatMoves = ROOK, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-            m = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to};
             if (isPinned)
             {
                 if (moveIsValid(b, m, h))
@@ -393,9 +383,8 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         tempMoves = posBishMoves(b, color, from);
         while(tempMoves)
         {
-            to = LSB_INDEX(tempMoves);
+            m = (Move) {.pieceThatMoves = BISH, .from = from, .to = to = LSB_INDEX(tempMoves)};   
             REMOVE_LSB(tempMoves);
-            m = (Move) {.pieceThatMoves = BISH, .from = from, .to = to};   
             if (isPinned)
             {
                 if (moveIsValid(b, m, h))
@@ -455,9 +444,8 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
     from = LSB_INDEX(temp);
     while(tempMoves)
     {
-        to = LSB_INDEX(tempMoves);
+        m = (Move) {.pieceThatMoves = KING, .from = from, .to = LSB_INDEX(tempMoves)};
         REMOVE_LSB(tempMoves);
-        m = (Move) {.pieceThatMoves = KING, .from = from, .to = to};
         if (moveIsValid(b, m, h))
             list[numMoves++] = m;
     }
@@ -508,9 +496,8 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
             tempMoves = posQueenMoves(b, color, from) & interfere;
             while(tempMoves)
             {
-                to = LSB_INDEX(tempMoves);
+                list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-                list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to};
             }
         }
 
@@ -522,9 +509,8 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
             tempMoves = posRookMoves(b, color, from) & interfere;
             while(tempMoves)
             {
-                to = LSB_INDEX(tempMoves);
+                list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-                list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to};
             }
         }
 
@@ -537,9 +523,8 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
 
             while(tempMoves)
             {
-                to = LSB_INDEX(tempMoves);
+                list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = LSB_INDEX(tempMoves)};   
                 REMOVE_LSB(tempMoves);
-                list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to};   
             }
         }
 
@@ -551,9 +536,8 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
             tempMoves = posKnightMoves(b, color, from) & interfere;
             while(tempMoves)
             {
-                to = LSB_INDEX(tempMoves);
+                list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-                list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to};
             }
         }
     }
@@ -565,9 +549,15 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
 int legalMoves(Board* b, Move* list, const int color)
 {
     int kingIndex = LSB_INDEX(b->piece[b->turn][KING]);
-    uint64_t kingPawnKnight = controlledKingPawnKnight(b, 1 ^ b->turn); //Squares attacked by the opp k/p/n
-    uint64_t xRay = xRaySquares(b, 1 ^ b->turn) | kingPawnKnight; //Squares attacked by opp pieces if there were no other pieces
-    uint64_t forbidden = forbiddenSquares(b, 1 ^ b->turn) | kingPawnKnight; //Squares attacked by opp pieces
+
+    //Squares attacked by the opp k/p/n
+    uint64_t kingPawnKnight = controlledKingPawnKnight(b, 1 ^ b->turn);
+    
+    //Squares attacked by opp pieces if there were no friendly pieces
+    uint64_t xRay = allSlidingAttacks(b, 1 ^ b->turn, b->color[1 ^ b->turn]) | kingPawnKnight;
+
+    //Squares attacked by opp pieces
+    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | kingPawnKnight;
 
     
     if ((xRay & b->piece[b->turn][KING]) == 0ULL)//The king isnt in check and even if a piece moves he wont be
