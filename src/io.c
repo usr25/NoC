@@ -63,7 +63,7 @@ void drawBitboard(uint64_t b)
     }
     printf("\n");
 }
-//TODO: Fix this
+
 void drawMove(Move m)
 {
     char a = 'h' - (m.from % 8);

@@ -14,10 +14,11 @@ typedef struct
 } Board;
 
 
+Board generateFromFenEP(char* const fen, char* const toPlay, char* const castle, char* const enPass);
 Board generateFromFen(char* const fen, char* const toPlay, char* const castle);
 Board defaultBoard();
 
-int index(uint64_t bitboard, int prev);
-
 int equal(Board* a, Board* b);
 Board duplicate(Board b);
+
+int getIndex(char row, char col);

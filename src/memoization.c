@@ -36,6 +36,11 @@ static inline int GETY(int i)
 static inline int ISVALID(int x, int y)
 {return x >= 0 && x < 8 && y >= 0 && y < 8;}
 
+void initializePOW2()
+{
+    for (int i = 0; i < 64; ++i) POW2[i] = 1ULL << i;
+}
+
 void genWhitePawnMoves()
 {   
     int i = 8;
@@ -269,6 +274,8 @@ void genKnightMoves()
 
 void initialize()
 {
+    initializePOW2();
+
     genRightMoves();
     genLeftMoves();
     genUpMoves();

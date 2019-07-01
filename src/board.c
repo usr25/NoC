@@ -32,6 +32,14 @@ White pieces
 
 //Starting: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
+Board generateFromFenEP(char* const fen, char* const toPlay, char* const castle, char* const enPass)
+{
+    Board b = generateFromFen(fen, toPlay, castle);
+    if (enPass[0] != '-')
+        b.enPass = getIndex(enPass[0], enPass[1]);
+    return b;
+}
+
 Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
 {
     Board b = (Board) {};
@@ -185,9 +193,9 @@ int equal(Board* a, Board* b)
         }
     }
 
-    int turn = a->turn == b->turn;
+    int other = a->turn == b->turn && a->enPass == b->enPass;
 
-    return data && pieces && turn;
+    return data && pieces && other;
 }
 
 Board duplicate(Board b)
@@ -205,7 +213,13 @@ Board duplicate(Board b)
 
     a.posInfo = b.posInfo;
     a.allPieces = b.allPieces;
+    a.enPass = b.enPass;
     a.turn = b.turn;
 
     return a;
+}
+
+int getIndex(char row, char col)
+{
+    return ((col - '1') << 3) + (7 + 'a' - row);
 }
