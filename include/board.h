@@ -14,8 +14,7 @@ typedef struct
 } Board;
 
 
-Board generateFromFenEP(char* const fen, char* const toPlay, char* const castle, char* const enPass);
-Board generateFromFen(char* const fen, char* const toPlay, char* const castle);
+Board genFromFen(char* const fen);
 Board defaultBoard();
 
 int equal(Board* a, Board* b);

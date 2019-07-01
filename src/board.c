@@ -11,6 +11,7 @@ Black pawns
 White pawns
 White pieces
 */
+#include <stdio.h>
 #include "../include/global.h"
 #include "../include/board.h"
 
@@ -32,20 +33,12 @@ White pieces
 
 //Starting: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-Board generateFromFenEP(char* const fen, char* const toPlay, char* const castle, char* const enPass)
-{
-    Board b = generateFromFen(fen, toPlay, castle);
-    if (enPass[0] != '-')
-        b.enPass = getIndex(enPass[0], enPass[1]);
-    return b;
-}
-
-Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
+Board genFromFen(char* const fen)
 {
     Board b = (Board) {};
     int i, num, shift;
     uint64_t pos = POW2[63];
-    
+
     for (i = 0; pos != 0; ++i)
     {
         shift = 1;
@@ -115,14 +108,18 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
 
     b.color[AV_WHITE] = ~b.color[WHITE];
     b.color[AV_BLACK] = ~b.color[BLACK];
-
     b.allPieces = b.color[WHITE] | b.color[BLACK];
 
-    int castleInfo = 0;
+    i++;
 
-    for (int i = 0, brk = 1; brk && i < 4; ++i)
+    b.turn = fen[i] == 'w';
+
+    i++;
+
+    int castleInfo = 0;
+    while(fen[++i] != ' ')
     {
-        switch (castle[i])
+        switch (fen[i])
         {
             case 'K':
                 castleInfo |= WCASTLEK;
@@ -136,14 +133,14 @@ Board generateFromFen(char* const fen, char* const toPlay, char* const castle)
             case 'q':
                 castleInfo |= BCASTLEQ;
                 break;
-            default:
-                brk = 0;
-                break;
         }
     }
-
     b.posInfo = castleInfo;
-    b.turn = toPlay[0] == 'w';
+
+    i++;
+
+    if (fen[i] != '-')
+        b.enPass = getIndex(fen[i], fen[i + 1]) - (2 * b.turn - 1) * 8;
 
     return b;
 }

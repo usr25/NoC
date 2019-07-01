@@ -10,9 +10,9 @@
 
 #include <stdio.h>
 
-int matrices(Board* b);
-int allPiecesValue(Board* b);
-int analyzePawnStructure(Board* b);
+int matrices(Board b);
+int allPiecesValue(Board b);
+int analyzePawnStructure(Board b);
 int multiply(int vals[64], uint64_t mask);
 
 int castlingStructure();
@@ -60,7 +60,7 @@ int rookMatrix[64] =
     0, 0, 0, 0,     0, 0, 0, 0};
 
 int bishMatrix[64] = 
-   {5, 5, 5, 9,     5, 5, 5, 9,     
+   {5, 5, 5, 5,     5, 5, 5, 5,     
     9, 9, 11, 5,    9, 9, 11, 5,
     11, 13, 9, 5,   11, 13, 9, 5,
     15, 11, 9, 5,   15, 11, 9, 5,
@@ -68,7 +68,7 @@ int bishMatrix[64] =
     5, 5, 5, 9,     5, 5, 5, 9,     
     9, 9, 11, 5,    9, 9, 11, 5,
     11, 13, 9, 5,   11, 13, 9, 5,
-    15, 11, 9, 5,   15, 11, 9, 5};
+    5, 5, 5, 5,   5, 5, 5, 5};
 
 int knightMatrix[64] = 
    {-50, -10, -10, -10, -10, -10, -10, -50,
@@ -79,7 +79,7 @@ int knightMatrix[64] =
     -10, 0, 15, 20,     20, 15, 0, -10,
     -10, 0, 10, 15,     15, 10, 0, -10,
     -10, 0, 0, 0,       0, 0, 0, -10,
-    -50, 0, 0, 0,       0, 0, 0, -50};
+    -50, -10, -10, -10,       -10, -10, -10, -50};
 
 int wPawnMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
@@ -103,48 +103,47 @@ int bPawnMatrix[64] =
     175, 200, 200, 200,     200, 200, 200, 175,
     0, 0, 0, 0,     0, 0, 0, 0};
 
-int evaluate(Board b)
+int eval(Board b)
 {
     int val = 0;
 
-    val += allPiecesValue(&b);
-    val += matrices(&b);
+    val += allPiecesValue(b) + matrices(b);
 
     //checks
 
     return val;
 }
 
-int matrices(Board* b)
+int matrices(Board b)
 {
     int val = 0;
-/*
-    val += multiply(wPawnMatrix, b->wPawn);
-    val -= multiply(bPawnMatrix, b->bPawn);
 
-    val += multiply(kingMatrix, b->wKing);
-    val += multiply(queenMatrix, b->wQueen);
-    val += multiply(rookMatrix, b->wRook);
-    val += multiply(bishMatrix, b->wBish);
-    val += multiply(knightMatrix, b->wKnight);
+    val += multiply(wPawnMatrix, b.piece[WHITE][PAWN]);
+    val -= multiply(bPawnMatrix, b.piece[BLACK][PAWN]);
 
-    val -= multiply(kingMatrix, b->bKing);
-    val -= multiply(queenMatrix, b->bQueen);
-    val -= multiply(rookMatrix, b->bRook);
-    val -= multiply(bishMatrix, b->bBish);
-    val -= multiply(knightMatrix, b->bKnight);
-*/
+    val += multiply(kingMatrix, b.piece[WHITE][KING]);
+    val += multiply(queenMatrix, b.piece[WHITE][QUEEN]);
+    val += multiply(rookMatrix, b.piece[WHITE][ROOK]);
+    val += multiply(bishMatrix, b.piece[WHITE][BISH]);
+    val += multiply(knightMatrix, b.piece[WHITE][KNIGHT]);
+
+    val -= multiply(kingMatrix, b.piece[BLACK][KING]);
+    val -= multiply(queenMatrix, b.piece[BLACK][QUEEN]);
+    val -= multiply(rookMatrix, b.piece[BLACK][ROOK]);
+    val -= multiply(bishMatrix, b.piece[BLACK][BISH]);
+    val -= multiply(knightMatrix, b.piece[BLACK][KNIGHT]);
+
     return val;
 }
 
-int allPiecesValue(Board* bo)
+int allPiecesValue(Board bo)
 {
-    int k = VKING *     (POPCOUNT(bo->piece[1][KING])     - POPCOUNT(bo->piece[0][KING]));
-    int q = VQUEEN *    (POPCOUNT(bo->piece[1][QUEEN])    - POPCOUNT(bo->piece[0][QUEEN]));
-    int r = VROOK *     (POPCOUNT(bo->piece[1][ROOK])     - POPCOUNT(bo->piece[0][ROOK]));
-    int b = VBISH *     (POPCOUNT(bo->piece[1][BISH])     - POPCOUNT(bo->piece[0][BISH]));
-    int n = VKNIGHT *   (POPCOUNT(bo->piece[1][KNIGHT])   - POPCOUNT(bo->piece[0][KNIGHT]));
-    int p = VPAWN *     (POPCOUNT(bo->piece[1][PAWN])     - POPCOUNT(bo->piece[0][PAWN]));
+    int k = VKING *     (POPCOUNT(bo.piece[1][KING])     - POPCOUNT(bo.piece[0][KING]));
+    int q = VQUEEN *    (POPCOUNT(bo.piece[1][QUEEN])    - POPCOUNT(bo.piece[0][QUEEN]));
+    int r = VROOK *     (POPCOUNT(bo.piece[1][ROOK])     - POPCOUNT(bo.piece[0][ROOK]));
+    int b = VBISH *     (POPCOUNT(bo.piece[1][BISH])     - POPCOUNT(bo.piece[0][BISH]));
+    int n = VKNIGHT *   (POPCOUNT(bo.piece[1][KNIGHT])   - POPCOUNT(bo.piece[0][KNIGHT]));
+    int p = VPAWN *     (POPCOUNT(bo.piece[1][PAWN])     - POPCOUNT(bo.piece[0][PAWN]));
 
     return k + q + r + b + n + p;
 }

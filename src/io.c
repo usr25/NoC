@@ -160,16 +160,3 @@ void generateFen(Board b, char* c)
     else
         c[counter++] = '-';
 }
-
-int getNextMove()
-{
-    int fcol, tcol;
-    int frow, trow;
-
-    printf("From col:"); scanf("%d", &fcol);
-    printf("From row:"); scanf("%d", &frow);
-    printf("To col:"); scanf("%d", &tcol);
-    printf("To row:"); scanf("%d", &trow);
-
-    return fcol - (int)'a' + frow - 1;
-}
