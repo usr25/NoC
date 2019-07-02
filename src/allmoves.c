@@ -3,6 +3,7 @@
  * Its job is to generate all possible moves for a given position and color
  * legalMoves is the main function.
  */
+#include <stdio.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -252,14 +253,12 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
 }
 
 //Returns all legal moves when there is a pinned piece
-int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden)
+int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
     int numMoves = 0, from, to;
     uint64_t temp, tempMoves, isPinned;
     History h;
     Move m;
-    
-    const uint64_t pinned = pinnedPieces(b, color);
 
     temp = b->piece[color][KING];
     tempMoves = posKingMoves(b, color) & (~forbidden);
@@ -428,7 +427,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
 }
 
 //Returns all legal moves when the king is in check
-int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
+int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
     int numMoves = 0, from, to;
     uint64_t temp, tempMoves;
@@ -437,7 +436,7 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
 
     AttacksOnK att = getCheckTiles(b, color); //TODO: Improve getCheckTiles by not having to calculate pawn / knight since it is already done in legalMoves, .num is the popcount
     uint64_t interfere = att.tiles;
-    uint64_t pinnedMask = ~ pinnedPieces(b, color);
+    uint64_t pinnedMask = ~ pinned;
 
     tempMoves = posKingMoves(b, color) & (~forbidden);
     temp = b->piece[color][KING];
@@ -545,25 +544,19 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden)
     return numMoves;
 }
 
-//Returns all legal moves
+//Modifies an array with all legal moves and returns the number
 int legalMoves(Board* b, Move* list, const int color)
-{
-    int kingIndex = LSB_INDEX(b->piece[b->turn][KING]);
-
-    //Squares attacked by the opp k/p/n
-    uint64_t kingPawnKnight = controlledKingPawnKnight(b, 1 ^ b->turn);
-    
-    //Squares attacked by opp pieces if there were no friendly pieces
-    uint64_t xRay = allSlidingAttacks(b, 1 ^ b->turn, b->color[1 ^ b->turn]) | kingPawnKnight;
-
+{    
     //Squares attacked by opp pieces
-    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | kingPawnKnight;
+    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | controlledKingPawnKnight(b, 1 ^ b->turn);
 
+    //All the pinned pieces for one side
+    uint64_t pinned = pinnedPieces(b, b->turn);
     
-    if ((xRay & b->piece[b->turn][KING]) == 0ULL)//The king isnt in check and even if a piece moves he wont be
+    if (forbidden & b->piece[b->turn][KING]) //The king is in check
+        return movesCheck(b, list, b->turn, forbidden, pinned);
+    else if (pinned) //The king isnt in check but there are pinned pieces
+        return movesPinnedPiece(b, list, b->turn, forbidden, pinned);
+    else //All pieces can move freely (Except enPassand captures)
         return movesKingFree(b, list, b->turn, forbidden);
-    else if((forbidden & b->piece[b->turn][KING]) == 0ULL) //The king isnt in check but there is a pinned piece
-        return movesPinnedPiece(b, list, b->turn, forbidden);
-    else //The king is in check
-        return movesCheck(b, list, b->turn, forbidden);
 }
