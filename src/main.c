@@ -14,6 +14,7 @@
 #include "../include/boardmoves.h"
 #include "../include/perft.h"
 #include "../include/uci.h"
+#include "../include/search.h"
 
 #include "../include/io.h"
 
@@ -29,11 +30,11 @@ int main(const int argc, char* const argv[])
     printf("[+] Pieces are valid: %s\n", BOOL(validPieces(start)));
 
     runTests();
-    slowTests();
+    //slowTests();
 
     //printf("%d\n", perft(6, 1));
 
-    //loop();
+    loop();
 
     return 0;
 }

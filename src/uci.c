@@ -7,6 +7,7 @@
 #include "../include/board.h"
 #include "../include/perft.h"
 #include "../include/moves.h"
+#include "../include/search.h"
 #include "../include/io.h"
 #include "../include/evaluation.h"
 
@@ -18,6 +19,7 @@ void uci();
 void isready();
 void perft_(Board b, int depth);
 void eval_(Board b);
+void best_(Board b);
 
 void loop()
 {
@@ -66,6 +68,9 @@ void loop()
         else if (strncmp(beg, "eval", 4) == 0)
             eval_(b);
         
+        else if (strncmp(beg, "best", 4) == 0)
+            best_(b);
+
         else if (strncmp(beg, "quit", 4) == 0 || beg[0] == 'q')//"quit" or something has gone wrong, either way exit
             quit = 1;
         
@@ -95,4 +100,9 @@ void perft_(Board b, int depth)
 void eval_(Board b)
 {
     printf("%d\n", eval(b));
+}
+void best_(Board b)
+{
+    drawMove(bestMoveAB(b, 5, 0));
+    printf("\n");
 }

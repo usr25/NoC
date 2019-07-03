@@ -7,6 +7,8 @@
 
 #include "../include/global.h"
 #include "../include/board.h"
+#include "../include/moves.h"
+#include "../include/io.h"
 
 #include <stdio.h>
 
@@ -14,6 +16,8 @@ int matrices(Board b);
 int allPiecesValue(Board b);
 int analyzePawnStructure(Board b);
 int multiply(int vals[64], uint64_t mask);
+
+int hasMatingMat(Board b, int color);
 
 int castlingStructure();
 int rookOnOpenFiles();
@@ -103,8 +107,20 @@ int bPawnMatrix[64] =
     175, 200, 200, 200,     200, 200, 200, 175,
     0, 0, 0, 0,     0, 0, 0, 0};
 
+int hasMatingMat(Board b, int color)
+{
+    if (b.piece[color][ROOK] || b.piece[color][QUEEN] || b.piece[color][PAWN])
+        return 1;
+    if (POPCOUNT(b.piece[color][BISH] | b.piece[color][KNIGHT]) > 1)
+        return 1;
+    return 0;
+}
+
 int eval(Board b)
 {
+    if (!hasMatingMat(b, WHITE) && !hasMatingMat(b, BLACK))
+        return 0;
+    
     int val = 0;
 
     val += allPiecesValue(b) + matrices(b);
