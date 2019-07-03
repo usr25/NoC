@@ -19,4 +19,9 @@ uint64_t getWhitePawnCaptures(int index);
 uint64_t getBlackPawnMoves(int index);
 uint64_t getBlackPawnCaptures(int index);
 
+uint64_t getVert(int index);
+uint64_t getHoriz(int index);
+//uint64_t getMainDiag(int index);
+//uint64_t getSndDiag(int index);
+
 void initialize();

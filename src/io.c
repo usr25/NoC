@@ -5,6 +5,8 @@
 #include "../include/moves.h"
 #include "../include/io.h"
 
+char pieces[] = {'k', 'q', 'r', 'b', 'k', 'p'};
+
 void drawPosition(Board b, const int drawCoords){
     uint64_t pos = POW2[63];
     int i, j;
@@ -72,6 +74,13 @@ void drawMove(Move m)
     char b1 = '1' + (m.to / 8);
 
     printf("%c%c%c%c", a, a1, b, b1);
+
+    if (m.promotion)
+        printf("=%c", pieces[m.promotion]);
+    else if (m.castle & 1)
+        printf(" O-O");
+    else if (m.castle & 2)
+        printf(" O-O-O");
 }
 
 void generateFen(Board b, char* c)

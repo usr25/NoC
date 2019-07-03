@@ -15,6 +15,7 @@
 #include "../include/perft.h"
 #include "../include/uci.h"
 #include "../include/search.h"
+#include "../include/evaluation.h"
 
 #include "../include/io.h"
 

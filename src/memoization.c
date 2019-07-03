@@ -27,6 +27,10 @@ uint64_t whitePawnCaptures[64];
 uint64_t blackPawnMoves[64];
 uint64_t blackPawnCaptures[64];
 
+uint64_t vert[8];
+uint64_t horiz[8];
+uint64_t mainDiag[15];
+uint64_t sndDiag[15];
 
 static inline int GETX(int i)
 {return i & 7;} //i % 8
@@ -225,6 +229,7 @@ void genStraDiagMoves()
     }
 }
 
+
 //Generates the king moves, it does NOT implement castling
 void genKingMoves()
 {
@@ -272,6 +277,27 @@ void genKnightMoves()
     }
 }
 
+void genVert()
+{
+    for (int i = 0; i < 8; ++i)
+    {
+        for (int j = 0; j < 8; ++j)
+        {
+            vert[i] |= 1ULL << (8 * j + i);
+        }
+    }
+}
+void genHoriz()
+{
+    for (int i = 0; i < 8; ++i)
+    {
+        for (int j = 0; j < 8; ++j)
+        {
+            horiz[i] |= 1ULL << (8 * i + j);
+        }
+    }
+}
+
 void initialize()
 {
     initializePOW2();
@@ -295,6 +321,11 @@ void initialize()
     genWhitePawnCaptures();
     genBlackPawnMoves();
     genBlackPawnCaptures();
+
+    genVert();
+    genHoriz();
+    //genMainDiag();
+    //genSndDiag();
 }
 
 uint64_t getKingMoves(int index)
@@ -333,3 +364,12 @@ uint64_t getBlackPawnMoves(int index)
 {return blackPawnMoves[index];}
 uint64_t getBlackPawnCaptures(int index)
 {return blackPawnCaptures[index];}
+
+uint64_t getVert(int index)
+{return vert[index];}
+uint64_t getHoriz(int index)
+{return horiz[index];}
+uint64_t getMainDiag(int index)
+{return mainDiag[index];}
+uint64_t getSndDiag(int index)
+{return sndDiag[index];}

@@ -7,6 +7,7 @@
 #include "../include/board.h"
 #include "../include/perft.h"
 #include "../include/moves.h"
+#include "../include/boardmoves.h"
 #include "../include/search.h"
 #include "../include/io.h"
 #include "../include/evaluation.h"
@@ -19,7 +20,8 @@ void uci();
 void isready();
 void perft_(Board b, int depth);
 void eval_(Board b);
-void best_(Board b);
+void best_(Board b, char* beg);
+void move_(Board* b, char* beg);
 
 void loop()
 {
@@ -69,11 +71,14 @@ void loop()
             eval_(b);
         
         else if (strncmp(beg, "best", 4) == 0)
-            best_(b);
+            best_(b, beg + 5);
+
+        else if (strncmp(beg, "move", 4) == 0)
+            move_(&b, beg + 5);
 
         else if (strncmp(beg, "quit", 4) == 0 || beg[0] == 'q')//"quit" or something has gone wrong, either way exit
             quit = 1;
-        
+
         else{
             fprintf(stdout, "Invalid command\n");
             fflush(stdout);
@@ -101,8 +106,20 @@ void eval_(Board b)
 {
     printf("%d\n", eval(b));
 }
-void best_(Board b)
+void best_(Board b, char* beg)
 {
-    drawMove(bestMoveAB(b, 5, 0));
+    if (strncmp(beg, "tree", 4) == 0)
+        drawMove(bestMoveAB(b, 5, 1));
+    else
+        drawMove(bestMoveAB(b, 5, 0));
     printf("\n");
+}
+void move_(Board* b, char* beg)
+{
+    Move m = (Move) {.from = getIndex(beg[0], beg[1]), .to = getIndex(beg[2], beg[3])};
+
+    m.pieceThatMoves = pieceAt(b, POW2[m.from], b->turn);
+
+    History h;
+    makeMove(b, m, &h);
 }

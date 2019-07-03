@@ -12,6 +12,8 @@
 #define PLUS_INF 999999
 #define MINS_INF -999999
 
+int callDepth = 5;
+
 int alphaBeta(Board b, int alpha, int beta, int depth)
 {
     if (! depth) return eval(b);
@@ -23,7 +25,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth)
     if (! numMoves)
     {
         if (isInCheck(&b, b.turn))
-            return b.turn ? MINS_INF : PLUS_INF;
+            return depth * (b.turn ? MINS_INF : PLUS_INF);
         else
             return 0;
     }
@@ -31,7 +33,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth)
     int val, best;
     if (b.turn)
     {
-        best = MINS_INF - 1;
+        best = MINS_INF;
 
         for (int i = 0; i < numMoves; ++i)
         {
@@ -53,7 +55,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth)
     }
     else
     {
-        best = PLUS_INF + 1;
+        best = PLUS_INF;
 
         for (int i = 0; i < numMoves; ++i)
         {
