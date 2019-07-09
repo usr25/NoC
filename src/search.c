@@ -9,8 +9,8 @@
 
 #include <stdio.h>
 
-#define PLUS_INF 999999
-#define MINS_INF -999999
+#define PLUS_INF 99999
+#define MINS_INF -99999
 
 int callDepth = 5;
 

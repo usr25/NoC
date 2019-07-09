@@ -14,35 +14,46 @@
 
 #define ENGINE_AUTHOR "usr"
 #define ENGINE_NAME "Engine"
-#define LEN 256
+#define LEN 4096
 
 void uci();
 void isready();
 void perft_(Board b, int depth);
 void eval_(Board b);
 void best_(Board b, char* beg);
-void move_(Board* b, char* beg);
+int move_(Board* b, char* beg);
+Board gen_(char* beg);
+Board gen_def(char* beg);
 
 void loop()
 {
-    Board b;
+    Board b = defaultBoard();
 
     char input[LEN];
     char* res, *beg;
     int quit = 0;
 
-    res = fgets(input, LEN, stdin);
-    if (res == NULL) return;
-    beg = input;
+    while(1)
+    {
+        res = fgets(input, LEN, stdin);
+        if (res == NULL) return;
+        beg = input;
 
-    if (strncmp(beg, "ucinewgame", 10) == 0)
-        b = defaultBoard();
-    else if (strncmp(beg, "uci", 3) == 0)
-        uci();
-    else if (strncmp(beg, "isready", 7) == 0)
-        isready();
-    else
-        return;
+        if (strncmp(beg, "ucinewgame", 10) == 0){
+            b = defaultBoard();
+            break;
+        }
+        else if (strncmp(beg, "uci", 3) == 0){
+            uci();
+            break;
+        }
+        else if (strncmp(beg, "isready", 7) == 0){
+            isready();
+            break;
+        }
+        else
+            return;
+    }
 
     while(! quit)
     {
@@ -64,13 +75,19 @@ void loop()
         else if (strncmp(beg, "perft", 5) == 0)
             perft_(b, atoi(beg + 6));
         
-        else if (strncmp(beg, "position", 8) == 0)
-            b = genFromFen(beg + 9);
-        
+        else if (strncmp(beg, "position startpos", 17) == 0)
+            b = gen_def(beg + 18);
+
+        else if (strncmp(beg, "position fen", 12) == 0)
+            b = gen_(beg + 13);
+
+        else if(strncmp(beg, "position", 8) == 0)
+            b = gen_(beg + 8);
+
         else if (strncmp(beg, "eval", 4) == 0)
             eval_(b);
         
-        else if (strncmp(beg, "best", 4) == 0)
+        else if (strncmp(beg, "best", 4) == 0 || strncmp(beg, "go", 2) == 0 || strncmp(beg, "bestmove", 8) == 0)
             best_(b, beg + 5);
 
         else if (strncmp(beg, "move", 4) == 0)
@@ -108,18 +125,92 @@ void eval_(Board b)
 }
 void best_(Board b, char* beg)
 {
-    if (strncmp(beg, "tree", 4) == 0)
-        drawMove(bestMoveAB(b, 5, 1));
-    else
-        drawMove(bestMoveAB(b, 5, 0));
-    printf("\n");
+    Move best;
+    char mv[6];
+    
+    best = bestMoveAB(b, 5, 0);
+    
+    moveToText(best, mv);
+    fprintf(stdout, "bestmove %s\n", mv);
+    fflush(stdout);
 }
-void move_(Board* b, char* beg)
+int move_(Board* b, char* beg)
 {
-    Move m = (Move) {.from = getIndex(beg[0], beg[1]), .to = getIndex(beg[2], beg[3])};
+    int prom = 0, from, to;
+    from = getIndex(beg[0], beg[1]);
+    to = getIndex(beg[2], beg[3]);
+
+    Move m = (Move) {.from = from, .to = to};
 
     m.pieceThatMoves = pieceAt(b, POW2[m.from], b->turn);
+    
+    if(m.pieceThatMoves == KING)
+    {
+        if (abs(from - to) == 2) //Castle
+        {
+            if (to > from)
+                m.castle = 2; //Castle queenside
+            else
+                m.castle = 1; //Castle kingside
+        }
+    }
+
+    if(m.pieceThatMoves == PAWN)
+    {
+        int piece = textToPiece(beg[4]);
+        if(piece != NO_PIECE)
+        {
+            m.promotion = piece;
+            prom++;
+        }
+    }
 
     History h;
     makeMove(b, m, &h);
+
+    if (m.pieceThatMoves == PAWN)
+    {
+        if (b->turn)
+        {
+            if (to - from == 9 || to - from == 7)
+                b->enPass = from + 16;
+        }
+        else
+        {
+            if (from - to == 9 || from - to == 7)
+                b->enPass = from - 16;
+        }
+    }
+
+    return 4 + prom;
+}
+Board gen_def(char* beg)
+{
+    Board b = defaultBoard();
+
+    if (strncmp(beg, "moves", 5) == 0)
+    {
+        beg += 6;
+        while(beg[0] != ' ' && beg[0] != '\0' && beg[0] <= 'h' && beg[0] >= 'a')
+            beg += move_(&b, beg) + 1;
+    }
+
+    return b;
+}
+
+Board gen_(char* beg)
+{
+    int counter;
+    Board b = genFromFen(beg, &counter);
+    
+    beg += counter + 1;
+
+    if (strncmp(beg, "moves", 5) == 0)
+    {
+        beg += 6;
+        while(beg[0] != ' ' && beg[0] != '\0' && beg[0] <= 'h' && beg[0] >= 'a')
+            beg += move_(&b, beg) + 1;
+    }
+
+    return b;
 }

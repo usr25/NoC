@@ -18,6 +18,8 @@
 //8/1p1p1Pk1/2N3K1/n3N3/2n3p1/qP1PQ3/8/8 w - -              Knight moves
 //8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8 w - -                   Pawn moves
 
+int ignore;
+
 int validStartingPos(Board b)
 {
     int correctNumOfPieces = 
@@ -58,7 +60,7 @@ int validPieces(Board b)
 int testGeneration()
 {
     Board a = defaultBoard();
-    Board b = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+    Board b = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", &ignore);
 
     return 
         equal(&a, &b) && validPieces(a) && validPieces(b) && validStartingPos(a) && validStartingPos(b);
@@ -74,7 +76,7 @@ int testKingMoves()
     int defaultMovs = 
         (movsW == 0ULL) && (movsB == 0ULL);
 
-    b = genFromFen("5N2/5Pkq/5p2/3P4/3pKQ2/3n4/8/8 w - -");
+    b = genFromFen("5N2/5Pkq/5p2/3P4/3pKQ2/3n4/8/8 w - -", &ignore);
     movsW = posKingMoves(&b, 1);
     movsB = posKingMoves(&b, 0);
 
@@ -93,7 +95,7 @@ int testQueenMoves()
     int defaultMovs = 
         (movsW == 0ULL) && (movsB == 0ULL);
 
-    b = genFromFen("8/2n2N2/8/1br2rb1/n1Q2q1N/1BR2RB1/8/8 w - -");
+    b = genFromFen("8/2n2N2/8/1br2rb1/n1Q2q1N/1BR2RB1/8/8 w - -", &ignore);
     movsW = posQueenMoves(&b, 1, LSB_INDEX(b.piece[WHITE][QUEEN]));
     movsB = posQueenMoves(&b, 0, LSB_INDEX(b.piece[BLACK][QUEEN]));
 
@@ -119,7 +121,7 @@ int testRookMoves()
     int defaultMovs = 
         (movsW1 == 0ULL) && (movsW2 == 0ULL) && (movsB1 == 0ULL) && (movsB2 == 0ULL);
 
-    b = genFromFen("8/8/2Br2R1/8/8/2BR2r1/8/8 w - -");
+    b = genFromFen("8/8/2Br2R1/8/8/2BR2r1/8/8 w - -", &ignore);
 
     posW = b.piece[WHITE][ROOK];
     posB = b.piece[BLACK][ROOK];
@@ -151,7 +153,7 @@ int testBishMoves()
     int defaultMovs = 
         (movsW1 == 0ULL) && (movsW2 == 0ULL) && (movsB1 == 0ULL) && (movsB2 == 0ULL);
 
-    b = genFromFen("8/2r4R/3B2b1/8/8/3B2b1/2R4r/8 w - -");
+    b = genFromFen("8/2r4R/3B2b1/8/8/3B2b1/2R4r/8 w - -", &ignore);
 
     posW = b.piece[WHITE][BISH];
     posB = b.piece[BLACK][BISH];
@@ -183,7 +185,7 @@ int testKnightMoves()
     int defaultMovs = 
         (movsW1 == 327680ULL) && (movsW2 == 10485760ULL) && (movsB1 == 5497558138880ULL) && (movsB2 == 175921860444160ULL);
 
-    b = genFromFen("8/1p1p1Pk1/2N3K1/n3N3/2n3p1/qP1PQ3/8/8 w - -");
+    b = genFromFen("8/1p1p1Pk1/2N3K1/n3N3/2n3p1/qP1PQ3/8/8 w - -", &ignore);
     
     posW = b.piece[WHITE][KNIGHT];
     posB = b.piece[BLACK][KNIGHT];
@@ -217,7 +219,7 @@ int testPawnMoves()
         REMOVE_LSB(posB);
     }
 
-    b = genFromFen("8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8 w - -");
+    b = genFromFen("8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8 w - -", &ignore);
 
     posW = b.piece[WHITE][PAWN];
     posB = b.piece[BLACK][PAWN];
@@ -241,37 +243,37 @@ int testChecks()
     int white = 1, black = 1;
 
     //White king
-    b = genFromFen("8/8/1q6/8/3K4/8/8/8 w - -");
+    b = genFromFen("8/8/1q6/8/3K4/8/8/8 w - -", &ignore);
     white &= isInCheck(&b, 1);
-    b = genFromFen("8/8/8/8/3K4/8/8/3q4 w - -");
+    b = genFromFen("8/8/8/8/3K4/8/8/3q4 w - -", &ignore);
     white &= isInCheck(&b, 1);
 
-    b = genFromFen("8/8/8/8/3K3r/8/8/8 w - -");
+    b = genFromFen("8/8/8/8/3K3r/8/8/8 w - -", &ignore);
     white &= isInCheck(&b, 1);    
-    b = genFromFen("8/8/8/2b5/3K4/8/8/8 w - -");
+    b = genFromFen("8/8/8/2b5/3K4/8/8/8 w - -", &ignore);
     white &= isInCheck(&b, 1);
-    b = genFromFen("8/8/8/5n2/3K4/8/8/8 w - -");
+    b = genFromFen("8/8/8/5n2/3K4/8/8/8 w - -", &ignore);
     white &= isInCheck(&b, 1);
-    b = genFromFen("8/8/8/2p5/3K4/8/8/8 w - -");
+    b = genFromFen("8/8/8/2p5/3K4/8/8/8 w - -", &ignore);
     white &= isInCheck(&b, 1);
-    b = genFromFen("4r3/8/3k4/1q6/3K4/8/2p2n2/2b5 w - -");
+    b = genFromFen("4r3/8/3k4/1q6/3K4/8/2p2n2/2b5 w - -", &ignore);
     white &= ! isInCheck(&b, 1);
 
     //Black king
-    b = genFromFen("8/8/1Q6/8/3k4/8/8/8 w - -");
+    b = genFromFen("8/8/1Q6/8/3k4/8/8/8 w - -", &ignore);
     black &= isInCheck(&b, 0);
-    b = genFromFen("8/8/8/8/3k4/8/8/3Q4 w - -");
+    b = genFromFen("8/8/8/8/3k4/8/8/3Q4 w - -", &ignore);
     black &= isInCheck(&b, 0);
 
-    b = genFromFen("8/8/8/8/3k3R/8/8/8 w - -");
+    b = genFromFen("8/8/8/8/3k3R/8/8/8 w - -", &ignore);
     black &= isInCheck(&b, 0);
-    b = genFromFen("8/8/8/2B5/3k4/8/8/8 w - -");
+    b = genFromFen("8/8/8/2B5/3k4/8/8/8 w - -", &ignore);
     black &= isInCheck(&b, 0);
-    b = genFromFen("8/8/8/5N2/3k4/8/8/8 w - -");
+    b = genFromFen("8/8/8/5N2/3k4/8/8/8 w - -", &ignore);
     black &= isInCheck(&b, 0);
-    b = genFromFen("8/8/8/8/3k4/2P5/8/8 w - -");
+    b = genFromFen("8/8/8/8/3k4/2P5/8/8 w - -", &ignore);
     black &= isInCheck(&b, 0);
-    b = genFromFen("4R3/8/3K4/1Q6/3k4/8/2P2N2/2B5 w - -");
+    b = genFromFen("4R3/8/3K4/1Q6/3k4/8/2P2N2/2B5 w - -", &ignore);
     black &= ! isInCheck(&b, 0);
     
     return white && black;
@@ -284,45 +286,45 @@ int testCheckInterfTiles()
     uint64_t expected;
 
     int emptyBoard = 1;
-    b = genFromFen("8/8/2Q3Q1/8/2R1K1B1/8/2R3B1/8 w - -");
+    b = genFromFen("8/8/2Q3Q1/8/2R1K1B1/8/2R3B1/8 w - -", &ignore);
     att = getCheckTiles(&b, WHITE);
     emptyBoard &= att.tiles == 0ULL && att.num == 0;
-    b = genFromFen("8/8/2q3q1/8/2r1k1b1/8/2r3b1/8 b - -");
+    b = genFromFen("8/8/2q3q1/8/2r1k1b1/8/2r3b1/8 b - -", &ignore);
     att = getCheckTiles(&b, BLACK);
     emptyBoard &= att.tiles == 0ULL && att.num == 0;
 
     int slidingPieces = 1;
     expected = 37470100259328ULL;
 
-    b = genFromFen("8/8/2q3q1/8/2r1K1b1/8/2r3b1/8 w - -");
+    b = genFromFen("8/8/2q3q1/8/2r1K1b1/8/2r3b1/8 w - -", &ignore);
     att = getCheckTiles(&b, WHITE);
     slidingPieces &= att.tiles == expected && att.num == 4;
-    b = genFromFen("8/8/2Q3Q1/8/2R1k1B1/8/2R3B1/8 b - -");
+    b = genFromFen("8/8/2Q3Q1/8/2R1k1B1/8/2R3B1/8 b - -", &ignore);
     att = getCheckTiles(&b, BLACK);
     slidingPieces &= att.tiles == expected && att.num == 4;
 
     int pawns = 1;
-    b = genFromFen("8/8/8/3P1p2/4K3/3p1P2/8/8 w - -");
+    b = genFromFen("8/8/8/3P1p2/4K3/3p1P2/8/8 w - -", &ignore);
     att = getCheckTiles(&b, WHITE);
     pawns &= att.tiles == 17179869184ULL && att.num == 1;
-    b = genFromFen("8/8/8/3p1P2/4k3/3P1p2/8/8 b - -");
+    b = genFromFen("8/8/8/3p1P2/4k3/3P1p2/8/8 b - -", &ignore);
     att = getCheckTiles(&b, BLACK);
     pawns &= att.tiles == 1048576ULL && att.num == 1;
 
     int knights = 1;
     expected = 4535485469696ULL;
-    b = genFromFen("8/8/3N1n2/2n3N1/4K3/2N3N1/3n1n2/8 w - -");
+    b = genFromFen("8/8/3N1n2/2n3N1/4K3/2N3N1/3n1n2/8 w - -", &ignore);
     att = getCheckTiles(&b, WHITE);
     knights &= att.tiles == expected && att.num == 4;
-    b = genFromFen("8/8/3n1N2/2N3n1/4k3/2n3n1/3N1N2/8 b - -");
+    b = genFromFen("8/8/3n1N2/2N3n1/4k3/2n3n1/3N1N2/8 b - -", &ignore);
     att = getCheckTiles(&b, BLACK);
     knights &= att.tiles == expected && att.num == 4;
 
     int misc = 1;
-    b = genFromFen("q7/1b5b/2Qq4/5P2/1bb1K1Qr/3r4/2rp1qQ1/7b w - -");
+    b = genFromFen("q7/1b5b/2Qq4/5P2/1bb1K1Qr/3r4/2rp1qQ1/7b w - -", &ignore);
     att = getCheckTiles(&b, WHITE);
     misc &= att.tiles == 0ULL && att.num == 0;
-    b = genFromFen("q7/1B5B/2qQ4/5p2/1BB1k1qR/3R4/2RP1Qq1/7B b - -");
+    b = genFromFen("q7/1B5B/2qQ4/5p2/1BB1k1qR/3R4/2RP1Qq1/7B b - -", &ignore);
     att = getCheckTiles(&b, BLACK);
     misc &= att.tiles == 0ULL && att.num == 0;
 
@@ -438,82 +440,82 @@ int testCastleNoCheck()
     Board expected, b;
     
     //White kingside
-    b = genFromFen("8/8/8/8/8/8/8/4K2R w K -");
+    b = genFromFen("8/8/8/8/8/8/8/4K2R w K -", &ignore);
     int dataIsOk = b.posInfo == WCASTLEK;
     int can = (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 1);
 
     Move moveWK = castleKSide(WHITE);
     makeMove(&b, moveWK, &h);
-    expected = genFromFen("8/8/8/8/8/8/8/5RK1 b - -");
+    expected = genFromFen("8/8/8/8/8/8/8/5RK1 b - -", &ignore);
     int castleSuccessful = equal(&b, &expected);
     undoMove(&b, moveWK, &h);
-    expected = genFromFen("8/8/8/8/8/8/8/4K2R w K -");
+    expected = genFromFen("8/8/8/8/8/8/8/4K2R w K -", &ignore);
     castleSuccessful &= equal(&b, &expected);
 
     //White queenside
-    b = genFromFen("8/8/8/8/8/8/8/R3K3 w Q -");
+    b = genFromFen("8/8/8/8/8/8/8/R3K3 w Q -", &ignore);
     dataIsOk &= b.posInfo == WCASTLEQ;
     can &= (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 2);
 
     Move moveWQ = castleQSide(WHITE);
     makeMove(&b, moveWQ, &h);
-    expected = genFromFen("8/8/8/8/8/8/8/2KR4 b - -");
+    expected = genFromFen("8/8/8/8/8/8/8/2KR4 b - -", &ignore);
     castleSuccessful &= equal(&b, &expected);
     undoMove(&b, moveWQ, &h);
-    expected = genFromFen("8/8/8/8/8/8/8/R3K3 w Q -");
+    expected = genFromFen("8/8/8/8/8/8/8/R3K3 w Q -", &ignore);
     castleSuccessful &= equal(&b, &expected);
 
     //Black kingside
-    b = genFromFen("4k2r/8/8/8/8/8/8/8 b k -");
+    b = genFromFen("4k2r/8/8/8/8/8/8/8 b k -", &ignore);
     dataIsOk &= b.posInfo == BCASTLEK;
     can &= (canCastleCheck(&b, BLACK) == 1) && (canCastleCheck(&b, WHITE) == 0);
 
     Move moveBK = castleKSide(BLACK);
     makeMove(&b, moveBK, &h);
-    expected = genFromFen("5rk1/8/8/8/8/8/8/8 w - -");
+    expected = genFromFen("5rk1/8/8/8/8/8/8/8 w - -", &ignore);
     castleSuccessful &= equal(&b, &expected);
     undoMove(&b, moveBK, &h);
-    expected = genFromFen("4k2r/8/8/8/8/8/8/8 b k -");
+    expected = genFromFen("4k2r/8/8/8/8/8/8/8 b k -", &ignore);
     castleSuccessful &= equal(&b, &expected);
 
     //Black queenside
-    b = genFromFen("r3k3/8/8/8/8/8/8/8 b q -");
+    b = genFromFen("r3k3/8/8/8/8/8/8/8 b q -", &ignore);
     dataIsOk &= b.posInfo == BCASTLEQ;
     can &= (canCastleCheck(&b, BLACK) == 2) && (canCastleCheck(&b, WHITE) == 0);
 
     Move moveBQ = castleQSide(BLACK);
     makeMove(&b, moveBQ, &h);
-    expected = genFromFen("2kr4/8/8/8/8/8/8/8 w - -");
+    expected = genFromFen("2kr4/8/8/8/8/8/8/8 w - -", &ignore);
     castleSuccessful &= equal(&b, &expected);
     undoMove(&b, moveBQ, &h);
-    expected = genFromFen("r3k3/8/8/8/8/8/8/8 b q -");
+    expected = genFromFen("r3k3/8/8/8/8/8/8/8 b q -", &ignore);
     castleSuccessful &= equal(&b, &expected);
 
     //Queenside with rook without blocking
     //White
-    b = genFromFen("1r6/8/8/8/8/8/8/R3K3 w Q -");
+    b = genFromFen("1r6/8/8/8/8/8/8/R3K3 w Q -", &ignore);
     dataIsOk &= b.posInfo == WCASTLEQ;
     can &= (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 2);
 
     Move moveWQ2 = castleQSide(WHITE);
     makeMove(&b, moveWQ2, &h);
-    expected = genFromFen("1r6/8/8/8/8/8/8/2KR4 b - -");
+    expected = genFromFen("1r6/8/8/8/8/8/8/2KR4 b - -", &ignore);
     castleSuccessful &= equal(&b, &expected);
     undoMove(&b, moveWQ2, &h);
-    expected = genFromFen("1r6/8/8/8/8/8/8/R3K3 w Q -");
+    expected = genFromFen("1r6/8/8/8/8/8/8/R3K3 w Q -", &ignore);
     castleSuccessful &= equal(&b, &expected);
 
     //Black
-    b = genFromFen("r3k3/8/8/8/8/8/8/1R6 b q -");
+    b = genFromFen("r3k3/8/8/8/8/8/8/1R6 b q -", &ignore);
     dataIsOk &= b.posInfo == BCASTLEQ;
     can &= (canCastleCheck(&b, BLACK) == 2) && (canCastleCheck(&b, WHITE) == 0);
 
     Move moveBQ2 = castleQSide(BLACK);
     makeMove(&b, moveBQ2, &h);
-    expected = genFromFen("2kr4/8/8/8/8/8/8/1R6 w - -");
+    expected = genFromFen("2kr4/8/8/8/8/8/8/1R6 w - -", &ignore);
     castleSuccessful &= equal(&b, &expected);
     undoMove(&b, moveBQ2, &h);
-    expected = genFromFen("r3k3/8/8/8/8/8/8/1R6 b q -");
+    expected = genFromFen("r3k3/8/8/8/8/8/8/1R6 b q -", &ignore);
     castleSuccessful &= equal(&b, &expected);
 
     return dataIsOk && can && castleSuccessful;
@@ -524,36 +526,36 @@ int testCastleCheck()
     int white = 1;
 
     //Kingside
-    b = genFromFen("8/8/8/8/8/8/8/4KP1R b KQkq -");
+    b = genFromFen("8/8/8/8/8/8/8/4KP1R b KQkq -", &ignore);
     white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("4r3/8/8/8/8/8/8/4K2R b KQkq -");
+    b = genFromFen("4r3/8/8/8/8/8/8/4K2R b KQkq -", &ignore);
     white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("5r2/8/8/8/8/8/8/4K2R b KQkq -");
+    b = genFromFen("5r2/8/8/8/8/8/8/4K2R b KQkq -", &ignore);
     white &= canCastleCheck(&b, WHITE) == 0;
 
     //Queenside
-    b = genFromFen("8/8/8/8/8/8/8/RP2K3 b KQkq -");
+    b = genFromFen("8/8/8/8/8/8/8/RP2K3 b KQkq -", &ignore);
     white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("4r3/8/8/8/8/8/8/R3K3 b KQkq -");
+    b = genFromFen("4r3/8/8/8/8/8/8/R3K3 b KQkq -", &ignore);
     white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("2r5/8/8/8/8/8/8/R3K3 b KQkq -");
+    b = genFromFen("2r5/8/8/8/8/8/8/R3K3 b KQkq -", &ignore);
     white &= canCastleCheck(&b, WHITE) == 0;
 
     int black = 1;
 
-    b = genFromFen("4k1pr/8/8/8/8/8/8/8 b KQkq -");
+    b = genFromFen("4k1pr/8/8/8/8/8/8/8 b KQkq -", &ignore);
     white &= canCastleCheck(&b, BLACK) == 0;
-    b = genFromFen("4k2r/8/8/8/8/8/8/4R3 b KQkq -");
+    b = genFromFen("4k2r/8/8/8/8/8/8/4R3 b KQkq -", &ignore);
     white &= canCastleCheck(&b, BLACK) == 0;
-    b = genFromFen("4k2r/8/8/8/8/8/8/6R1 b KQkq -");
+    b = genFromFen("4k2r/8/8/8/8/8/8/6R1 b KQkq -", &ignore);
     white &= canCastleCheck(&b, BLACK) == 0;
 
     //Queenside
-    b = genFromFen("r1P1k3/8/8/8/8/8/8/8 b KQkq -");
+    b = genFromFen("r1P1k3/8/8/8/8/8/8/8 b KQkq -", &ignore);
     white &= canCastleCheck(&b, BLACK) == 0;
-    b = genFromFen("r3k3/8/8/8/8/8/8/4R3 b KQkq -");
+    b = genFromFen("r3k3/8/8/8/8/8/8/4R3 b KQkq -", &ignore);
     white &= canCastleCheck(&b, BLACK) == 0;
-    b = genFromFen("r3k3/8/8/8/8/8/8/2R5 b KQkq -");
+    b = genFromFen("r3k3/8/8/8/8/8/8/2R5 b KQkq -", &ignore);
     white &= canCastleCheck(&b, BLACK) == 0;
 
     return white && black;
@@ -607,7 +609,7 @@ int testPromotion()
     Move moves[13];
     History h;
 
-    b = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -");
+    b = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -", &ignore);
 
     int numMovesB = legalMoves(&b, moves, BLACK);
     int numMovesW = legalMoves(&b, moves, WHITE);
@@ -621,7 +623,7 @@ int testPromotion()
         makeMove(&b, moves[8 + i], &h);
         undoMove(&b, moves[8 + i], &h);
     }
-    Board cp = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -");
+    Board cp = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -", &ignore);
     
     int eq = equal(&cp, &b);
 
@@ -632,20 +634,20 @@ int testEnPass()
 {
     Board b;
 
-    b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -");
+    b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -", &ignore);
 
     int perft1 = 
         (perftRecursive(b, 1) == 4ULL) && (perftRecursive(b, 2) == 32ULL) && (perftRecursive(b, 3) == 185ULL) && (perftRecursive(b, 4) == 1382ULL);
 
-    b = genFromFen("3k4/1p6/8/2P5/6p1/3K4/5P1P/8 w - -");
+    b = genFromFen("3k4/1p6/8/2P5/6p1/3K4/5P1P/8 w - -", &ignore);
     int perft2 = 
         (perftRecursive(b, 1) == 13ULL) && (perftRecursive(b, 2) == 108ULL) && (perftRecursive(b, 3) == 1360ULL);        
 
-    b = genFromFen("k7/pp5p/8/2P5/8/8/P6P/K7 w - -");
+    b = genFromFen("k7/pp5p/8/2P5/8/8/P6P/K7 w - -", &ignore);
     int perft3 = 
         (perftRecursive(b, 3) == 400ULL) && (perftRecursive(b, 4) == 2824ULL) && (perftRecursive(b, 6) == 177792ULL);
 
-    b = genFromFen("rnbqkbnr/pppppp1p/8/6pP/8/8/PPPPPPP1/RNBQKBNR w KQkq g6");
+    b = genFromFen("rnbqkbnr/pppppp1p/8/6pP/8/8/PPPPPPP1/RNBQKBNR w KQkq g6", &ignore);
     int perft4 = 
         (perftRecursive(b, 3) == 11273ULL) && (perftRecursive(b, 4) == 249383ULL);
 
@@ -658,23 +660,23 @@ int testSimplePerft()
     int startPos = 
         perft(1, 0) && perft(2, 0) && perft(3, 0);
 
-    b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -");
+    b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -", &ignore);
     int noPawns = 
         (perftRecursive(b, 1) == 50ULL) && (perftRecursive(b, 2) == 2125ULL) && (perftRecursive(b, 3) == 96062ULL);
 
-    b = genFromFen("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -");
+    b = genFromFen("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -", &ignore);
     int castle = 
         (perftRecursive(b, 1) == 27ULL) && (perftRecursive(b, 2) == 586ULL) && (perftRecursive(b, 3) == 13643ULL);
 
-    b = genFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3 w - -");
+    b = genFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3 w - -", &ignore);
     int bishAndKnight =
         (perftRecursive(b, 1) == 35ULL) && (perftRecursive(b, 2) == 1252ULL) && (perftRecursive(b, 3) == 42180ULL);
 
-    b = genFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3 w - -");
+    b = genFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3 w - -", &ignore);
     int queen =
         (perftRecursive(b, 1) == 4ULL) && (perftRecursive(b, 2) == 105ULL) && (perftRecursive(b, 3) == 2532ULL);
 
-    b = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -");
+    b = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -", &ignore);
     int promotion = 
         (perftRecursive(b, 1) == 12ULL) && (perftRecursive(b, 2) == 142ULL) && (perftRecursive(b, 3) == 1788ULL);
 
@@ -694,41 +696,41 @@ void slowTests()
     printf("Start depth 6: %d\n", perft(6, 0));
 
 
-    b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -");
+    b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -", &ignore);
     printf("No pawns depth 5: %d\n", perftRecursive(b, 5) == 191462298ULL);
     
-    b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -");
+    b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -", &ignore);
     printf("En passand + promotion: %d\n", perftRecursive(b, 8) == 3558853ULL);
     
-    b = genFromFen("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -");
+    b = genFromFen("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -", &ignore);
     printf("Castle: %d\n", perftRecursive(b, 5) == 7288108ULL);
     
-    b = genFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3 w - -");
+    b = genFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3 w - -", &ignore);
     printf("Bish & Knight: %d\n", perftRecursive(b, 5) == 48483119ULL);
     
-    b = genFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3 w - -");
+    b = genFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3 w - -", &ignore);
     printf("Queen: %d\n", perftRecursive(b, 6) == 71878391ULL);
     
-    b = genFromFen("8/8/8/3k1K3/8/8/8/8 w - -");
+    b = genFromFen("8/8/8/3k1K3/8/8/8/8 w - -", &ignore);
     printf("King: %d\n", perftRecursive(b, 9) == 31356171ULL);
 
-    b = genFromFen("8/5K2/5PR1/7k/7p/5P2/6P1/8 w - -");
+    b = genFromFen("8/5K2/5PR1/7k/7p/5P2/6P1/8 w - -", &ignore);
     printf("Check enP: %d\n", perftRecursive(b, 8) == 7991633ULL);
 
 
-    b = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+    b = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", &ignore);
     printf("Perfect 1: %d\n", perftRecursive(b, 6) == 119060324ULL);
     
-    b = genFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+    b = genFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", &ignore);
     printf("Perfect 2: %d\n", perftRecursive(b, 5) == 193690690ULL);
     
-    b = genFromFen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -");
+    b = genFromFen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", &ignore);
     printf("Perfect 3: %d\n", perftRecursive(b, 7) == 178633661ULL);
 
-    b = genFromFen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -");
+    b = genFromFen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -", &ignore);
     printf("Perfect 4: %d\n", perftRecursive(b, 6) == 706045033ULL);
 
-    b = genFromFen("1k6/1b6/8/8/7R/8/8/4K2R b K -");
+    b = genFromFen("1k6/1b6/8/8/7R/8/8/4K2R b K -", &ignore);
     printf("Perfect 5: %d\n", perftRecursive(b, 5) == 1063513ULL);
 }
 

@@ -13,8 +13,9 @@ typedef struct
     int enPass; //0 by default, otherwise it is the index of the pawn that just moved
 } Board;
 
+int textToPiece(char piece);
 
-Board genFromFen(char* const fen);
+Board genFromFen(char* const fen, int* counter);
 Board defaultBoard();
 
 int equal(Board* a, Board* b);

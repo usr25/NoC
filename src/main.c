@@ -19,18 +19,13 @@
 
 #include "../include/io.h"
 
+//position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
+
 int main(const int argc, char* const argv[])
 {
     initialize();
 
-    Board start = defaultBoard();
-
-    drawPosition(start, 1);
-
-    printf("[+] Is starting pos: %s\n", BOOL(validStartingPos(start)));
-    printf("[+] Pieces are valid: %s\n", BOOL(validPieces(start)));
-
-    runTests();
+    //runTests();
     //slowTests();
 
     //printf("%d\n", perft(6, 1));

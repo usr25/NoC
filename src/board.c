@@ -33,7 +33,35 @@ White pieces
 
 //Starting: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-Board genFromFen(char* const fen)
+int textToPiece(char piece)
+{
+    switch(piece)
+    {
+        case 'P':
+        case 'p':
+            return PAWN;
+        case 'K':
+        case 'k':
+            return KING;
+        case 'Q':
+        case 'q':
+            return QUEEN;
+        case 'R':
+        case 'r':
+            return ROOK;
+        case 'B':
+        case 'b':
+            return BISH;
+        case 'N':
+        case 'n':
+            return KNIGHT;
+
+        default:
+            return NO_PIECE;
+    }
+}
+
+Board genFromFen(char* const fen, int* counter)
 {
     Board b = (Board) {};
     int i, num, shift;
@@ -139,9 +167,28 @@ Board genFromFen(char* const fen)
 
     i++;
 
-    if (fen[i] != '-')
+    if (fen[i] != '-'){
         b.enPass = getIndex(fen[i], fen[i + 1]) - (2 * b.turn - 1) * 8;
+        i+=2;
+    }
+    i++;
 
+
+    if (fen[i+1] >= '0' && fen[i+1] <= '9')
+    {
+        i++;
+        int fifty = (fen[i++] - '0'); //TODO: Implement this in the board struct for the fifty move rule
+        if (fen[i] != ' ')
+            fifty = 10 * fifty + fen[i++] - '0';
+
+        int numMoves = (fen[++i] - '0');
+        i++;
+
+        while(fen[i] != ' ' && fen[i] != '\0')
+            numMoves = 10 * numMoves + (fen[i++] - '0');
+    }
+
+    *counter = i;
     return b;
 }
 

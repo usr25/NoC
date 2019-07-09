@@ -5,10 +5,16 @@
 #define VKNIGHT 300
 #define VPAWN 100
 
+//All the constants that begin with N_ are negative, so instead of C * (w - b) the operation is C * (b - w)
 #define CONNECTED_ROOKS 50
 #define TWO_BISH 30
 #define ROOK_OPEN_FILE 60
 #define BISHOP_MOBILITY 1
+#define N_DOUBLED_PAWNS 50
+#define PAWN_CHAIN 30
+#define PAWN_PROTECTION 20
+#define N_ATTACKED_BY_PAWN 30
+//#define BLOCKED_PAWNS 0
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -41,7 +47,7 @@ int pins(); //?
 int skewers();  //?
 
 int kingMatrix[64] = 
-   {3, 8, 2, 0,     0, 8, 10, 5,
+   {3, 8, 2, -10,     0, -10, 10, 5,
     0, 0, 0, 0,     0, 0, 0, 0,
     0, 0, -4, -5,   -5, -5, -4, 0,
     0, 0, -5, -10,  -10, -5, 0, 0,
@@ -49,7 +55,7 @@ int kingMatrix[64] =
     0, 0, -5, -10,  -10, -5, 0, 0,
     0, 0, -4, -5,   -5, -4, 0, 0,
     0, 0, 0, 0,     0, 0, 0, 0,
-    3, 8, 2, 0,     0, 8, 10, 5};
+    3, 8, 2, -10,     0, -10, 10, 5};
 
 int queenMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
@@ -64,13 +70,13 @@ int queenMatrix[64] =
 
 int rookMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
-    7, 7, 7, 7,     7, 7, 7, 7,
+    -5, 7, 7, 7,     7, 7, 7, -5,
     0, 0, 0, 0,     0, 0, 0, 0,
     0, 0, 0, 0,     0, 0, 0, 0,
 
     0, 0, 0, 0,     0, 0, 0, 0,
     0, 0, 0, 0,     0, 0, 0, 0,
-    7, 7, 7, 7,     7, 7, 7, 7,
+    -5, 7, 7, 7,     7, 7, 7, -5,
     0, 0, 0, 0,     0, 0, 0, 0};
 
 int bishMatrix[64] = 
@@ -129,13 +135,9 @@ int eval(Board b)
     if (!hasMatingMat(b, WHITE) && !hasMatingMat(b, BLACK))
         return 0;
     
-    int val = 0;
-
-    val += allPiecesValue(b) + matrices(b);
-    //val += 50 * (((-2) * b.turn + 1) * (! isInCheck(&b, b.turn))); //If is in check, there is a penalization
-    val += pieceActivity(b);
-
-    return val;
+    return   allPiecesValue(b) 
+            +matrices(b)
+            +pieceActivity(b);
 }
 
 inline int pieceActivity(Board b)
@@ -224,14 +226,11 @@ inline int twoBishops(uint64_t wh, uint64_t bl)
 
 int allPiecesValue(Board bo)
 {
-    //int k = VKING *     (POPCOUNT(bo.piece[1][KING])     - POPCOUNT(bo.piece[0][KING]));
-    int q = VQUEEN *    (POPCOUNT(bo.piece[1][QUEEN])    - POPCOUNT(bo.piece[0][QUEEN]));
-    int r = VROOK *     (POPCOUNT(bo.piece[1][ROOK])     - POPCOUNT(bo.piece[0][ROOK]));
-    int b = VBISH *     (POPCOUNT(bo.piece[1][BISH])     - POPCOUNT(bo.piece[0][BISH]));
-    int n = VKNIGHT *   (POPCOUNT(bo.piece[1][KNIGHT])   - POPCOUNT(bo.piece[0][KNIGHT]));
-    int p = VPAWN *     (POPCOUNT(bo.piece[1][PAWN])     - POPCOUNT(bo.piece[0][PAWN]));
-
-    return q + r + b + n + p;
+    return   VQUEEN *    (POPCOUNT(bo.piece[1][QUEEN])    - POPCOUNT(bo.piece[0][QUEEN]))
+            +VROOK *     (POPCOUNT(bo.piece[1][ROOK])     - POPCOUNT(bo.piece[0][ROOK]))
+            +VBISH *     (POPCOUNT(bo.piece[1][BISH])     - POPCOUNT(bo.piece[0][BISH]))
+            +VKNIGHT *   (POPCOUNT(bo.piece[1][KNIGHT])   - POPCOUNT(bo.piece[0][KNIGHT]))
+            +VPAWN *     (POPCOUNT(bo.piece[1][PAWN])     - POPCOUNT(bo.piece[0][PAWN]));
 }
 
 int multiply(int vals[64], uint64_t mask)

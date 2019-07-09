@@ -143,15 +143,6 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
     History h;
     Move m;
 
-    tempMoves = posKingMoves(b, color) & (~forbidden);
-    temp = b->piece[color][KING];
-    from = LSB_INDEX(temp);
-    while(tempMoves)
-    {
-        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = LSB_INDEX(tempMoves)};
-        REMOVE_LSB(tempMoves);
-    }
-
     temp = b->piece[color][PAWN];
     while(temp)
     {
@@ -249,6 +240,15 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
     if (castle & 2)
         list[numMoves++] = castleQSide(color);
 
+    tempMoves = posKingMoves(b, color) & (~forbidden);
+    temp = b->piece[color][KING];
+    from = LSB_INDEX(temp);
+    while(tempMoves)
+    {
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = LSB_INDEX(tempMoves)};
+        REMOVE_LSB(tempMoves);
+    }
+
     return numMoves;
 }
 
@@ -327,7 +327,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
             if (moveIsValid(b, m, h))
                 list[numMoves++] = m;
-        }   
+        }
     }
     
     temp = b->piece[color][QUEEN];
