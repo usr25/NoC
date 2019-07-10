@@ -373,9 +373,9 @@ int checkInPosition(Board* b, const int lsb, const int kingsColor)
     if (b->piece[inverse][KNIGHT] & getKnightMoves(lsb)) return 1;
     
     const uint64_t stra = b->piece[inverse][QUEEN] | b->piece[inverse][ROOK];
-    const uint64_t diag = b->piece[inverse][QUEEN] | b->piece[inverse][BISH];
-
     if (stra && (stra & straight(lsb, b->allPieces))) return 1;
+
+    const uint64_t diag = b->piece[inverse][QUEEN] | b->piece[inverse][BISH];
     if (diag && (diag & diagonal(lsb, b->allPieces))) return 1;
 
     return 0;

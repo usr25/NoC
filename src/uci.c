@@ -170,22 +170,14 @@ int move_(Board* b, char* beg)
 
     if (m.pieceThatMoves == PAWN)
     {
-        if (b->turn)
-        {
-            if (to - from == 9 || to - from == 7)
-                m.enPass = to - 8;
-        }
-        else
-        {
-            if (from - to == 9 || from - to == 7)
-                m.enPass = to + 8;
-        }
+        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[1 ^ b->turn][PAWN] & POW2[b->enPass]))
+            m.enPass = b->enPass;
+        if (b->enPass - from == -1 && (from & 7) != 0 && (b->piece[1 ^b->turn][PAWN] & POW2[b->enPass]))
+            m.enPass = b->enPass;
     }
 
-    drawPosition(*b, 0);
     History h;
     makeMove(b, m, &h);
-    drawPosition(*b, 0);
 
     return 4 + prom;
 }

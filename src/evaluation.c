@@ -14,6 +14,8 @@
 #define PAWN_CHAIN 15
 #define PAWN_PROTECTION 20
 #define N_ATTACKED_BY_PAWN 30
+#define E_ADVANCED_KING 5
+#define E_ADVANCED_PAWN 10
 //#define BLOCKED_PAWNS 0
 
 #include "../include/global.h"
@@ -28,6 +30,7 @@ int matrices(Board b);
 int allPiecesValue(Board b);
 int analyzePawnStructure(Board b);
 int pieceActivity(Board b);
+int endgameAnalysis(Board b);
 int multiply(int vals[64], uint64_t mask);
 
 int hasMatingMat(Board b, int color);
@@ -38,7 +41,6 @@ int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces);
 int twoBishops(uint64_t wh, uint64_t bl);
 int bishopMobility(uint64_t wh, uint64_t bl, uint64_t allPieces);
 int knightCoordination(); //Two knights side by side are better
-int bishopPair(); //Having a bishop pair but the opponent doesnt
 int passedPawns();
 int pawns();
 int knightForks();
@@ -46,17 +48,6 @@ int materialHit(); //?
 int pins(); //?
 int skewers();  //?
 
-
-int rookMatrix[64] = 
-   {0, 0, 0, 0,     0, 0, 0, 0,
-    -5, 7, 7, 7,     7, 7, 7, -5,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    -5, 7, 7, 7,     7, 7, 7, -5,
-    0, 0, 0, 0,     0, 0, 0, 0};
 
 int bishMatrix[64] = 
    {5, 5, 5, 5,     5, 5, 5, 5,     
@@ -86,7 +77,7 @@ int wPawnMatrix[64] =
     -10, 10, 0, 0,     0, 0, 10, -10,
     -5, 5, 0, 15,     15, 0, 5, -5,
 
-    1, 4, 4, 20,     20, 4, 4, 1,
+    4, 4, 4, 20,     20, 4, 4, 4,
     0, 3, 0, 10,     10, 0, 3, 0,
     3, 3, 3, 0,     0, 3, 3, 3,
     0, 0, 0, 0,     0, 0, 0, 0};
@@ -95,7 +86,7 @@ int bPawnMatrix[64] =
    {0, 0, 0, 0,     0, 0, 0, 0,
     3, 3, 3, 0,     0, 3, 3, 3,
     0, 3, 0, 15,     15, 0, 3, 0,
-    1, 4, 4, 20,     20, 4, 4, 1,
+    4, 4, 4, 20,     20, 4, 4, 4,
 
     -5, 5, 0, 10,     10, 0, 5, -5,
     -10, 10, 0, 0,     0, 0, 10, -10,
@@ -123,6 +114,14 @@ int isEndgame(Board b)
 
 int eval(Board b)
 {
+    if (isEndgame(b))
+    {
+        return   allPiecesValue(b)
+                +endgameAnalysis(b)
+                +pieceActivity(b)
+                +pawns(b);
+    }
+
     return   allPiecesValue(b)
             +matrices(b)
             +pieceActivity(b)
@@ -154,6 +153,21 @@ inline int pawns(Board b)
             +N_ATTACKED_BY_PAWN * (POPCOUNT(attB & b.color[WHITE]) - POPCOUNT(attW & b.color[BLACK]));
 }
 
+inline int endgameAnalysis(Board b)
+{
+    int wAvg = b.piece[WHITE][PAWN] ? 
+    (LSB_INDEX(b.piece[WHITE][PAWN]) + MSB_INDEX(b.piece[WHITE][PAWN])) >> 1 
+    : 0;
+    int bAvg = b.piece[BLACK][PAWN] ? 
+    (LSB_INDEX(b.piece[BLACK][PAWN]) + MSB_INDEX(b.piece[BLACK][PAWN])) >> 1 
+    : 64;
+    
+    int advPawns = (wAvg >> 3) - ((64 - bAvg) >> 3);
+    return 
+        E_ADVANCED_KING * ((LSB_INDEX(b.piece[WHITE][KING]) >> 3) - ((63 - LSB_INDEX(b.piece[BLACK][KING])) >> 3))
+        +E_ADVANCED_PAWN * advPawns;
+}
+
 inline int pieceActivity(Board b)
 {
     return   connectedRooks(b.piece[WHITE][ROOK], b.piece[BLACK][ROOK], b.allPieces)
@@ -165,7 +179,6 @@ inline int pieceActivity(Board b)
 inline int matrices(Board b)
 {
     return   multiply(wPawnMatrix, b.piece[WHITE][PAWN]) - multiply(bPawnMatrix, b.piece[BLACK][PAWN])
-            +multiply(rookMatrix, b.piece[WHITE][ROOK]) - multiply(rookMatrix, b.piece[BLACK][ROOK])
             +multiply(bishMatrix, b.piece[WHITE][BISH]) - multiply(bishMatrix, b.piece[BLACK][BISH])
             +multiply(knightMatrix, b.piece[WHITE][KNIGHT]) - multiply(knightMatrix, b.piece[BLACK][KNIGHT]);
 }
