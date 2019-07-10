@@ -3,6 +3,8 @@ typedef struct
     int pieceThatMoves;
     int from;
     int to;
+    int capture;
+
     int castle;
     int promotion;
     int enPass;
@@ -10,9 +12,6 @@ typedef struct
 
 typedef struct
 {
-    int pieceCaptured;
-
-    //Data regarding the Board struct, to make it easier to save
     uint64_t allPieces;
     int posInfo;
     int enPass;

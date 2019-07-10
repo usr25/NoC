@@ -12,6 +12,7 @@
 #include "../include/test.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/allmoves.h"
 #include "../include/perft.h"
 #include "../include/uci.h"
 #include "../include/search.h"

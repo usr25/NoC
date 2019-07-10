@@ -394,8 +394,8 @@ int testBoardPawnMoves()
 
     for (int i = 0; i < 8; ++i)
     {
-        Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8 + i, .to = 48 + i};
-        Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i};
+        Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8 + i, .to = 48 + i, .capture = PAWN};
+        Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 48 + i, .to = 8 + i, .capture = PAWN};
 
         b = defaultBoard();
         b.turn = WHITE;
@@ -421,8 +421,8 @@ int testBoardPawnMoves()
     }
 
     b = defaultBoard();
-    Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56};
-    Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7};
+    Move w1 = (Move) {.pieceThatMoves= PAWN, .from = 8, .to = 56, .capture = ROOK};
+    Move b1 = (Move) {.pieceThatMoves= PAWN, .from = 55, .to = 7, .capture = ROOK};
 
     b.turn = WHITE;
     makeMove(&b, w1, &h);
@@ -430,6 +430,7 @@ int testBoardPawnMoves()
     b.turn = BLACK;
     makeMove(&b, b1, &h);
     extra &= ((b.piece[BLACK][PAWN] & POW2[57]) == 0) && ((b.piece[BLACK][PAWN] & POW2[7]) == POW2[7]) && (b.piece[WHITE][ROOK] == POW2[0]);
+
 
     return pawnMovesNoCapture && pawnMovesCapture && extra;
 }
@@ -619,15 +620,15 @@ int testPromotion()
 
     for (int i = 0; i < 4; ++i)
     {
-        piecesAddUp &= (moves[8 + i].promotion != KING);
-        makeMove(&b, moves[8 + i], &h);
-        undoMove(&b, moves[8 + i], &h);
+        piecesAddUp &= (moves[i].promotion != KING);
+        makeMove(&b, moves[i], &h);
+        undoMove(&b, moves[i], &h);
     }
     Board cp = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -", &ignore);
     
     int eq = equal(&cp, &b);
 
-    return correctNum && eq && piecesAddUp;
+    return correctNum && piecesAddUp && eq;
 }
 
 int testEnPass()
@@ -635,7 +636,6 @@ int testEnPass()
     Board b;
 
     b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -", &ignore);
-
     int perft1 = 
         (perftRecursive(b, 1) == 4ULL) && (perftRecursive(b, 2) == 32ULL) && (perftRecursive(b, 3) == 185ULL) && (perftRecursive(b, 4) == 1382ULL);
 
@@ -763,4 +763,5 @@ void runTests()
 
     //Perft
     printf("[+] Perft: %d\n",           testSimplePerft());
+  
 }

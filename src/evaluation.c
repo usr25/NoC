@@ -9,9 +9,9 @@
 #define CONNECTED_ROOKS 50
 #define TWO_BISH 30
 #define ROOK_OPEN_FILE 60
-#define BISHOP_MOBILITY 1
-#define N_DOUBLED_PAWNS 50
-#define PAWN_CHAIN 30
+#define BISHOP_MOBILITY 2
+#define N_DOUBLED_PAWNS 30
+#define PAWN_CHAIN 15
 #define PAWN_PROTECTION 20
 #define N_ATTACKED_BY_PAWN 30
 //#define BLOCKED_PAWNS 0
@@ -40,33 +40,12 @@ int bishopMobility(uint64_t wh, uint64_t bl, uint64_t allPieces);
 int knightCoordination(); //Two knights side by side are better
 int bishopPair(); //Having a bishop pair but the opponent doesnt
 int passedPawns();
-int connectedPawns(); //Pawns lined up diagonally
+int pawns();
 int knightForks();
 int materialHit(); //? 
 int pins(); //?
 int skewers();  //?
 
-int kingMatrix[64] = 
-   {3, 8, 2, -10,     0, -10, 10, 5,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, -4, -5,   -5, -5, -4, 0,
-    0, 0, -5, -10,  -10, -5, 0, 0,
-
-    0, 0, -5, -10,  -10, -5, 0, 0,
-    0, 0, -4, -5,   -5, -4, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    3, 8, 2, -10,     0, -10, 10, 5};
-
-int queenMatrix[64] = 
-   {0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0,
-    0, 0, 0, 0,     0, 0, 0, 0};
 
 int rookMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
@@ -107,21 +86,22 @@ int wPawnMatrix[64] =
     -10, 10, 0, 0,     0, 0, 10, -10,
     -5, 5, 0, 15,     15, 0, 5, -5,
 
-    0, 0, 0, 20,     20, 0, 0, 0,
+    1, 4, 4, 20,     20, 4, 4, 1,
     0, 3, 0, 10,     10, 0, 3, 0,
-    5, 5, 5, 0,     0, 5, 5, 5,
+    3, 3, 3, 0,     0, 3, 3, 3,
     0, 0, 0, 0,     0, 0, 0, 0};
 
 int bPawnMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
-    5, 5, 5, 0,     0, 5, 5, 5,
+    3, 3, 3, 0,     0, 3, 3, 3,
     0, 3, 0, 15,     15, 0, 3, 0,
-    0, 0, 0, 20,     20, 0, 0, 0,
+    1, 4, 4, 20,     20, 4, 4, 1,
 
     -5, 5, 0, 10,     10, 0, 5, -5,
     -10, 10, 0, 0,     0, 0, 10, -10,
     175, 200, 200, 200,     200, 200, 200, 175,
     0, 0, 0, 0,     0, 0, 0, 0};
+
 
 inline int hasMatingMat(Board b, int color)
 {
@@ -130,14 +110,48 @@ inline int hasMatingMat(Board b, int color)
     return POPCOUNT(b.piece[color][BISH] | b.piece[color][KNIGHT]) > 1;
 }
 
+int isDraw(Board b)
+{
+    return ! (hasMatingMat(b, WHITE) || hasMatingMat(b, BLACK));
+}
+
+//It is considered an endgame if there are 3 pieces or less in each side
+int isEndgame(Board b)
+{
+    return POPCOUNT(b.allPieces - (b.piece[WHITE][PAWN] + b.piece[BLACK][PAWN])) < 9;
+}
+
 int eval(Board b)
 {
-    if (!hasMatingMat(b, WHITE) && !hasMatingMat(b, BLACK))
-        return 0;
-    
-    return   allPiecesValue(b) 
+    return   allPiecesValue(b)
             +matrices(b)
-            +pieceActivity(b);
+            +pieceActivity(b)
+            +pawns(b);
+}
+
+
+uint64_t pawnAttacks(uint64_t pawns, int color)
+{
+    uint64_t res = 0ULL;
+    while(pawns)
+    {
+        res |= color ? getWhitePawnCaptures(LSB_INDEX(pawns)) : getBlackPawnCaptures(LSB_INDEX(pawns));
+        REMOVE_LSB(pawns);
+    }
+    return res;
+}
+
+inline int pawns(Board b)
+{
+    uint64_t wPawn = b.piece[WHITE][PAWN];
+    uint64_t bPawn = b.piece[BLACK][PAWN];
+    uint64_t attW = pawnAttacks(wPawn, WHITE);
+    uint64_t attB = pawnAttacks(bPawn, BLACK);
+
+    return   PAWN_CHAIN * (POPCOUNT(wPawn & attW) - POPCOUNT(bPawn & attB))
+            +PAWN_PROTECTION * (POPCOUNT(attW & (b.piece[WHITE][BISH] | b.piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b.piece[BLACK][BISH] | b.piece[BLACK][KNIGHT])))
+            +N_DOUBLED_PAWNS * (POPCOUNT(bPawn & (bPawn * 24)) - POPCOUNT(wPawn & (wPawn * 24)));
+            +N_ATTACKED_BY_PAWN * (POPCOUNT(attB & b.color[WHITE]) - POPCOUNT(attW & b.color[BLACK]));
 }
 
 inline int pieceActivity(Board b)
@@ -150,24 +164,10 @@ inline int pieceActivity(Board b)
 
 inline int matrices(Board b)
 {
-    int val = 0;
-
-    val += multiply(wPawnMatrix, b.piece[WHITE][PAWN]);
-    val -= multiply(bPawnMatrix, b.piece[BLACK][PAWN]);
-
-    val += multiply(kingMatrix, b.piece[WHITE][KING]);
-    val += multiply(queenMatrix, b.piece[WHITE][QUEEN]);
-    val += multiply(rookMatrix, b.piece[WHITE][ROOK]);
-    val += multiply(bishMatrix, b.piece[WHITE][BISH]);
-    val += multiply(knightMatrix, b.piece[WHITE][KNIGHT]);
-
-    val -= multiply(kingMatrix, b.piece[BLACK][KING]);
-    val -= multiply(queenMatrix, b.piece[BLACK][QUEEN]);
-    val -= multiply(rookMatrix, b.piece[BLACK][ROOK]);
-    val -= multiply(bishMatrix, b.piece[BLACK][BISH]);
-    val -= multiply(knightMatrix, b.piece[BLACK][KNIGHT]);
-
-    return val;
+    return   multiply(wPawnMatrix, b.piece[WHITE][PAWN]) - multiply(bPawnMatrix, b.piece[BLACK][PAWN])
+            +multiply(rookMatrix, b.piece[WHITE][ROOK]) - multiply(rookMatrix, b.piece[BLACK][ROOK])
+            +multiply(bishMatrix, b.piece[WHITE][BISH]) - multiply(bishMatrix, b.piece[BLACK][BISH])
+            +multiply(knightMatrix, b.piece[WHITE][KNIGHT]) - multiply(knightMatrix, b.piece[BLACK][KNIGHT]);
 }
 
 inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t allPieces)
@@ -226,11 +226,11 @@ inline int twoBishops(uint64_t wh, uint64_t bl)
 
 int allPiecesValue(Board bo)
 {
-    return   VQUEEN *    (POPCOUNT(bo.piece[1][QUEEN])    - POPCOUNT(bo.piece[0][QUEEN]))
-            +VROOK *     (POPCOUNT(bo.piece[1][ROOK])     - POPCOUNT(bo.piece[0][ROOK]))
-            +VBISH *     (POPCOUNT(bo.piece[1][BISH])     - POPCOUNT(bo.piece[0][BISH]))
-            +VKNIGHT *   (POPCOUNT(bo.piece[1][KNIGHT])   - POPCOUNT(bo.piece[0][KNIGHT]))
-            +VPAWN *     (POPCOUNT(bo.piece[1][PAWN])     - POPCOUNT(bo.piece[0][PAWN]));
+    return   VQUEEN     *(POPCOUNT(bo.piece[1][QUEEN])    - POPCOUNT(bo.piece[0][QUEEN]))
+            +VROOK      *(POPCOUNT(bo.piece[1][ROOK])     - POPCOUNT(bo.piece[0][ROOK]))
+            +VBISH      *(POPCOUNT(bo.piece[1][BISH])     - POPCOUNT(bo.piece[0][BISH]))
+            +VKNIGHT    *(POPCOUNT(bo.piece[1][KNIGHT])   - POPCOUNT(bo.piece[0][KNIGHT]))
+            +VPAWN      *(POPCOUNT(bo.piece[1][PAWN])     - POPCOUNT(bo.piece[0][PAWN]));
 }
 
 int multiply(int vals[64], uint64_t mask)

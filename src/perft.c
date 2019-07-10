@@ -59,5 +59,5 @@ int perft(int depth, int tree)
         undoMove(&b, moves[i], &h);
     }
     
-    return results[depth] == tot;
+    return tot == results[depth];
 }

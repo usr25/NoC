@@ -38,7 +38,10 @@ int alphaBeta(Board b, int alpha, int beta, int depth)
         for (int i = 0; i < numMoves; ++i)
         {
             makeMove(&b, list[i], &h);
-            val = alphaBeta(b, alpha, beta, depth - 1);
+            if (isDraw(b))
+                val = 0;
+            else
+                val = alphaBeta(b, alpha, beta, depth - 1);
 
             if(val > best)
             {
@@ -60,7 +63,10 @@ int alphaBeta(Board b, int alpha, int beta, int depth)
         for (int i = 0; i < numMoves; ++i)
         {
             makeMove(&b, list[i], &h);
-            val = alphaBeta(b, alpha, beta, depth - 1);
+            if (isDraw(b))
+                val = 0;
+            else
+                val = alphaBeta(b, alpha, beta, depth - 1);
 
             if(val < best)
             {
@@ -87,8 +93,9 @@ Move bestMoveAB(Board b, int depth, int tree)
     History h;
 
     int numMoves = legalMoves(&b, list, color);
+    printf("%d\n", numMoves);
 
-    int best = color ? MINS_INF : PLUS_INF;
+    int best = (color ? MINS_INF : PLUS_INF) << 8;
     
     Move currBest;
     int val;

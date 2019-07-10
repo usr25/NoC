@@ -12,14 +12,17 @@
 
 //returns the piece CAPTURED
 //returns -1 otherwise
-int pieceAt(Board* const b, const uint64_t pos, const int color)
+inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 {
-    if (pos & b->piece[color][PAWN])     return PAWN;
-    else if (pos & b->piece[color][ROOK]) return ROOK;
-    else if (pos & b->piece[color][BISH]) return BISH;
-    else if (pos & b->piece[color][KNIGHT]) return KNIGHT;
-    else if (pos & b->piece[color][QUEEN]) return QUEEN;
-    else if (pos & b->piece[color][KING]) return KING;
+    if (pos & b->allPieces)
+    {
+        if (pos & b->piece[color][PAWN])     return PAWN;
+        else if (pos & b->piece[color][ROOK]) return ROOK;
+        else if (pos & b->piece[color][BISH]) return BISH;
+        else if (pos & b->piece[color][KNIGHT]) return KNIGHT;
+        else if (pos & b->piece[color][QUEEN]) return QUEEN;
+        else if (pos & b->piece[color][KING]) return KING;
+    }
     
     return NO_PIECE;
 }
@@ -145,9 +148,8 @@ void makeMove(Board* b, Move move, History* h)
         break;
     }
 
-    h->pieceCaptured = pieceAt(b, toBit, 1 ^ b->turn);
-    if (h->pieceCaptured != NO_PIECE)
-        unsetBit(b, toBit, h->pieceCaptured, 1 ^ b->turn);
+    if (move.capture && move.capture != NO_PIECE)
+        unsetBit(b, toBit, move.capture, 1 ^ b->turn);
     
     b->allPieces = b->color[WHITE] | b->color[BLACK];
     b->turn ^= 1;
@@ -195,6 +197,6 @@ void undoMove(Board* b, Move move, History* h)
         break;
     }
 
-    if (h->pieceCaptured != NO_PIECE)
-        setBit(b, toBit, h->pieceCaptured, 1 ^ b->turn);  
+    if (move.capture && move.capture != NO_PIECE)
+        setBit(b, toBit, move.capture, 1 ^ b->turn);  
 }

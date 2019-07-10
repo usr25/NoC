@@ -60,75 +60,37 @@ int textToPiece(char piece)
             return NO_PIECE;
     }
 }
+int color(char piece)
+{
+    return 'A' <= piece && piece <= 'Z';
+}
 
 Board genFromFen(char* const fen, int* counter)
 {
     Board b = (Board) {};
-    int i, num, shift;
+    int i, num, shift, col, piece;
     uint64_t pos = POW2[63];
 
     for (i = 0; pos != 0; ++i)
     {
         shift = 1;
-        switch(fen[i])
+        col = color(fen[i]);
+        piece = textToPiece(fen[i]);
+
+        if (piece != NO_PIECE)
         {
-            case 'K':
-                b.color[WHITE] |= pos;
-                b.piece[WHITE][KING] |= pos;
-                break;
-            case 'Q':
-                b.color[WHITE] |= pos;
-                b.piece[WHITE][QUEEN] |= pos;
-                break;
-            case 'R':
-                b.color[WHITE] |= pos;
-                b.piece[WHITE][ROOK] |= pos;
-                break;
-            case 'B':
-                b.color[WHITE] |= pos;
-                b.piece[WHITE][BISH] |= pos;
-                break;
-            case 'N':
-                b.color[WHITE] |= pos;
-                b.piece[WHITE][KNIGHT] |= pos;
-                break;
-            case 'P':
-                b.color[WHITE] |= pos;
-                b.piece[WHITE][PAWN] |= pos;
-                break;
-
-            case 'k':
-                b.color[BLACK] |= pos;
-                b.piece[BLACK][KING] |= pos;
-                break;
-            case 'q':
-                b.color[BLACK] |= pos;
-                b.piece[BLACK][QUEEN] |= pos;
-                break;
-            case 'r':
-                b.color[BLACK] |= pos;
-                b.piece[BLACK][ROOK] |= pos;
-                break;
-            case 'b':
-                b.color[BLACK] |= pos;
-                b.piece[BLACK][BISH] |= pos;
-                break;
-            case 'n':
-                b.color[BLACK] |= pos;
-                b.piece[BLACK][KNIGHT] |= pos;
-                break;
-            case 'p':
-                b.color[BLACK] |= pos;
-                b.piece[BLACK][PAWN] |= pos;
-                break;
-            case '/': 
-                shift = 0;
-                break;
-
-            default:
-                num = fen[i] - (int)'0';
-                pos >>= num;
-                shift = 0;
+            b.color[col] |= pos;
+            b.piece[col][piece] |= pos;
+        }
+        else if (fen[i] == '/')
+        {
+            shift = 0;
+        }
+        else
+        {
+            num = fen[i] - '0';
+            pos >>= num;
+            shift = 0;
         }
 
         pos >>= shift;
@@ -168,7 +130,7 @@ Board genFromFen(char* const fen, int* counter)
     i++;
 
     if (fen[i] != '-'){
-        b.enPass = getIndex(fen[i], fen[i + 1]) - (2 * b.turn - 1) * 8;
+        b.enPass = getIndex(fen[i], fen[i+1]) - (2 * b.turn - 1) * 8;
         i+=2;
     }
     i++;

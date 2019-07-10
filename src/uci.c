@@ -13,7 +13,7 @@
 #include "../include/evaluation.h"
 
 #define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "Engine"
+#define ENGINE_NAME "Dev"
 #define LEN 4096
 
 void uci();
@@ -27,7 +27,7 @@ Board gen_def(char* beg);
 
 void loop()
 {
-    Board b = defaultBoard();
+    Board b;
 
     char input[LEN];
     char* res, *beg;
@@ -82,7 +82,7 @@ void loop()
             b = gen_(beg + 13);
 
         else if(strncmp(beg, "position", 8) == 0)
-            b = gen_(beg + 8);
+            b = gen_(beg + 9);
 
         else if (strncmp(beg, "eval", 4) == 0)
             eval_(b);
@@ -93,7 +93,7 @@ void loop()
         else if (strncmp(beg, "move", 4) == 0)
             move_(&b, beg + 5);
 
-        else if (strncmp(beg, "quit", 4) == 0 || beg[0] == 'q')//"quit" or something has gone wrong, either way exit
+        else if (strncmp(beg, "quit", 4) == 0)
             quit = 1;
 
         else{
@@ -140,9 +140,10 @@ int move_(Board* b, char* beg)
     from = getIndex(beg[0], beg[1]);
     to = getIndex(beg[2], beg[3]);
 
-    Move m = (Move) {.from = from, .to = to};
+    Move m = (Move) {.from = from, .to = to, 
+        .pieceThatMoves = pieceAt(b, POW2[from], b->turn),
+        .capture = pieceAt(b, POW2[to], 1 ^ b->turn)};
 
-    m.pieceThatMoves = pieceAt(b, POW2[m.from], b->turn);
     
     if(m.pieceThatMoves == KING)
     {
@@ -163,24 +164,28 @@ int move_(Board* b, char* beg)
             m.promotion = piece;
             prom++;
         }
+        if (abs(from - to) == 16)
+            b->enPass = to;
     }
-
-    History h;
-    makeMove(b, m, &h);
 
     if (m.pieceThatMoves == PAWN)
     {
         if (b->turn)
         {
             if (to - from == 9 || to - from == 7)
-                b->enPass = from + 16;
+                m.enPass = to - 8;
         }
         else
         {
             if (from - to == 9 || from - to == 7)
-                b->enPass = from - 16;
+                m.enPass = to + 8;
         }
     }
+
+    drawPosition(*b, 0);
+    History h;
+    makeMove(b, m, &h);
+    drawPosition(*b, 0);
 
     return 4 + prom;
 }
