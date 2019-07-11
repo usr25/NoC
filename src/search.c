@@ -8,13 +8,57 @@
 #include "../include/io.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define PLUS_MATE 99999
 #define MINS_MATE -99999
-#define PLUS_INF 9999999
-#define MINS_INF -9999999
+#define PLUS_INF 99999999
+#define MINS_INF -99999999
 
+int alphaBeta(Board b, int alpha, int beta, int depth);
+int bestMoveBruteValue(Board b, int depth);
 
+Move bestMoveAB(Board b, int depth, int tree)
+{
+    if (depth == 0) return (Move) {};
+    const int color = b.turn;
+
+    Move list[200];
+    History h;
+
+    int numMoves = legalMoves(&b, list, color);
+
+    int best = color ? MINS_INF : PLUS_INF;
+    
+    Move currBest = list[0];
+    int val;
+
+    for (int i = 0; i < numMoves; ++i)
+    {
+        makeMove(&b, list[i], &h);
+        val = alphaBeta(b, MINS_INF, PLUS_INF, depth - 1);
+        undoMove(&b, list[i], &h);
+
+        if (tree)
+        {
+            drawMove(list[i]);
+            printf(": %d\n", val);
+        }
+
+        if (color && val > best)
+        {
+            currBest = list[i];
+            best = val;
+        }
+        else if (!color && val < best)
+        {
+            currBest = list[i];
+            best = val;
+        }
+    }
+
+    return currBest;
+}
 int alphaBeta(Board b, int alpha, int beta, int depth)
 {
     if (! depth) return eval(b);
@@ -85,82 +129,8 @@ int alphaBeta(Board b, int alpha, int beta, int depth)
     
     return best;
 }
-Move bestMoveAB(Board b, int depth, int tree)
-{
-    if (depth == 0) return (Move) {};
-    const int color = b.turn;
 
-    Move list[200];
-    History h;
 
-    int numMoves = legalMoves(&b, list, color);
-
-    int best = color ? MINS_INF : PLUS_INF;
-    
-    Move currBest = list[0];
-    int val;
-
-    for (int i = 0; i < numMoves; ++i)
-    {
-        makeMove(&b, list[i], &h);
-        val = alphaBeta(b, MINS_INF, PLUS_INF, depth - 1);
-        undoMove(&b, list[i], &h);
-
-        if (tree)
-        {
-            drawMove(list[i]);
-            printf(": %d\n", val);
-        }
-
-        if (color && val > best)
-        {
-            currBest = list[i];
-            best = val;
-        }
-        else if (!color && val < best)
-        {
-            currBest = list[i];
-            best = val;
-        }
-    }
-
-    return currBest;
-}
-
-int bestMoveBruteValue(Board b, int depth)
-{
-    if (depth == 0) return eval(b);
-
-    Move list[200];
-    History h;
-
-    int numMoves = legalMoves(&b, list, b.turn);
-    
-    if (! numMoves)
-    {
-        if (isInCheck(&b, b.turn))
-            return depth * (b.turn ? MINS_MATE : PLUS_MATE);
-        else
-            return 0;
-    }
-
-    int best = b.turn ? MINS_INF : PLUS_INF;
-    int val;
-
-    for (int i = 0; i < numMoves; ++i)
-    {
-        makeMove(&b, list[i], &h);
-        val = bestMoveBruteValue(b, depth - 1);
-        undoMove(&b, list[i], &h);
-
-        if (b.turn && val > best)
-            best = val;
-        else if (!b.turn && val < best)
-            best = val;
-    }
-
-    return best;
-}
 Move bestMoveBrute(Board b, int depth, int tree)
 {
     Move list[200];
@@ -196,4 +166,38 @@ Move bestMoveBrute(Board b, int depth, int tree)
     }
 
     return currBest;
+}
+int bestMoveBruteValue(Board b, int depth)
+{
+    if (depth == 0) return eval(b);
+
+    Move list[200];
+    History h;
+
+    int numMoves = legalMoves(&b, list, b.turn);
+    
+    if (! numMoves)
+    {
+        if (isInCheck(&b, b.turn))
+            return depth * (b.turn ? MINS_MATE : PLUS_MATE);
+        else
+            return 0;
+    }
+
+    int best = b.turn ? MINS_INF : PLUS_INF;
+    int val;
+
+    for (int i = 0; i < numMoves; ++i)
+    {
+        makeMove(&b, list[i], &h);
+        val = bestMoveBruteValue(b, depth - 1);
+        undoMove(&b, list[i], &h);
+
+        if (b.turn && val > best)
+            best = val;
+        else if (!b.turn && val < best)
+            best = val;
+    }
+
+    return best;
 }

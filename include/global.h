@@ -27,8 +27,8 @@
 #define WCASTLEK 8
 #define WCASTLEQ 16
 
-#define C_MASK_WK 0x6
-#define C_MASK_WQ 0x70
+#define C_MASK_WK 0x6ULL
+#define C_MASK_WQ 0x70ULL
 #define C_MASK_BK 0x600000000000000ULL
 #define C_MASK_BQ 0x7000000000000000ULL
 

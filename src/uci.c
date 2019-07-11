@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "../include/global.h"
-#include "../include/uci.h"
 #include "../include/board.h"
 #include "../include/perft.h"
 #include "../include/moves.h"
@@ -11,10 +10,12 @@
 #include "../include/search.h"
 #include "../include/io.h"
 #include "../include/evaluation.h"
+#include "../include/uci.h"
 
 #define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "Dev"
+#define ENGINE_NAME "Inf"
 #define LEN 4096
+#define DEPTH 6
 
 void uci();
 void isready();
@@ -24,6 +25,8 @@ void best_(Board b, char* beg);
 int move_(Board* b, char* beg);
 Board gen_(char* beg);
 Board gen_def(char* beg);
+
+Move evalPos(char* beg);
 
 void loop()
 {
@@ -128,7 +131,7 @@ void best_(Board b, char* beg)
     Move best;
     char mv[6];
     
-    best = bestMoveAB(b, 5, 0);
+    best = bestMoveAB(b, DEPTH, 0);
     
     moveToText(best, mv);
     fprintf(stdout, "bestmove %s\n", mv);
@@ -210,4 +213,14 @@ Board gen_(char* beg)
     }
 
     return b;
+}
+
+Move evalPos(char* beg)
+{
+    int a;
+    Board b = genFromFen(beg, &a);
+    Move best = bestMoveAB(b, DEPTH, 1);
+    drawMove(best);
+    printf("\n");
+    return best;
 }

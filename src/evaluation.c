@@ -6,16 +6,19 @@
 #define VPAWN 100
 
 //All the constants that begin with N_ are negative, so instead of C * (w - b) the operation is C * (b - w)
-#define CONNECTED_ROOKS 50
-#define TWO_BISH 30
-#define ROOK_OPEN_FILE 60
-#define BISHOP_MOBILITY 2
-#define N_DOUBLED_PAWNS 30
-#define PAWN_CHAIN 15
-#define PAWN_PROTECTION 20
-#define N_ATTACKED_BY_PAWN 30
-#define E_ADVANCED_KING 5
-#define E_ADVANCED_PAWN 10
+#define CONNECTED_ROOKS 40 //Bonus for having connected rooks
+#define TWO_BISH 20 //Bonus for having the bishop pair
+#define ROOK_OPEN_FILE 30 //Bonus for a rook on an open file (No same color pawns)
+#define BISHOP_MOBILITY 2 //Bonus for sqares available to the bish
+#define N_DOUBLED_PAWNS 30 //Penalization for doubled pawns (proportional to the pawns in line - 1)
+#define PAWN_CHAIN 15 //Bonus for making a pawn chain
+#define PAWN_PROTECTION 20 //Bonus for Bish / Knight protected by pawn
+#define N_ATTACKED_BY_PAWN 30 //Penalization if a pawn can easily attack a piece
+#define E_ADVANCED_KING 5 //Endgame, bonus for advanced king
+#define E_ADVANCED_PAWN 10 //Endgame, bonus for advanced pawns
+#define N_PIECE_SLOW_DEV 20 //Penalization for keeping the pieces in the back-rank
+#define STABLE_KING 30 //Bonus for king in e1/8 or castled
+#define SAFE_KING 20 //Bonus for pawns surrounding the king
 //#define BLOCKED_PAWNS 0
 
 #include "../include/global.h"
@@ -31,7 +34,9 @@ int allPiecesValue(Board b);
 int analyzePawnStructure(Board b);
 int pieceActivity(Board b);
 int endgameAnalysis(Board b);
+int pieceDevelopment(Board b);
 int multiply(int vals[64], uint64_t mask);
+int pawns(Board b);
 
 int hasMatingMat(Board b, int color);
 
@@ -39,11 +44,12 @@ int castlingStructure();
 int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp);
 int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces);
 int twoBishops(uint64_t wh, uint64_t bl);
-int bishopMobility(uint64_t wh, uint64_t bl, uint64_t allPieces);
+int bishopMobility(uint64_t wh, uint64_t bl, uint64_t whP, uint64_t blP);
+
+//TO implement:
 int knightCoordination(); //Two knights side by side are better
 int passedPawns();
-int pawns();
-int knightForks();
+int knightForks(); //Probably not necessary
 int materialHit(); //? 
 int pins(); //?
 int skewers();  //?
@@ -106,10 +112,10 @@ int isDraw(Board b)
     return ! (hasMatingMat(b, WHITE) || hasMatingMat(b, BLACK));
 }
 
-//It is considered an endgame if there are 3 pieces or less in each side
+//It is considered an endgame if there are 3 pieces or less in each side, (<=8 taking into account the kings)
 int isEndgame(Board b)
 {
-    return POPCOUNT(b.allPieces - (b.piece[WHITE][PAWN] + b.piece[BLACK][PAWN])) < 9;
+    return POPCOUNT(b.allPieces ^ (b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN])) < 9;
 }
 
 int eval(Board b)
@@ -123,6 +129,7 @@ int eval(Board b)
     }
 
     return   allPiecesValue(b)
+            +pieceDevelopment(b)
             +matrices(b)
             +pieceActivity(b)
             +pawns(b);
@@ -140,6 +147,14 @@ uint64_t pawnAttacks(uint64_t pawns, int color)
     return res;
 }
 
+//TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
+inline int pieceDevelopment(Board b)
+{
+    return 
+         N_PIECE_SLOW_DEV * ((0x6600000000000000ULL & b.color[BLACK]) - (0x66ULL & b.color[WHITE]))
+        +STABLE_KING * (((0x6b & b.piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b.piece[BLACK][KING]) != 0));
+}
+
 inline int pawns(Board b)
 {
     uint64_t wPawn = b.piece[WHITE][PAWN];
@@ -150,7 +165,7 @@ inline int pawns(Board b)
     return   PAWN_CHAIN * (POPCOUNT(wPawn & attW) - POPCOUNT(bPawn & attB))
             +PAWN_PROTECTION * (POPCOUNT(attW & (b.piece[WHITE][BISH] | b.piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b.piece[BLACK][BISH] | b.piece[BLACK][KNIGHT])))
             +N_DOUBLED_PAWNS * (POPCOUNT(bPawn & (bPawn * 24)) - POPCOUNT(wPawn & (wPawn * 24)));
-            +N_ATTACKED_BY_PAWN * (POPCOUNT(attB & b.color[WHITE]) - POPCOUNT(attW & b.color[BLACK]));
+            +N_ATTACKED_BY_PAWN * (POPCOUNT((attB * 9) & b.color[WHITE]) - POPCOUNT((attW * 9) & b.color[BLACK]));
 }
 
 inline int endgameAnalysis(Board b)
@@ -162,10 +177,9 @@ inline int endgameAnalysis(Board b)
     (LSB_INDEX(b.piece[BLACK][PAWN]) + MSB_INDEX(b.piece[BLACK][PAWN])) >> 1 
     : 64;
     
-    int advPawns = (wAvg >> 3) - ((64 - bAvg) >> 3);
     return 
         E_ADVANCED_KING * ((LSB_INDEX(b.piece[WHITE][KING]) >> 3) - ((63 - LSB_INDEX(b.piece[BLACK][KING])) >> 3))
-        +E_ADVANCED_PAWN * advPawns;
+        +E_ADVANCED_PAWN * ((wAvg >> 3) - ((64 - bAvg) >> 3));
 }
 
 inline int pieceActivity(Board b)
@@ -173,7 +187,7 @@ inline int pieceActivity(Board b)
     return   connectedRooks(b.piece[WHITE][ROOK], b.piece[BLACK][ROOK], b.allPieces)
             +rookOnOpenFile(b.piece[WHITE][ROOK], b.piece[WHITE][PAWN], b.piece[BLACK][ROOK], b.piece[BLACK][PAWN])
             +twoBishops(b.piece[WHITE][BISH], b.piece[BLACK][BISH])
-            +bishopMobility(b.piece[WHITE][BISH], b.piece[BLACK][BISH], b.allPieces);
+            +bishopMobility(b.piece[WHITE][BISH], b.piece[BLACK][BISH], b.color[WHITE], b.color[BLACK]);
 }
 
 inline int matrices(Board b)
@@ -183,19 +197,19 @@ inline int matrices(Board b)
             +multiply(knightMatrix, b.piece[WHITE][KNIGHT]) - multiply(knightMatrix, b.piece[BLACK][KNIGHT]);
 }
 
-inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t allPieces)
+inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t whP, uint64_t blP)
 {
-    return BISHOP_MOBILITY * ((POPCOUNT(diagonal(MSB_INDEX(wh), allPieces)) + POPCOUNT(diagonal(LSB_INDEX(wh), allPieces))) 
-                             -(POPCOUNT(diagonal(MSB_INDEX(bl), allPieces)) + POPCOUNT(diagonal(LSB_INDEX(bl), allPieces))));
+    return BISHOP_MOBILITY * ((POPCOUNT(diagonal(MSB_INDEX(wh), whP)) + POPCOUNT(diagonal(LSB_INDEX(wh), whP))) 
+                             -(POPCOUNT(diagonal(MSB_INDEX(bl), blP)) + POPCOUNT(diagonal(LSB_INDEX(bl), blP))));
 }
 
 inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces)
 {
     int res = 0;
-    int hi, lo;
+
     if (wh & (wh - 1))
     {
-        hi = MSB_INDEX(wh); lo = LSB_INDEX(wh);
+        int hi = MSB_INDEX(wh), lo = LSB_INDEX(wh);
         if ((hi >> 3) == (lo >> 3)) //Same row
         {
             res += LSB_INDEX(getLeftMoves(lo) & allPieces) == hi;
@@ -207,7 +221,7 @@ inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces)
     }
     if (bl & (bl - 1))
     {
-        hi = MSB_INDEX(bl); lo = LSB_INDEX(bl);
+        int hi = MSB_INDEX(bl), lo = LSB_INDEX(bl);
         if ((hi >> 3) == (lo >> 3)) //Same row
         {
             res -= LSB_INDEX(getLeftMoves(lo) & allPieces) == hi;
@@ -257,4 +271,11 @@ int multiply(int vals[64], uint64_t mask)
     }
 
     return val;
+}
+
+int testEval(char* beg)
+{
+    int a;
+    Board b = genFromFen(beg, &a);
+    return eval(b);
 }
