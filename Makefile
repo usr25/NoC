@@ -24,7 +24,7 @@ $(ODIR)/%.o.o: $(SDIR)/%.c $(DEPS)
 main: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
-.PHONY: clean optimized lichess
+.PHONY: clean optimized lichess all
 
 optimized: $(OBJO)
 	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS)
@@ -32,6 +32,9 @@ optimized: $(OBJO)
 lichess:
 	make optimized
 	mv optimized $(LICHESS)
+
+all:
+	(mkdir $(ODIR) && make optimized) || make optimized 
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~

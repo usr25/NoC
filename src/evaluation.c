@@ -1,24 +1,24 @@
 //#define VKING 99999
-#define VQUEEN 900
-#define VROOK 500
-#define VBISH 325
-#define VKNIGHT 300
+#define VQUEEN 950
+#define VROOK 520
+#define VBISH 335
+#define VKNIGHT 310
 #define VPAWN 100
 
 //All the constants that begin with N_ are negative, so instead of C * (w - b) the operation is C * (b - w)
-#define CONNECTED_ROOKS 40 //Bonus for having connected rooks
+#define CONNECTED_ROOKS 35 //Bonus for having connected rooks
 #define TWO_BISH 20 //Bonus for having the bishop pair
-#define ROOK_OPEN_FILE 30 //Bonus for a rook on an open file (No same color pawns)
+#define ROOK_OPEN_FILE 25 //Bonus for a rook on an open file (No same color pawns)
 #define BISHOP_MOBILITY 2 //Bonus for sqares available to the bish
-#define N_DOUBLED_PAWNS 30 //Penalization for doubled pawns (proportional to the pawns in line - 1)
+#define N_DOUBLED_PAWNS 40 //Penalization for doubled pawns (proportional to the pawns in line - 1)
 #define PAWN_CHAIN 15 //Bonus for making a pawn chain
 #define PAWN_PROTECTION 20 //Bonus for Bish / Knight protected by pawn
-#define N_ATTACKED_BY_PAWN 30 //Penalization if a pawn can easily attack a piece
+#define ATTACKED_BY_PAWN 18 //Bonus if a pawn can easily attack a piece
 #define E_ADVANCED_KING 5 //Endgame, bonus for advanced king
-#define E_ADVANCED_PAWN 10 //Endgame, bonus for advanced pawns
-#define N_PIECE_SLOW_DEV 20 //Penalization for keeping the pieces in the back-rank
-#define STABLE_KING 30 //Bonus for king in e1/8 or castled
-#define SAFE_KING 20 //Bonus for pawns surrounding the king
+#define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
+#define N_PIECE_SLOW_DEV 25 //Penalization for keeping the pieces in the back-rank
+#define STABLE_KING 25 //Bonus for king in e1/8 or castled
+#define SAFE_KING 20 //TODO //Bonus for pawns surrounding the king
 //#define BLOCKED_PAWNS 0
 
 #include "../include/global.h"
@@ -29,7 +29,8 @@
 
 #include <stdio.h>
 
-int matrices(Board b);
+int matricesBeg(Board b);
+int matricesEnd(Board b);
 int allPiecesValue(Board b);
 int analyzePawnStructure(Board b);
 int pieceActivity(Board b);
@@ -40,7 +41,6 @@ int pawns(Board b);
 
 int hasMatingMat(Board b, int color);
 
-int castlingStructure();
 int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp);
 int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces);
 int twoBishops(uint64_t wh, uint64_t bl);
@@ -54,51 +54,12 @@ int materialHit(); //?
 int pins(); //?
 int skewers();  //?
 
-
-int bishMatrix[64] = 
-   {5, 5, 5, 5,     5, 5, 5, 5,     
-    9, 9, 11, 5,    9, 9, 11, 5,
-    11, 13, 9, 5,   11, 13, 9, 5,
-    15, 11, 9, 5,   15, 11, 9, 5,
-    
-    5, 5, 5, 9,     5, 5, 5, 9,     
-    9, 9, 11, 5,    9, 9, 11, 5,
-    11, 13, 9, 5,   11, 13, 9, 5,
-    5, 5, 5, 5,   5, 5, 5, 5};
-
-int knightMatrix[64] = 
-   {-50, -10, -10, -10, -10, -10, -10, -50,
-    -10, 0, 0, 0,       0, 0, 0, -10,
-    -10, 0, 10, 15,     15, 10, 0, -10,
-    -10, 0, 15, 20,     20, 15, 0, -10,
-
-    -10, 0, 15, 20,     20, 15, 0, -10,
-    -10, 0, 10, 15,     15, 10, 0, -10,
-    -10, 0, 0, 0,       0, 0, 0, -10,
-    -50, -10, -10, -10,       -10, -10, -10, -50};
-
-int wPawnMatrix[64] = 
-   {0, 0, 0, 0,     0, 0, 0, 0,
-    175, 200, 200, 200,     200, 200, 200, 175,
-    -10, 10, 0, 0,     0, 0, 10, -10,
-    -5, 5, 0, 15,     15, 0, 5, -5,
-
-    4, 4, 4, 20,     20, 4, 4, 4,
-    0, 3, 0, 10,     10, 0, 3, 0,
-    3, 3, 3, 0,     0, 3, 3, 3,
-    0, 0, 0, 0,     0, 0, 0, 0};
-
-int bPawnMatrix[64] = 
-   {0, 0, 0, 0,     0, 0, 0, 0,
-    3, 3, 3, 0,     0, 3, 3, 3,
-    0, 3, 0, 15,     15, 0, 3, 0,
-    4, 4, 4, 20,     20, 4, 4, 4,
-
-    -5, 5, 0, 10,     10, 0, 5, -5,
-    -10, 10, 0, 0,     0, 0, 10, -10,
-    175, 200, 200, 200,     200, 200, 200, 175,
-    0, 0, 0, 0,     0, 0, 0, 0};
-
+int bishMatrix[64];
+int knightMatrix[64];
+int wPawnMatrix[64];
+int ewPawnMatrix[64];
+int bPawnMatrix[64];
+int ebPawnMatrix[64];
 
 inline int hasMatingMat(Board b, int color)
 {
@@ -123,6 +84,7 @@ int eval(Board b)
     if (isEndgame(b))
     {
         return   allPiecesValue(b)
+                +matricesEnd(b)
                 +endgameAnalysis(b)
                 +pieceActivity(b)
                 +pawns(b);
@@ -130,11 +92,10 @@ int eval(Board b)
 
     return   allPiecesValue(b)
             +pieceDevelopment(b)
-            +matrices(b)
+            +matricesBeg(b)
             +pieceActivity(b)
             +pawns(b);
 }
-
 
 uint64_t pawnAttacks(uint64_t pawns, int color)
 {
@@ -148,10 +109,11 @@ uint64_t pawnAttacks(uint64_t pawns, int color)
 }
 
 //TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
+//TODO: Disable piece_slow_dev if all the pieces have already moved or if it is the middlegame
 inline int pieceDevelopment(Board b)
 {
     return 
-         N_PIECE_SLOW_DEV * ((0x6600000000000000ULL & b.color[BLACK]) - (0x66ULL & b.color[WHITE]))
+         N_PIECE_SLOW_DEV * (POPCOUNT(0x6600000000000000ULL & b.color[BLACK]) - POPCOUNT(0x66ULL & b.color[WHITE]))
         +STABLE_KING * (((0x6b & b.piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b.piece[BLACK][KING]) != 0));
 }
 
@@ -164,8 +126,8 @@ inline int pawns(Board b)
 
     return   PAWN_CHAIN * (POPCOUNT(wPawn & attW) - POPCOUNT(bPawn & attB))
             +PAWN_PROTECTION * (POPCOUNT(attW & (b.piece[WHITE][BISH] | b.piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b.piece[BLACK][BISH] | b.piece[BLACK][KNIGHT])))
-            +N_DOUBLED_PAWNS * (POPCOUNT(bPawn & (bPawn * 24)) - POPCOUNT(wPawn & (wPawn * 24)));
-            +N_ATTACKED_BY_PAWN * (POPCOUNT((attB * 9) & b.color[WHITE]) - POPCOUNT((attW * 9) & b.color[BLACK]));
+            +N_DOUBLED_PAWNS * (POPCOUNT(bPawn & (bPawn >> 8 | bPawn >> 16)) - POPCOUNT(wPawn & (wPawn * 0x10100)))
+            +ATTACKED_BY_PAWN * (POPCOUNT((attW * 0x101) & b.color[BLACK]) - POPCOUNT((attB | attB >> 8) & b.color[WHITE]));
 }
 
 inline int endgameAnalysis(Board b)
@@ -184,17 +146,21 @@ inline int endgameAnalysis(Board b)
 
 inline int pieceActivity(Board b)
 {
-    return   connectedRooks(b.piece[WHITE][ROOK], b.piece[BLACK][ROOK], b.allPieces)
+    return   connectedRooks(b.piece[WHITE][ROOK], b.piece[BLACK][ROOK], b.allPieces ^ b.piece[WHITE][QUEEN] ^ b.piece[BLACK][QUEEN])
             +rookOnOpenFile(b.piece[WHITE][ROOK], b.piece[WHITE][PAWN], b.piece[BLACK][ROOK], b.piece[BLACK][PAWN])
             +twoBishops(b.piece[WHITE][BISH], b.piece[BLACK][BISH])
             +bishopMobility(b.piece[WHITE][BISH], b.piece[BLACK][BISH], b.color[WHITE], b.color[BLACK]);
 }
 
-inline int matrices(Board b)
+inline int matricesBeg(Board b)
 {
     return   multiply(wPawnMatrix, b.piece[WHITE][PAWN]) - multiply(bPawnMatrix, b.piece[BLACK][PAWN])
             +multiply(bishMatrix, b.piece[WHITE][BISH]) - multiply(bishMatrix, b.piece[BLACK][BISH])
             +multiply(knightMatrix, b.piece[WHITE][KNIGHT]) - multiply(knightMatrix, b.piece[BLACK][KNIGHT]);
+}
+inline int matricesEnd(Board b)
+{
+    return   multiply(ewPawnMatrix, b.piece[WHITE][PAWN]) - multiply(ebPawnMatrix, b.piece[BLACK][PAWN]);
 }
 
 inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t whP, uint64_t blP)
@@ -279,3 +245,69 @@ int testEval(char* beg)
     Board b = genFromFen(beg, &a);
     return eval(b);
 }
+
+int bishMatrix[64] = 
+   {5, 5, 5, 5,     5, 5, 5, 5,     
+    9, 9, 11, 5,    9, 9, 11, 5,
+    11, 13, 9, 5,   11, 13, 9, 5,
+    15, 11, 9, 5,   15, 11, 9, 5,
+    
+    5, 5, 5, 9,     5, 5, 5, 9,     
+    9, 9, 11, 5,    9, 9, 11, 5,
+    11, 13, 9, 5,   11, 13, 9, 5,
+    5, 5, 5, 5,   5, 5, 5, 5};
+
+int knightMatrix[64] = 
+   {-30, -7, -7, -7, -7, -7, -7, -30,
+    -7, 0, 0, 0,       0, 0, 0, -7,
+    -7, 0, 10, 15,     15, 10, 0, -7,
+    -7, 0, 15, 20,     20, 15, 0, -7,
+
+    -7, 0, 15, 20,     20, 15, 0, -7,
+    -7, 0, 10, 15,     15, 10, 0, -7,
+    -7, 0, 0, 0,       0, 0, 0, -7,
+    -30, -7, -7, -7,       -7, -7, -7, -30};
+
+int wPawnMatrix[64] = 
+   {0, 0, 0, 0,     0, 0, 0, 0,
+    20, 50, 50, 50,     50, 50, 50, 20,
+    -10, 10, 0, 0,     0, 0, 10, -10,
+    -5, 5, 0, 2,     2, 0, 5, -5,
+
+    4, 4, 4, 40,     40, 4, 4, 4,
+    1, 5, 1, 10,     10, 1, 5, 1,
+    5, 5, 5, 0,     0, 5, 5, 5,
+    0, 0, 0, 0,     0, 0, 0, 0};
+
+int bPawnMatrix[64] = 
+   {0, 0, 0, 0,     0, 0, 0, 0,
+    5, 5, 5, 0,     0, 5, 5, 5,
+    1, 5, 1, 15,     15, 1, 5, 1,
+    4, 4, 4, 20,     20, 4, 4, 4,
+
+    -5, 5, 0, 2,     2, 0, 5, -5,
+    -5, 2, 0, 0,     0, 0, 2, -5,
+    20, 50, 50, 50,     50, 50, 50, 20,
+    0, 0, 0, 0,     0, 0, 0, 0};
+
+int ewPawnMatrix[64] = 
+   {0, 0, 0, 0,     0, 0, 0, 0,
+    50, 100, 100, 100,     100, 100, 100, 50,
+    7, 15, 20, 25,     25, 20, 15, 7,
+    5, 7, 7, 7,     7, 7, 7, 5,
+
+    0, 0, 3, 5,     5, 3, 0, 0,
+    -3, -3, -3, -3,     -3, -3, -3, -3,
+    -10, -10, -10, -10,     -10, -10, -10, -10,
+    0, 0, 0, 0,     0, 0, 0, 0};
+
+int ebPawnMatrix[64] = 
+   {0, 0, 0, 0,     0, 0, 0, 0,
+    -10, -10, -10, -10,     -10, -10, -10, -10,
+    -3, -3, -3, -3,     -3, -3, -3, -3,
+    0, 0, 3, 5,     5, 3, 0, 0,
+
+    5, 7, 7, 7,     7, 7, 7, 5,
+    7, 15, 20, 25,     25, 20, 15, 7,
+    50, 100, 100, 100,     100, 100, 100, 50,
+    0, 0, 0, 0,     0, 0, 0, 0};

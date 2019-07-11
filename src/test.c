@@ -4,9 +4,11 @@
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
 #include "../include/io.h"
+#include "../include/evaluation.h"
 #include "../include/perft.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
@@ -684,6 +686,108 @@ int testSimplePerft()
     return startPos && noPawns && castle && bishAndKnight && queen && promotion;
 }
 
+int equalsDelta(int a, int b)
+{
+    return abs(a - b) < 20;
+}
+
+int evEquality()
+{
+    int eq = 1;
+    
+    Board b = defaultBoard();
+    eq &= equalsDelta(eval(b), 0);
+
+    b = genFromFen("2b3k1/2pQRppp/1p6/p1N5/P1n5/1P6/2PqrPPP/2B3K1 b - -", &ignore);
+    return eq;
+}
+int evMaterial()
+{
+    int mat = 1;
+    Board b1 = defaultBoard();
+    History h;
+
+    //BLACK pieces removed
+    for (int i = 0; i < 8; ++i)
+    {
+        if (i != 4)
+        {
+            Move m = (Move) {.pieceThatMoves = PAWN, .from = 8, .to = 63 - i, .capture = pieceAt(&b1, 1ULL << (63 - i), 1 ^ b1.turn)};
+            makeMove(&b1, m, &h);
+            mat &= eval(b1) > 270;
+            undoMove(&b1, m, &h);
+        }
+    }
+
+    //BLACK pawns removed
+    for (int i = 8; i < 16; ++i)
+    {
+        Move m = (Move) {.pieceThatMoves = PAWN, .from = 8, .to = 63 - i, .capture = PAWN};
+        makeMove(&b1, m, &h);
+        mat &= 300 > eval(b1) && eval(b1) > 75;
+        undoMove(&b1, m, &h);
+    }
+    
+
+    b1.turn ^= 1;
+    //WHITE pieces removed
+    for (int i = 0; i < 8; ++i)
+    {
+        if (i != 3)
+        {
+            Move m = (Move) {.pieceThatMoves = PAWN, .from = 56, .to = i, .capture = pieceAt(&b1, 1ULL << i, 1 ^ b1.turn)};
+            makeMove(&b1, m, &h);
+            mat &= eval(b1) < -270;
+            undoMove(&b1, m, &h);
+        }
+    }
+    //WHITE pawns removed
+    for (int i = 8; i < 16; ++i)
+    {
+        Move m = (Move) {.pieceThatMoves = PAWN, .from = 56, .to = i, .capture = PAWN};
+        makeMove(&b1, m, &h);
+        mat &= eval(b1) < -75 && -300 < eval(b1);
+        undoMove(&b1, m, &h);
+    }
+
+    return mat;
+}
+int evCastle()
+{
+    int cas = 1;
+    Board b1 = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq -", &ignore);
+    Board b2 = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1RK1 w kq -", &ignore);
+
+    //TODO: Improve this so that the rook doesnt get penalized
+    //cas &= eval(b2) > eval(b1);
+
+    b1 = genFromFen("rnbqk2r/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq -", &ignore);
+    b2 = genFromFen("rnbq1rk1/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQ -", &ignore);
+
+    //cas &= eval(b2) < eval(b1);
+
+    b1 = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq -", &ignore);
+    b2 = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/2KR3R w kq -", &ignore);
+
+    //cas &= eval(b2) > eval(b1);
+
+    b1 = genFromFen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQkq -", &ignore);
+    b2 = genFromFen("2kr3r/pppppppp/8/8/8/8/PPPPPPPP/RNBQK2R w KQ -", &ignore);
+
+    //cas &= eval(b2) < eval(b1);
+
+    return cas;
+}
+int evPawnPos()
+{
+    return 1;
+}
+
+int testEvaluation()
+{
+    return evEquality() && evMaterial() && evCastle() && evPawnPos();
+}
+
 //This are deep perfts to ensure that everything is working, use this as well to benchmark
 void slowTests()
 {
@@ -764,4 +868,6 @@ void runTests()
     //Perft
     printf("[+] Perft: %d\n",           testSimplePerft());
   
+    //Eval
+    printf("[+] Eval: %d\n",            testEvaluation());
 }

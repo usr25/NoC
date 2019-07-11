@@ -13,7 +13,7 @@
 #include "../include/uci.h"
 
 #define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "Inf"
+#define ENGINE_NAME "DEV"
 #define LEN 4096
 #define DEPTH 6
 
