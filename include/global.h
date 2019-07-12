@@ -32,6 +32,9 @@
 #define C_MASK_BK 0x600000000000000ULL
 #define C_MASK_BQ 0x7000000000000000ULL
 
+#define EVEN_TILES 0x55aa55aa55aa55aa
+#define ODD_TILES 0xaa55aa55aa55aa55
+
 #include <inttypes.h>
 
 typedef struct 

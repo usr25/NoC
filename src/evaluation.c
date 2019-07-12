@@ -14,7 +14,7 @@
 #define PAWN_CHAIN 15 //Bonus for making a pawn chain
 #define PAWN_PROTECTION 20 //Bonus for Bish / Knight protected by pawn
 #define ATTACKED_BY_PAWN 18 //Bonus if a pawn can easily attack a piece
-#define E_ADVANCED_KING 5 //Endgame, bonus for advanced king
+#define E_ADVANCED_KING 3 //Endgame, bonus for advanced king
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
 #define N_PIECE_SLOW_DEV 25 //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
@@ -63,14 +63,45 @@ int ebPawnMatrix[64];
 
 inline int hasMatingMat(Board b, int color)
 {
-    if (b.piece[color][ROOK] || b.piece[color][QUEEN] || b.piece[color][PAWN])
-        return 1;
-    return POPCOUNT(b.piece[color][BISH] | b.piece[color][KNIGHT]) > 1;
+    return b.piece[color][PAWN] || b.piece[color][ROOK] || b.piece[color][QUEEN] || POPCOUNT(b.piece[color][BISH] | b.piece[color][KNIGHT]) > 1;
+}
+
+int insuffMat(Board b)
+{
+    switch(POPCOUNT(b.color[WHITE]))
+    {
+        case 1: 
+            
+            switch(POPCOUNT(b.color[BLACK]))
+            {
+                case 1:
+                    return 1;
+                case 2:
+                    return b.piece[BLACK][BISH] || b.piece[BLACK][KNIGHT];
+            }
+
+            return 0;
+
+        case 2:
+
+            switch(POPCOUNT(b.color[BLACK]))
+            {
+                case 1:
+                    return b.piece[WHITE][BISH] || b.piece[WHITE][KNIGHT];
+                case 2:
+                    return 
+                              ((ODD_TILES & b.piece[WHITE][BISH]) && (ODD_TILES & b.piece[BLACK][BISH])
+                            ||(EVEN_TILES & b.piece[WHITE][BISH]) && (EVEN_TILES & b.piece[BLACK][BISH]));
+            }
+            return 0;
+    }
+
+    return 0;
 }
 
 int isDraw(Board b)
 {
-    return ! (hasMatingMat(b, WHITE) || hasMatingMat(b, BLACK));
+    return insuffMat(b);
 }
 
 //It is considered an endgame if there are 3 pieces or less in each side, (<=8 taking into account the kings)
@@ -274,15 +305,15 @@ int wPawnMatrix[64] =
     -10, 10, 0, 0,     0, 0, 10, -10,
     -5, 5, 0, 2,     2, 0, 5, -5,
 
-    4, 4, 4, 40,     40, 4, 4, 4,
-    1, 5, 1, 10,     10, 1, 5, 1,
-    5, 5, 5, 0,     0, 5, 5, 5,
+    4, 4, 4, 20,     20, 4, 4, 4,
+    1, 5, 1, 7,     7, 1, 5, 1,
+    5, 5, 5, -5,     -5, 5, 5, 5,
     0, 0, 0, 0,     0, 0, 0, 0};
 
 int bPawnMatrix[64] = 
    {0, 0, 0, 0,     0, 0, 0, 0,
-    5, 5, 5, 0,     0, 5, 5, 5,
-    1, 5, 1, 15,     15, 1, 5, 1,
+    5, 5, 5, -5,     -5, 5, 5, 5,
+    1, 5, 1, 7,     7, 1, 5, 1,
     4, 4, 4, 20,     20, 4, 4, 4,
 
     -5, 5, 0, 2,     2, 0, 5, -5,

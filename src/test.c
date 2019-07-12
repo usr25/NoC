@@ -5,10 +5,12 @@
 #include "../include/allmoves.h"
 #include "../include/io.h"
 #include "../include/evaluation.h"
+#include "../include/search.h"
 #include "../include/perft.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
@@ -786,6 +788,59 @@ int evPawnPos()
 int testEvaluation()
 {
     return evEquality() && evMaterial() && evCastle() && evPawnPos();
+}
+
+int compMove(char* fen, char* target, int depth, int len)
+{
+    int a;
+    char mv[6];
+    Board b = genFromFen(fen, &a);
+    Move best = bestMoveAB(b, depth, 0);
+
+    moveToText(best, mv);
+
+    return strncmp(mv, target, len) == 0;
+}
+
+void slowEval()
+{
+    printf("\n---= This will take a long time =---\n");
+    
+    int depth = 7;
+
+    int white = 1, black = 1;
+
+    white &= compMove("k7/pp6/8/4Q3/8/2r5/K7/2q5 w - -", "e5b8", depth, 4);      //Queen sac to draw
+    black &= compMove("2Q5/k7/2R5/8/4q3/8/PP6/K7 b - -", "e4b1", depth, 4);
+
+    white &= compMove("k7/pp6/8/5Q2/8/8/K7/2q5 w - -", "f5f8", depth, 4);        //Queen mate
+    black &= compMove("k7/2Q5/8/8/5q2/8/PP6/K7 b - -", "f4f1", depth, 4);
+
+    white &= compMove("k1q5/pp6/8/3K4/2N5/Q7/8/8 w - -", "c4b6", depth, 4);      //Knight fork pin
+    black &= compMove("k7/8/8/r1n5/8/8/PP6/K1Q5 b - -", "c5b3", depth, 4);
+
+    white &= compMove("8/pp3r1k/8/3K2P1/2N5/8/6R1/8 w - -", "g5g6", depth, 4);   //Pawn fork
+    black &= compMove("6r1/8/8/3k2p1/2N5/5R1K/8/8 b - -", "g5g4", depth, 4);
+
+    white &= compMove("5k2/2P2q2/8/8/4R3/5K2/8/8 w - -", "e4f4", depth, 4);      //Pins
+    black &= compMove("5k2/4r3/8/8/5Q2/5K2/2p5/8 b - -", "e7f7", depth, 4);
+
+    white &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", depth, 5);          //Rook promotion
+    black &= compMove("8/8/8/8/8/2k5/K1p5/8 b - -", "c2c1r", depth, 5);
+    
+    white &= compMove("1q4k1/2pN3R/8/6B1/5K2/8/2p5/4q3 w - -", "d7f6", depth, 4);//Mate
+    black &= compMove("1Q4Q1/2P5/8/8/1b3k2/8/r3n3/1K6 b - -", "e2c3", depth, 4);
+
+    white &= compMove("5Q2/7k/1K6/5pP1/4B1b1/8/8/8 w - f6", "g5f6", depth, 4);   //EnPass mate
+    black &= compMove("5Q2/5p1k/1K6/6P1/4B1b1/8/8/8 b - -", "f7f5", depth, 4);
+    
+    
+    depth = 9;
+    white &= compMove("8/ppp5/8/PPP5/8/8/5K1k/8 w - -", "b5b6", depth, 4); //Pawn breaks
+    black &= compMove("7K/5k2/8/8/ppp5/8/PPP5/8 b - -", "b4b3", depth, 4);
+
+    printf("[+] White Eval: %d\n", white);
+    printf("[+] Black Eval: %d\n", black);
 }
 
 //This are deep perfts to ensure that everything is working, use this as well to benchmark
