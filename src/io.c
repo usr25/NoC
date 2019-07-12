@@ -5,7 +5,7 @@
 #include "../include/moves.h"
 #include "../include/io.h"
 
-char pieces[] = {'k', 'q', 'r', 'b', 'n', 'p'};
+char pieces[6] = {'k', 'q', 'r', 'b', 'n', 'p'};
 
 void drawPosition(Board b, const int drawCoords){
     uint64_t pos = POW2[63];

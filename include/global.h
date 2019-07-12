@@ -37,10 +37,4 @@
 
 #include <inttypes.h>
 
-typedef struct 
-{
-    int numMoves;
-    int check;
-}Check;
-
 uint64_t POW2[64];

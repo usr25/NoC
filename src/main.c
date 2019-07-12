@@ -33,6 +33,6 @@ int main(const int argc, char* const argv[])
     //printf("%d\n", perft(6, 1));
 
     loop();
-
+    
     return 0;
 }

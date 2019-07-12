@@ -18,6 +18,8 @@
 int alphaBeta(Board b, int alpha, int beta, int depth);
 int bestMoveBruteValue(Board b, int depth);
 
+void sort(Move* list, const int numMoves);
+
 Move bestMoveAB(Board b, int depth, int tree)
 {
     if (depth == 0) return (Move) {};
@@ -27,6 +29,8 @@ Move bestMoveAB(Board b, int depth, int tree)
     History h;
 
     int numMoves = legalMoves(&b, list, color);
+
+    sort(list, numMoves);
 
     int best = color ? MINS_INF : PLUS_INF;
     
@@ -74,6 +78,8 @@ int alphaBeta(Board b, int alpha, int beta, int depth)
         else
             return 0;
     }
+
+    sort(list, numMoves);
 
     int val, best;
     if (b.turn)
@@ -139,6 +145,7 @@ Move bestMoveBrute(Board b, int depth, int tree)
     int numMoves = legalMoves(&b, list, b.turn);
     int best = b.turn ? MINS_INF : PLUS_INF;
     int val;
+    sort(list, numMoves);
     Move currBest = list[0];
 
     for (int i = 0; i < numMoves; ++i)
@@ -187,6 +194,7 @@ int bestMoveBruteValue(Board b, int depth)
     int best = b.turn ? MINS_INF : PLUS_INF;
     int val;
 
+    sort(list, numMoves);
     for (int i = 0; i < numMoves; ++i)
     {
         makeMove(&b, list[i], &h);
@@ -200,4 +208,33 @@ int bestMoveBruteValue(Board b, int depth)
     }
 
     return best;
+}
+
+
+void sort(Move* list, const int numMoves)
+{
+    static const int score[6] = {80, 160, 240, 320, 400, 480};
+
+    for (int i = 0; i < numMoves; ++i)
+    {
+        if(list[i].capture != NO_PIECE && list[i].capture)
+            list[i].score = score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4);   
+    }
+
+    //Insertion sort
+    int j;
+    Move temp;
+    for (int i = 1; i < numMoves; ++i)
+    {
+        temp = list[i];
+        j = i - 1;
+
+        while(j >= 0 && list[j].score < temp.score)
+        {
+            list[j + 1] = list[j];
+            --j;
+        }
+
+        list[j + 1] = temp;
+    }    
 }

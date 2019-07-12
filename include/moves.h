@@ -8,6 +8,8 @@ typedef struct
     int castle;
     int promotion;
     int enPass;
+
+    int score;
 }Move;
 
 typedef struct

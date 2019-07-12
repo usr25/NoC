@@ -806,9 +806,18 @@ void slowEval()
 {
     printf("\n---= This will take a long time =---\n");
     
-    int depth = 7;
+    int depth = 6;
+
+    printf("[+] Eval equal position: ");
+    Board b = defaultBoard();
+    drawMove(bestMoveAB(b, depth, 0));
+    printf(" ");
+    b.turn ^= 1;
+    drawMove(bestMoveAB(b, depth, 0));
+    printf("\n");
 
     int white = 1, black = 1;
+    depth = 7;
 
     white &= compMove("k7/pp6/8/4Q3/8/2r5/K7/2q5 w - -", "e5b8", depth, 4);      //Queen sac to draw
     black &= compMove("2Q5/k7/2R5/8/4q3/8/PP6/K7 b - -", "e4b1", depth, 4);
@@ -841,6 +850,7 @@ void slowEval()
 
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);
+
 }
 
 //This are deep perfts to ensure that everything is working, use this as well to benchmark
