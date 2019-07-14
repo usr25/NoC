@@ -111,7 +111,7 @@ void makeMove(Board* b, Move move, History* h)
     switch(move.pieceThatMoves)
     {
         case PAWN:
-        if (move.to - move.from == ((2 * b->turn - 1) << 4))
+        if (move.to - move.from == (2 * b->turn - 1) << 4)
             b->enPass = move.to;
         if (move.enPass)
         {
@@ -139,9 +139,6 @@ void makeMove(Board* b, Move move, History* h)
         
         case ROOK:
         b->posInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
-
-        setBit(b, toBit, ROOK, b->turn);
-        break;
 
         default:
         setBit(b, toBit, move.pieceThatMoves, b->turn);

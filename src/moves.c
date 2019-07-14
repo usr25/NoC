@@ -9,12 +9,12 @@
 #include "../include/memoization.h"
 #include "../include/io.h"
 
-uint64_t posKingMoves(Board* b, const int color)
+inline uint64_t posKingMoves(Board* b, const int color)
 {
     return getKingMoves(LSB_INDEX(b->piece[color][KING])) & b->color[color | 2];
 }
 
-uint64_t posKnightMoves(Board* b, const int color, const int lsb)
+inline uint64_t posKnightMoves(Board* b, const int color, const int lsb)
 {
     return getKnightMoves(lsb) & b->color[color | 2];
 }
@@ -23,14 +23,14 @@ uint64_t posPawnMoves(Board* b, const int color, const int lsb)
 {
     uint64_t forward;
     if (color){
-        if (lsb < 16 && (POW2[8 + lsb] & b->allPieces))
+        if (POW2[lsb + 8] & b->allPieces)
             return getWhitePawnCaptures(lsb) & b->color[BLACK];
 
         forward = getWhitePawnMoves(lsb) & ~(b->color[WHITE] | b->color[BLACK]);
         return forward | (getWhitePawnCaptures(lsb) & b->color[BLACK]);
     }
     else{
-        if (lsb > 47 && (POW2[lsb - 8] & b->allPieces))
+        if (POW2[lsb - 8] & b->allPieces)
             return getBlackPawnCaptures(lsb) & b->color[WHITE];
 
         forward = getBlackPawnMoves(lsb) & ~(b->color[BLACK] | b->color[WHITE]);
@@ -54,27 +54,18 @@ uint64_t straight(const int lsb, const uint64_t allPieces)
     const uint64_t inteLeft = getLeftMovesInt(lsb) & allPieces;
     
     uint64_t res = getStraMoves(lsb);   
-    int obstacle;
 
-    if (inteUp){
-        obstacle = LSB_INDEX(inteUp);
-        res ^= getUpMoves(obstacle);
-    }
+    if (inteUp)
+        res ^= getUpMoves(LSB_INDEX(inteUp));
 
-    if (inteDown){
-        obstacle = MSB_INDEX(inteDown);
-        res ^= getDownMoves(obstacle);
-    }
+    if (inteDown)
+        res ^= getDownMoves(MSB_INDEX(inteDown));
     
-    if (inteRight){
-        obstacle = MSB_INDEX(inteRight);
-        res ^= getRightMoves(obstacle);
-    }
+    if (inteRight)
+        res ^= getRightMoves(MSB_INDEX(inteRight));
     
-    if (inteLeft){
-        obstacle = LSB_INDEX(inteLeft);
-        res ^= getLeftMoves(obstacle);
-    }
+    if (inteLeft)
+        res ^= getLeftMoves(LSB_INDEX(inteLeft));
 
     return res;
 }
@@ -86,27 +77,18 @@ uint64_t diagonal(const int lsb, const uint64_t allPieces)
     const uint64_t inteDownLeft = getDownLeftMovesInt(lsb) & allPieces;
 
     uint64_t res = getDiagMoves(lsb);
-    int obstacle;
 
-    if (inteUpRight){
-        obstacle = LSB_INDEX(inteUpRight);
-        res ^= getUpRightMoves(obstacle);
-    }
+    if (inteUpRight)
+        res ^= getUpRightMoves(LSB_INDEX(inteUpRight));
     
-    if (inteUpLeft){
-        obstacle = LSB_INDEX(inteUpLeft);
-        res ^= getUpLeftMoves(obstacle);
-    }
+    if (inteUpLeft)
+        res ^= getUpLeftMoves(LSB_INDEX(inteUpLeft));
     
-    if (inteDownRight){
-        obstacle = MSB_INDEX(inteDownRight);
-        res ^= getDownRightMoves(obstacle);
-    }
+    if (inteDownRight)
+        res ^= getDownRightMoves(MSB_INDEX(inteDownRight));
     
-    if (inteDownLeft){
-        obstacle = MSB_INDEX(inteDownLeft);
-        res ^= getDownLeftMoves(obstacle);
-    }
+    if (inteDownLeft)
+        res ^= getDownLeftMoves(MSB_INDEX(inteDownLeft));
 
     return res;
 }
@@ -128,86 +110,23 @@ static inline uint64_t kingPawn(const int lsb, const int color)
 {
     return color ? getWhitePawnCaptures(lsb) : getBlackPawnCaptures(lsb);
 }
-//Slower version, only for tests
-//TODO: Update tests and remove
-int canCastleCheck(Board* b, const int color)
-{
-
-    int lsb, canK, canQ;
-    uint64_t maskK, maskQ, rookK, rookQ;
-
-    if (color)
-    {
-        maskK = C_MASK_WK;
-        maskQ = C_MASK_WQ;
-        rookK = 1;
-        rookQ = 128;
-
-        canK = (b->posInfo & WCASTLEK) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL);
-        canQ = (b->posInfo & WCASTLEQ) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL);
-    }
-    else
-    {
-        maskK = C_MASK_BK;
-        maskQ = C_MASK_BQ;
-        rookK = POW2[56];
-        rookQ = POW2[63];
-
-        canK = (b->posInfo & BCASTLEK) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL);
-        canQ = (b->posInfo & BCASTLEQ) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL);
-    }
-
-    if (canK)
-    {
-        canK = ! isInCheck(b, color);
-        while(canK && maskK)
-        {
-            if (checkInPosition(b, LSB_INDEX(maskK), color))
-                canK = 0;
-            REMOVE_LSB(maskK);
-        }
-    }
-    if (canQ)
-    {
-        uint64_t maskToCastle = 0x30 * POW2[(1 ^ color) * 56]; //Squares which the king goes throught, in kingside they are the same as the mask
-        canQ = ! isInCheck(b, color);
-        while(canQ && maskToCastle)
-        {
-            if (checkInPosition(b, LSB_INDEX(maskToCastle), color))
-                canQ = 0;
-            REMOVE_LSB(maskToCastle);
-        }
-    }
-
-    return (canQ << 1) | canK;
-}
 //Determines if the king can castle
+//This function does NOT determine if the king is in check, since it isnt called from genCheckMoves
 int canCastle(Board* b, const int color, const uint64_t forbidden) //Faster version, but forbidden has to be calculated
 {
-    int lsb, canK, canQ;
-    uint64_t maskK, maskQ, rookK, rookQ;
+    int canK, canQ;
 
     uint64_t maskCheck = 0x30 * POW2[(1 ^ color) * 56];
 
     if (color)
     {
-        maskK = C_MASK_WK;
-        maskQ = C_MASK_WQ;
-        rookK = 1;   //2^0
-        rookQ = 128; //2^7
-
-        canK = (b->posInfo & WCASTLEK) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL) && ((maskK & forbidden) == 0ULL);
-        canQ = (b->posInfo & WCASTLEQ) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL) && ((maskCheck & forbidden) == 0ULL);
+        canK = (b->posInfo & WCASTLEK) && (1   & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_WK) && ! (C_MASK_WK & forbidden);
+        canQ = (b->posInfo & WCASTLEQ) && (128 & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_WQ) && ! (maskCheck & forbidden);
     }
     else
     {
-        maskK = C_MASK_BK;
-        maskQ = C_MASK_BQ;
-        rookK = POW2[56];
-        rookQ = POW2[63];
-
-        canK = (b->posInfo & BCASTLEK) && (rookK & b->piece[color][ROOK]) && ((b->allPieces & maskK) == 0ULL) && ((maskK & forbidden) == 0ULL);
-        canQ = (b->posInfo & BCASTLEQ) && (rookQ & b->piece[color][ROOK]) && ((b->allPieces & maskQ) == 0ULL) && ((maskCheck & forbidden) == 0ULL);
+        canK = (b->posInfo & BCASTLEK) && (POW2[56] & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_BK) && ! (C_MASK_BK & forbidden);
+        canQ = (b->posInfo & BCASTLEQ) && (POW2[63] & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_BQ) && ! (maskCheck & forbidden);
     }
 
     return (canQ << 1) | canK;
@@ -222,18 +141,18 @@ inline Move castleQSide(const int color)
 }
 
 //Tiles controlled by the opp king / pawns / knights
-uint64_t controlledKingPawnKnight(Board* b, const int inverse)
+uint64_t controlledKingPawnKnight(Board* b, const int opp)
 {
     uint64_t temp;
-    uint64_t res = getKingMoves(LSB_INDEX(b->piece[inverse][KING]));
+    uint64_t res = getKingMoves(LSB_INDEX(b->piece[opp][KING]));
 
-    temp = b->piece[inverse][PAWN];
+    temp = b->piece[opp][PAWN];
     while(temp)
     {
-        res |= kingPawn(LSB_INDEX(temp), inverse);
+        res |= kingPawn(LSB_INDEX(temp), opp);
         REMOVE_LSB(temp);
     }
-    temp = b->piece[inverse][KNIGHT];
+    temp = b->piece[opp][KNIGHT];
     while(temp)
     {
         res |= getKnightMoves(LSB_INDEX(temp));
@@ -274,17 +193,17 @@ uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles)
 //Any piece placed in one of this tiles will stop a check, either by capture or by pinning itself
 AttacksOnK getCheckTiles(Board* b, const int color)
 {
-    const int inverse = 1 ^ color;
+    const int opp = 1 ^ color;
     const int lsb = LSB_INDEX(b->piece[color][KING]);
 
     uint64_t res = 
-        (b->piece[inverse][PAWN] & kingPawn(lsb, color)) | (b->piece[inverse][KNIGHT] & getKnightMoves(lsb));
+        (b->piece[opp][PAWN] & kingPawn(lsb, color)) | (b->piece[opp][KNIGHT] & getKnightMoves(lsb));
 
     int num = POPCOUNT(res);
     int obstacle;
 
-    uint64_t stra = b->piece[inverse][QUEEN] | b->piece[inverse][ROOK];
-    uint64_t diag = b->piece[inverse][QUEEN] | b->piece[inverse][BISH];
+    uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
+    uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
 
     if (stra)
     {
@@ -366,20 +285,21 @@ AttacksOnK getCheckTiles(Board* b, const int color)
 
 int checkInPosition(Board* b, const int lsb, const int kingsColor)
 {
-    const int inverse = 1 ^ kingsColor;
+    const int opp = 1 ^ kingsColor;
 
-    if (b->piece[inverse][KING] & getKingMoves(lsb)) return 1;
-    if (b->piece[inverse][PAWN] & kingPawn(lsb, kingsColor)) return 1;
-    if (b->piece[inverse][KNIGHT] & getKnightMoves(lsb)) return 1;
+    if (b->piece[opp][KING] & getKingMoves(lsb)) return 1;
+    if (b->piece[opp][PAWN] & kingPawn(lsb, kingsColor)) return 1;
+    if (b->piece[opp][KNIGHT] & getKnightMoves(lsb)) return 1;
     
-    const uint64_t stra = b->piece[inverse][QUEEN] | b->piece[inverse][ROOK];
+    const uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
     if (stra && (stra & straight(lsb, b->allPieces))) return 1;
 
-    const uint64_t diag = b->piece[inverse][QUEEN] | b->piece[inverse][BISH];
+    const uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
     if (diag && (diag & diagonal(lsb, b->allPieces))) return 1;
 
     return 0;
 }
+
 inline int isInCheck(Board* b, const int kingsColor)
 {
     return checkInPosition(b, LSB_INDEX(b->piece[kingsColor][KING]), kingsColor);

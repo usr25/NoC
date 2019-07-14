@@ -8,7 +8,6 @@
 #include "../include/io.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #define PLUS_MATE 99999
 #define MINS_MATE -99999

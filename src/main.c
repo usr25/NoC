@@ -28,7 +28,9 @@ int main(const int argc, char* const argv[])
 
     //runTests();
     //slowTests();    //58'8s
-    slowEval();   //47'9s
+    //slowEval();   //47'9s
+
+    //printf("%d\n", perft(6, 1)); //5'9s
 
     //loop();
 

@@ -10,7 +10,6 @@
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
 
-uint64_t pinnedPieces(Board* b, const int color);
 int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
 int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
@@ -196,14 +195,14 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         }
 
         //TODO: The king may end up in check if enPass, so take that into account (happens if they are in the same row or diag, maybe optimize?)
-        if ((b->enPass - from == 1) && ((from & 7) != 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass])){
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass};
             
             if (moveIsValid(b, m, h))
                 list[numMoves++] = m;
         }
         
-        else if ((b->enPass - from == -1) && ((from & 7) != 0) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+        else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
             
             if (moveIsValid(b, m, h))
@@ -271,7 +270,7 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         }
     }
 
-    tempMoves = posKingMoves(b, color) & (~forbidden);
+    tempMoves = posKingMoves(b, color) & ~forbidden;
     temp = b->piece[color][KING];
     from = LSB_INDEX(temp);
     while(tempMoves)
@@ -301,9 +300,11 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         list[numMoves++] = castleQSide(color);
 
     temp = b->piece[color][KING];
-    tempMoves = posKingMoves(b, color) & (~forbidden);
+    tempMoves = posKingMoves(b, color) & ~forbidden;
     from = LSB_INDEX(temp);
+
     uint64_t kingSliding = getStraMoves(from) | getDiagMoves(from);
+    
     while(tempMoves)
     {
         to = LSB_INDEX(tempMoves);
@@ -357,13 +358,13 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
                 list[numMoves++] = (Move){.pieceThatMoves = PAWN, .from = from, .to = to, .capture = capt};
         }
 
-        if ((b->enPass - from == 1) && ((from & 7) != 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass])){
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass};
             if (moveIsValid(b, m, h))
                 list[numMoves++] = m;
         }
         
-        else if ((b->enPass - from == -1) && ((from & 7) != 0) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+        else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
             if (moveIsValid(b, m, h))
                 list[numMoves++] = m;
@@ -466,7 +467,7 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
     uint64_t interfere = att.tiles;
     uint64_t pinnedMask = ~ pinned;
 
-    tempMoves = posKingMoves(b, color) & (~forbidden);
+    tempMoves = posKingMoves(b, color) & ~forbidden;
     temp = b->piece[color][KING];
     from = LSB_INDEX(temp);
     while(tempMoves)
@@ -505,12 +506,12 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
                 }    
             }
 
-            if ((b->enPass - from == 1) && ((from & 7) != 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+            if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass])){
                 m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass};
                 if (moveIsValid(b, m, h))
                     list[numMoves++] = m;
             }
-            else if ((b->enPass - from == -1) && ((from & 7) != 0) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+            else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
                 m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
                 if (moveIsValid(b, m, h))
                     list[numMoves++] = m;

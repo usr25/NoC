@@ -446,8 +446,9 @@ int testCastleNoCheck()
     
     //White kingside
     b = genFromFen("8/8/8/8/8/8/8/4K2R w K -", &ignore);
+    uint64_t forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
     int dataIsOk = b.posInfo == WCASTLEK;
-    int can = (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 1);
+    int can = canCastle(&b, BLACK, forbidden) == 0 && canCastle(&b, WHITE, forbidden) == 1;
 
     Move moveWK = castleKSide(WHITE);
     makeMove(&b, moveWK, &h);
@@ -459,8 +460,9 @@ int testCastleNoCheck()
 
     //White queenside
     b = genFromFen("8/8/8/8/8/8/8/R3K3 w Q -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
     dataIsOk &= b.posInfo == WCASTLEQ;
-    can &= (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 2);
+    can &= canCastle(&b, BLACK, forbidden) == 0 && canCastle(&b, WHITE, forbidden) == 2;
 
     Move moveWQ = castleQSide(WHITE);
     makeMove(&b, moveWQ, &h);
@@ -472,8 +474,9 @@ int testCastleNoCheck()
 
     //Black kingside
     b = genFromFen("4k2r/8/8/8/8/8/8/8 b k -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
     dataIsOk &= b.posInfo == BCASTLEK;
-    can &= (canCastleCheck(&b, BLACK) == 1) && (canCastleCheck(&b, WHITE) == 0);
+    can &= canCastle(&b, BLACK, forbidden) == 1 && canCastle(&b, WHITE, forbidden) == 0;
 
     Move moveBK = castleKSide(BLACK);
     makeMove(&b, moveBK, &h);
@@ -485,8 +488,9 @@ int testCastleNoCheck()
 
     //Black queenside
     b = genFromFen("r3k3/8/8/8/8/8/8/8 b q -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
     dataIsOk &= b.posInfo == BCASTLEQ;
-    can &= (canCastleCheck(&b, BLACK) == 2) && (canCastleCheck(&b, WHITE) == 0);
+    can &= canCastle(&b, BLACK, forbidden) == 2 && canCastle(&b, WHITE, forbidden) == 0;
 
     Move moveBQ = castleQSide(BLACK);
     makeMove(&b, moveBQ, &h);
@@ -499,8 +503,9 @@ int testCastleNoCheck()
     //Queenside with rook without blocking
     //White
     b = genFromFen("1r6/8/8/8/8/8/8/R3K3 w Q -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
     dataIsOk &= b.posInfo == WCASTLEQ;
-    can &= (canCastleCheck(&b, BLACK) == 0) && (canCastleCheck(&b, WHITE) == 2);
+    can &= canCastle(&b, BLACK, forbidden) == 0 && canCastle(&b, WHITE, forbidden) == 2;
 
     Move moveWQ2 = castleQSide(WHITE);
     makeMove(&b, moveWQ2, &h);
@@ -512,8 +517,9 @@ int testCastleNoCheck()
 
     //Black
     b = genFromFen("r3k3/8/8/8/8/8/8/1R6 b q -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
     dataIsOk &= b.posInfo == BCASTLEQ;
-    can &= (canCastleCheck(&b, BLACK) == 2) && (canCastleCheck(&b, WHITE) == 0);
+    can &= (canCastle(&b, BLACK, forbidden) == 2) && (canCastle(&b, WHITE, forbidden) == 0);
 
     Move moveBQ2 = castleQSide(BLACK);
     makeMove(&b, moveBQ2, &h);
@@ -528,40 +534,45 @@ int testCastleNoCheck()
 int testCastleCheck()
 {
     Board b;
-    int white = 1;
+    uint64_t forbidden;
 
+    int white = 1;
     //Kingside
-    b = genFromFen("8/8/8/8/8/8/8/4KP1R b KQkq -", &ignore);
-    white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("4r3/8/8/8/8/8/8/4K2R b KQkq -", &ignore);
-    white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("5r2/8/8/8/8/8/8/4K2R b KQkq -", &ignore);
-    white &= canCastleCheck(&b, WHITE) == 0;
+    b = genFromFen("8/8/8/8/8/8/8/4KP1R w KQkq -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    white &= canCastle(&b, WHITE, forbidden) == 0;
+
+    b = genFromFen("5r2/8/8/8/8/8/8/4K2R w KQkq -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    white &= canCastle(&b, WHITE, forbidden) == 0;
 
     //Queenside
-    b = genFromFen("8/8/8/8/8/8/8/RP2K3 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("4r3/8/8/8/8/8/8/R3K3 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, WHITE) == 0;
-    b = genFromFen("2r5/8/8/8/8/8/8/R3K3 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, WHITE) == 0;
+    b = genFromFen("8/8/8/8/8/8/8/RP2K3 w KQkq -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    white &= canCastle(&b, WHITE, forbidden) == 0;
+
+    b = genFromFen("2r5/8/8/8/8/8/8/R3K3 w KQkq -", &ignore);
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    white &= canCastle(&b, WHITE, forbidden) == 0;
 
     int black = 1;
-
+    //Kingside
     b = genFromFen("4k1pr/8/8/8/8/8/8/8 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, BLACK) == 0;
-    b = genFromFen("4k2r/8/8/8/8/8/8/4R3 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, BLACK) == 0;
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    black &= canCastle(&b, BLACK, forbidden) == 0;
+
     b = genFromFen("4k2r/8/8/8/8/8/8/6R1 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, BLACK) == 0;
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    black &= canCastle(&b, BLACK, forbidden) == 0;
 
     //Queenside
     b = genFromFen("r1P1k3/8/8/8/8/8/8/8 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, BLACK) == 0;
-    b = genFromFen("r3k3/8/8/8/8/8/8/4R3 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, BLACK) == 0;
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    black &= canCastle(&b, BLACK, forbidden) == 0;
+
     b = genFromFen("r3k3/8/8/8/8/8/8/2R5 b KQkq -", &ignore);
-    white &= canCastleCheck(&b, BLACK) == 0;
+    forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
+    black &= canCastle(&b, BLACK, forbidden) == 0;
 
     return white && black;
 }
