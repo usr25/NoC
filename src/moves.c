@@ -48,10 +48,10 @@ uint64_t posPawnMoves(Board* b, const int color, const int lsb)
 //Possible rook moves
 uint64_t straight(const int lsb, const uint64_t allPieces)
 {
-    const uint64_t inteUp = getUpMoves(lsb) & allPieces;
-    const uint64_t inteDown = getDownMoves(lsb) & allPieces;
-    const uint64_t inteRight = getRightMoves(lsb) & allPieces;
-    const uint64_t inteLeft = getLeftMoves(lsb) & allPieces;
+    const uint64_t inteUp = getUpMovesInt(lsb) & allPieces;
+    const uint64_t inteDown = getDownMovesInt(lsb) & allPieces;
+    const uint64_t inteRight = getRightMovesInt(lsb) & allPieces;
+    const uint64_t inteLeft = getLeftMovesInt(lsb) & allPieces;
     
     uint64_t res = getStraMoves(lsb);   
     int obstacle;
@@ -80,10 +80,10 @@ uint64_t straight(const int lsb, const uint64_t allPieces)
 }
 uint64_t diagonal(const int lsb, const uint64_t allPieces)
 {
-    const uint64_t inteUpRight = getUpRightMoves(lsb) & allPieces;
-    const uint64_t inteUpLeft = getUpLeftMoves(lsb) & allPieces;
-    const uint64_t inteDownRight = getDownRightMoves(lsb) & allPieces;
-    const uint64_t inteDownLeft = getDownLeftMoves(lsb) & allPieces;
+    const uint64_t inteUpRight = getUpRightMovesInt(lsb) & allPieces;
+    const uint64_t inteUpLeft = getUpLeftMovesInt(lsb) & allPieces;
+    const uint64_t inteDownRight = getDownRightMovesInt(lsb) & allPieces;
+    const uint64_t inteDownLeft = getDownLeftMovesInt(lsb) & allPieces;
 
     uint64_t res = getDiagMoves(lsb);
     int obstacle;

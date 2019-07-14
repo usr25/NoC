@@ -1,27 +1,61 @@
-uint64_t getKingMoves(int index);
-uint64_t getKnightMoves(int index);
+uint64_t kingMoves[64];
+uint64_t knightMoves[64];
 
-uint64_t getRightMoves(int index);
-uint64_t getLeftMoves(int index);
-uint64_t getUpMoves(int index);
-uint64_t getDownMoves(int index);
+uint64_t rightMoves[64];        uint64_t rightMovesInt[64];
+uint64_t leftMoves[64];         uint64_t leftMovesInt[64];
+uint64_t upMoves[64];           uint64_t upMovesInt[64];
+uint64_t downMoves[64];         uint64_t downMovesInt[64];
+uint64_t uprightMoves[64];      uint64_t uprightMovesInt[64];
+uint64_t downrightMoves[64];    uint64_t downrightMovesInt[64];
+uint64_t upleftMoves[64];       uint64_t upleftMovesInt[64];
+uint64_t downleftMoves[64];     uint64_t downleftMovesInt[64];
 
-uint64_t getUpRightMoves(int index);
-uint64_t getUpLeftMoves(int index);
-uint64_t getDownRightMoves(int index);
-uint64_t getDownLeftMoves(int index);
+uint64_t straMoves[64];
+uint64_t diagMoves[64];
 
-uint64_t getStraMoves(int index);
-uint64_t getDiagMoves(int index);
+//It can be made to be 64 - 8 but the impact in memory is tiny and the runtime performance would worsen
+uint64_t whitePawnMoves[64];
+uint64_t whitePawnCaptures[64];
+uint64_t blackPawnMoves[64];
+uint64_t blackPawnCaptures[64];
 
-uint64_t getWhitePawnMoves(int index);
-uint64_t getWhitePawnCaptures(int index);
-uint64_t getBlackPawnMoves(int index);
-uint64_t getBlackPawnCaptures(int index);
+uint64_t vert[8];
+uint64_t horiz[8];
 
-uint64_t getVert(int index);
-uint64_t getHoriz(int index);
-//uint64_t getMainDiag(int index);
-//uint64_t getSndDiag(int index);
+uint64_t pawnLanes[8];
+
+#define getKingMoves(i) kingMoves[i]
+#define getKnightMoves(i) knightMoves[i]
+
+#define getRightMoves(i) rightMoves[i]
+#define getLeftMoves(i) leftMoves[i]
+#define getUpMoves(i) upMoves[i]
+#define getDownMoves(i) downMoves[i]
+#define getUpRightMoves(i) uprightMoves[i]
+#define getUpLeftMoves(i) upleftMoves[i]
+#define getDownRightMoves(i) downrightMoves[i]
+#define getDownLeftMoves(i) downleftMoves[i]
+
+#define getRightMovesInt(i) rightMovesInt[i]
+#define getLeftMovesInt(i) leftMovesInt[i]
+#define getUpMovesInt(i) upMovesInt[i]
+#define getDownMovesInt(i) downMovesInt[i]
+#define getUpRightMovesInt(i) uprightMovesInt[i]
+#define getUpLeftMovesInt(i) upleftMovesInt[i]
+#define getDownRightMovesInt(i) downrightMovesInt[i]
+#define getDownLeftMovesInt(i) downleftMovesInt[i]
+
+#define getStraMoves(i) straMoves[i]
+#define getDiagMoves(i) diagMoves[i]
+
+#define getWhitePawnMoves(i) whitePawnMoves[i]
+#define getWhitePawnCaptures(i) whitePawnCaptures[i]
+#define getBlackPawnMoves(i) blackPawnMoves[i]
+#define getBlackPawnCaptures(i) blackPawnCaptures[i]
+
+#define getVert(i) vert[i]
+#define getHoriz(i) horiz[i]
+
+#define getPawnLanes(i) pawnLanes[i]
 
 void initialize();

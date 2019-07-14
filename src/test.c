@@ -798,7 +798,7 @@ int compMove(char* fen, char* target, int depth, int len)
     Move best = bestMoveAB(b, depth, 0);
 
     moveToText(best, mv);
-
+    //printf("%s\n", mv);
     return strncmp(mv, target, len) == 0;
 }
 
@@ -807,7 +807,7 @@ void slowEval()
     printf("\n---= This will take a long time =---\n");
     
     int depth = 6;
-
+    
     printf("[+] Eval equal position: ");
     Board b = defaultBoard();
     drawMove(bestMoveAB(b, depth, 0));
@@ -815,10 +815,12 @@ void slowEval()
     b.turn ^= 1;
     drawMove(bestMoveAB(b, depth, 0));
     printf("\n");
-
+    
     int white = 1, black = 1;
     depth = 7;
 
+    white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
+    
     white &= compMove("k7/pp6/8/4Q3/8/2r5/K7/2q5 w - -", "e5b8", depth, 4);      //Queen sac to draw
     black &= compMove("2Q5/k7/2R5/8/4q3/8/PP6/K7 b - -", "e4b1", depth, 4);
 
@@ -843,10 +845,18 @@ void slowEval()
     white &= compMove("5Q2/7k/1K6/5pP1/4B1b1/8/8/8 w - f6", "g5f6", depth, 4);   //EnPass mate
     black &= compMove("5Q2/5p1k/1K6/6P1/4B1b1/8/8/8 b - -", "f7f5", depth, 4);
     
+
+    white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
+    //black &= compMove("r1bqk2r/pp3ppp/2n2n2/3pp1B1/1b6/1BNP4/PPP1NPPP/R2QK2R b KQkq -", "d5d4", depth, 4);
     
-    depth = 9;
+    depth = 10;
+    
     white &= compMove("8/ppp5/8/PPP5/8/8/5K1k/8 w - -", "b5b6", depth, 4); //Pawn breaks
     black &= compMove("7K/5k2/8/8/ppp5/8/PPP5/8 b - -", "b4b3", depth, 4);
+    
+    white &= compMove("7k/8/5KPP/8/8/8/8/8 w - -", "g6g7", depth, 4);
+    black &= compMove("8/8/8/8/8/ppk5/8/K7 b - -", "b3b2", depth, 4);
+
 
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);

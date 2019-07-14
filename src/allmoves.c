@@ -33,10 +33,10 @@ uint64_t pinnedPieces(Board* b, const int color)
 
     if (stra)
     {
-        const uint64_t inteUp = getUpMoves(lsb) & b->allPieces;
-        const uint64_t inteDown = getDownMoves(lsb) & b->allPieces;
-        const uint64_t inteRight = getRightMoves(lsb) & b->allPieces;
-        const uint64_t inteLeft = getLeftMoves(lsb) & b->allPieces;
+        const uint64_t inteUp = getUpMovesInt(lsb) & b->allPieces;
+        const uint64_t inteDown = getDownMovesInt(lsb) & b->allPieces;
+        const uint64_t inteRight = getRightMovesInt(lsb) & b->allPieces;
+        const uint64_t inteLeft = getLeftMovesInt(lsb) & b->allPieces;
 
         if (inteUp)
         {
@@ -81,9 +81,9 @@ uint64_t pinnedPieces(Board* b, const int color)
     }
     if (diag)
     {
-        const uint64_t inteUpRight = getUpRightMoves(lsb) & b->allPieces;
-        const uint64_t inteUpLeft = getUpLeftMoves(lsb) & b->allPieces;
-        const uint64_t inteDownRight = getDownRightMoves(lsb) & b->allPieces;
+        const uint64_t inteUpRight = getUpRightMovesInt(lsb) & b->allPieces;
+        const uint64_t inteUpLeft = getUpLeftMovesInt(lsb) & b->allPieces;
+        const uint64_t inteDownRight = getDownRightMovesInt(lsb) & b->allPieces;
         const uint64_t inteDownLeft = getDownLeftMoves(lsb) & b->allPieces;
 
         if (inteUpRight){
@@ -164,12 +164,10 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
             REMOVE_LSB(tempMoves);
             if (to < 8 || to > 55)
             {
-                //TODO: Promotions to queen and knight are pushed to the beggining
                 int capt = pieceAt(b, POW2[to], opp); 
 
                 list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt};
                 list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = KNIGHT, .capture = capt};
-
                 list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = ROOK, .capture = capt};
                 list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = BISH, .capture = capt};
             }
@@ -468,7 +466,6 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
                     
                     list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt};
                     list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = KNIGHT, .capture = capt};
-                    
                     list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = ROOK, .capture = capt};
                     list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = BISH, .capture = capt};
                 }
@@ -559,7 +556,6 @@ int legalMoves(Board* b, Move* list, const int color)
     //All the pinned pieces for one side
     uint64_t pinned = pinnedPieces(b, b->turn);
     
-    int numMoves;
     if (forbidden & b->piece[b->turn][KING]) //The king is in check
         return movesCheck(b, list, b->turn, forbidden, pinned);
     else if (pinned) //The king isnt in check but there are pinned pieces

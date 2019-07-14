@@ -145,7 +145,6 @@ Move bestMoveBrute(Board b, int depth, int tree)
     int numMoves = legalMoves(&b, list, b.turn);
     int best = b.turn ? MINS_INF : PLUS_INF;
     int val;
-    sort(list, numMoves);
     Move currBest = list[0];
 
     for (int i = 0; i < numMoves; ++i)
@@ -194,7 +193,6 @@ int bestMoveBruteValue(Board b, int depth)
     int best = b.turn ? MINS_INF : PLUS_INF;
     int val;
 
-    sort(list, numMoves);
     for (int i = 0; i < numMoves; ++i)
     {
         makeMove(&b, list[i], &h);
@@ -229,12 +227,12 @@ void sort(Move* list, const int numMoves)
         temp = list[i];
         j = i - 1;
 
-        while(j >= 0 && list[j].score < temp.score)
+        while(j > -1 && list[j].score < temp.score)
         {
             list[j + 1] = list[j];
             --j;
         }
 
         list[j + 1] = temp;
-    }    
+    }
 }

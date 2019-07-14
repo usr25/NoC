@@ -1,4 +1,3 @@
-//#define VKING 99999
 #define VQUEEN 950
 #define VROOK 520
 #define VBISH 335
@@ -10,15 +9,17 @@
 #define TWO_BISH 20 //Bonus for having the bishop pair
 #define ROOK_OPEN_FILE 25 //Bonus for a rook on an open file (No same color pawns)
 #define BISHOP_MOBILITY 2 //Bonus for sqares available to the bish
-#define N_DOUBLED_PAWNS 40 //Penalization for doubled pawns (proportional to the pawns in line - 1)
+#define N_DOUBLED_PAWNS -40 //Penalization for doubled pawns (proportional to the pawns in line - 1)
 #define PAWN_CHAIN 20 //Bonus for making a pawn chain
 #define PAWN_PROTECTION 15 //Bonus for Bish / Knight protected by pawn
 #define ATTACKED_BY_PAWN 20 //Bonus if a pawn can easily attack a piece
 #define E_ADVANCED_KING 3 //Endgame, bonus for advanced king
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
-#define N_PIECE_SLOW_DEV 25 //Penalization for keeping the pieces in the back-rank
+#define N_PIECE_SLOW_DEV -25 //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
 #define SAFE_KING 20 //TODO //Bonus for pawns surrounding the king
+#define PASSED_PAWN 30 //TODO: Generate new array in memoization which is vert[i-1], vert[i], vert[i+1] but just from the pawn onwards, maybe one for each color. Or maybe get the pawn structure and shift it up, right, forward and see the intersections.
+#define N_ISOLATED_PAWN -20 //TODO
 //#define BLOCKED_PAWNS 0
 
 #include "../include/global.h"
@@ -107,7 +108,7 @@ int isDraw(Board b)
 //It is considered an endgame if there are 3 pieces or less in each side, (<=8 taking into account the kings)
 int isEndgame(Board b)
 {
-    return POPCOUNT(b.allPieces ^ (b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN])) < 9;
+    return POPCOUNT(b.allPieces ^ (b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN])) < 10;
 }
 
 int eval(Board b)
@@ -155,7 +156,7 @@ uint64_t pawnAttacks(uint64_t pawns, int color)
 inline int pieceDevelopment(Board b)
 {
     return 
-         N_PIECE_SLOW_DEV * (POPCOUNT(0x6600000000000000ULL & b.color[BLACK]) - POPCOUNT(0x66ULL & b.color[WHITE]))
+         N_PIECE_SLOW_DEV * (POPCOUNT(0x66ULL & b.color[WHITE]) - POPCOUNT(0x6600000000000000ULL & b.color[BLACK]))
         +STABLE_KING * (((0x6b & b.piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b.piece[BLACK][KING]) != 0));
 }
 
@@ -168,7 +169,7 @@ inline int pawns(Board b)
 
     return   PAWN_CHAIN * (POPCOUNT(wPawn & attW) - POPCOUNT(bPawn & attB))
             +PAWN_PROTECTION * (POPCOUNT(attW & (b.piece[WHITE][BISH] | b.piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b.piece[BLACK][BISH] | b.piece[BLACK][KNIGHT])))
-            +N_DOUBLED_PAWNS * (POPCOUNT(bPawn & (bPawn >> 8 | bPawn >> 16)) - POPCOUNT(wPawn & (wPawn * 0x10100)))
+            +N_DOUBLED_PAWNS * (POPCOUNT(wPawn & (wPawn * 0x10100)) - POPCOUNT(bPawn & (bPawn >> 8 | bPawn >> 16)))
             +ATTACKED_BY_PAWN * (POPCOUNT((attW * 0x101) & b.color[BLACK]) - POPCOUNT((attB | (attB >> 8)) & b.color[WHITE]));
 }
 

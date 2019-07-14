@@ -27,12 +27,10 @@ int main(const int argc, char* const argv[])
     initialize();
 
     //runTests();
-    //slowTests();
-    //slowEval();
-
-    //printf("%d\n", perft(6, 1));
+    //slowTests();  //1:00
+    //slowEval();   //49'1
 
     loop();
-    
+
     return 0;
 }
