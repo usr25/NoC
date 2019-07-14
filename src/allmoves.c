@@ -3,15 +3,43 @@
  * Its job is to generate all possible moves for a given position and color
  * legalMoves is the main function.
  */
-#include <stdio.h>
-
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/memoization.h"
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
-#include "../include/io.h"
+
+uint64_t pinnedPieces(Board* b, const int color);
+int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
+int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
+int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
+
+
+static inline int moveIsValid(Board* b, Move m, History h)
+{
+    makeMove(b, m, &h);
+    int chk = isInCheck(b, 1 ^ b->turn);
+    undoMove(b, m, &h);
+    return ! chk;
+}
+
+//Modifies an array with all legal moves and returns the number
+int legalMoves(Board* b, Move* list, const int color)
+{    
+    //Squares attacked by opp pieces
+    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | controlledKingPawnKnight(b, 1 ^ b->turn);
+
+    //All the pinned pieces for one side
+    uint64_t pinned = pinnedPieces(b, b->turn);
+    
+    if (forbidden & b->piece[b->turn][KING]) //The king is in check
+        return movesCheck(b, list, b->turn, forbidden, pinned);
+    else if (pinned) //The king isnt in check but there are pinned pieces
+        return movesPinnedPiece(b, list, b->turn, forbidden, pinned);
+    else //All pieces can move freely (Except enPassand captures)
+        return movesKingFree(b, list, b->turn, forbidden);
+}
 
 //Returns a bitboard with a 1 for every pinned piece, works similarly to isInCheck
 uint64_t pinnedPieces(Board* b, const int color)
@@ -125,14 +153,6 @@ uint64_t pinnedPieces(Board* b, const int color)
     }
 
     return res;
-}
-
-inline int moveIsValid(Board* b, Move m, History h)
-{
-    makeMove(b, m, &h);
-    int chk = isInCheck(b, 1 ^ b->turn);
-    undoMove(b, m, &h);
-    return ! chk;
 }
 
 //Generates all legal moves if the king isnt in check nor is there a pinned piece
@@ -283,6 +303,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
     temp = b->piece[color][KING];
     tempMoves = posKingMoves(b, color) & (~forbidden);
     from = LSB_INDEX(temp);
+    uint64_t kingSliding = getStraMoves(from) | getDiagMoves(from);
     while(tempMoves)
     {
         to = LSB_INDEX(tempMoves);
@@ -306,6 +327,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
             int capt = pieceAt(b, POW2[to], opp);
             if (isPinned)
             {
+                tempMoves &= kingSliding;
                 if (to < 8 || to > 55)
                 {
                     m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt};
@@ -355,6 +377,9 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         REMOVE_LSB(temp);
         isPinned = pinned & POW2[from];
         tempMoves = posQueenMoves(b, color, from);
+
+        if (isPinned) tempMoves &= kingSliding;
+        
         while(tempMoves)
         {
             to = LSB_INDEX(tempMoves);
@@ -372,6 +397,9 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         REMOVE_LSB(temp);
         isPinned = pinned & POW2[from];
         tempMoves = posRookMoves(b, color, from);
+        
+        if (isPinned) tempMoves &= kingSliding;
+        
         while(tempMoves)
         {
             to = LSB_INDEX(tempMoves);
@@ -390,6 +418,9 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         REMOVE_LSB(temp);
         isPinned = pinned & POW2[from];
         tempMoves = posBishMoves(b, color, from);
+        
+        if (isPinned) tempMoves &= kingSliding;
+        
         while(tempMoves)
         {
             to = LSB_INDEX(tempMoves);
@@ -406,15 +437,15 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
     {
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
-        isPinned = pinned & POW2[from];
-        tempMoves = posKnightMoves(b, color, from);
-        while(tempMoves)
+        if (! (pinned & POW2[from])) //Fun fact: A pinned knight cant move
         {
-            to = LSB_INDEX(tempMoves);
-            m = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMoves);
-            if (!isPinned || moveIsValid(b, m, h))
-                list[numMoves++] = m;
+            tempMoves = posKnightMoves(b, color, from);
+            while(tempMoves)
+            {
+                to = LSB_INDEX(tempMoves);
+                list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempMoves);
+            }
         }
     }
 
@@ -545,21 +576,4 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
     }
 
     return numMoves;
-}
-
-//Modifies an array with all legal moves and returns the number
-int legalMoves(Board* b, Move* list, const int color)
-{    
-    //Squares attacked by opp pieces
-    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | controlledKingPawnKnight(b, 1 ^ b->turn);
-
-    //All the pinned pieces for one side
-    uint64_t pinned = pinnedPieces(b, b->turn);
-    
-    if (forbidden & b->piece[b->turn][KING]) //The king is in check
-        return movesCheck(b, list, b->turn, forbidden, pinned);
-    else if (pinned) //The king isnt in check but there are pinned pieces
-        return movesPinnedPiece(b, list, b->turn, forbidden, pinned);
-    else //All pieces can move freely (Except enPassand captures)
-        return movesKingFree(b, list, b->turn, forbidden);
 }
