@@ -23,6 +23,8 @@ uint64_t vert[8];
 uint64_t horiz[8];
 
 uint64_t pawnLanes[8];
+uint64_t wPassedPawn[64];
+uint64_t bPassedPawn[64];
 
 #define getKingMoves(i) kingMoves[i]
 #define getKnightMoves(i) knightMoves[i]
@@ -57,5 +59,7 @@ uint64_t pawnLanes[8];
 #define getHoriz(i) horiz[i]
 
 #define getPawnLanes(i) pawnLanes[i]
+#define getWPassedPawn(i) wPassedPawn[i]
+#define getBPassedPawn(i) bPassedPawn[i]
 
 void initialize();

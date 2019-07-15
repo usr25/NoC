@@ -17,6 +17,7 @@
 #include "../include/uci.h"
 #include "../include/search.h"
 #include "../include/evaluation.h"
+#include "../include/hash.h"
 
 #include "../include/io.h"
 
@@ -27,12 +28,12 @@ int main(const int argc, char* const argv[])
     initialize();
 
     //runTests();
-    //slowTests();    //58'8s
+    //slowTests();  //58'8s
     //slowEval();   //47'9s
 
     //printf("%d\n", perft(6, 1)); //5'9s
 
-    //loop();
-
+    loop();
+    
     return 0;
 }

@@ -6,6 +6,7 @@
 #include "../include/io.h"
 #include "../include/evaluation.h"
 #include "../include/search.h"
+#include "../include/hash.h"
 #include "../include/perft.h"
 
 #include <stdio.h>
@@ -813,6 +814,66 @@ int compMove(char* fen, char* target, int depth, int len)
     return strncmp(mv, target, len) == 0;
 }
 
+int testHashingInPos(char* fen)
+{
+    int a;
+    Board b = genFromFen(fen, &a);
+    Move list[256];
+    History h;
+
+    int numMoves = legalMoves(&b, list,b.turn);
+
+    uint64_t initialHash = hashPosition(&b);
+
+    int makeWorks = 1;
+    for (int i = 0; i < numMoves; ++i)
+    {
+        makeMove(&b, list[i], &h);
+        uint64_t make = makeMoveHash(initialHash, &b, list[i], h);
+        uint64_t makeCorrect = hashPosition(&b);
+        undoMove(&b, list[i], &h);
+
+        makeWorks &= make == makeCorrect;
+    }
+
+    return makeWorks;
+}
+
+int testHashing()
+{
+    int updating = 1;
+
+    updating &= testHashingInPos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0");
+    updating &= testHashingInPos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0");
+
+    updating &= testHashingInPos("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq -");
+    updating &= testHashingInPos("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -");
+
+    updating &= testHashingInPos("8/1p3k2/7K/8/2P5/8/8/8 w - -");
+    updating &= testHashingInPos("8/1p3k2/7K/8/2P5/8/8/8 b - -");
+
+    updating &= testHashingInPos("8/5K2/5PR1/7k/7p/5P2/6P1/8 w - -");
+    updating &= testHashingInPos("8/5K2/5PR1/7k/7p/5P2/6P1/8 b - -");
+
+    updating &= testHashingInPos("r3k3/8/8/8/8/3b4/8/R3K2R w KQkq -");
+    updating &= testHashingInPos("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -");
+
+    int a;
+    Board b = genFromFen("2k5/6p1/q7/7P/7p/8/Q5P1/3K4 w - -", &a);
+    Move m = (Move) {.pieceThatMoves = PAWN, .from = 9, .to = 25};
+    History h;
+
+    uint64_t start = hashPosition(&b);
+    makeMove(&b, m, &h);
+    uint64_t after = makeMoveHash(start, &b, m, h);
+
+    
+    b = genFromFen("2k5/6p1/q7/7P/6Pp/8/Q7/3K4 b - -", &a);
+    int enPass = hashPosition(&b) != after && after != start;
+
+    return updating && enPass;
+}
+
 void slowEval()
 {
     printf("\n---= This will take a long time =---\n");
@@ -829,7 +890,7 @@ void slowEval()
     
     int white = 1, black = 1;
     depth = 7;
-
+    
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
     
     white &= compMove("k7/pp6/8/4Q3/8/2r5/K7/2q5 w - -", "e5b8", depth, 4);      //Queen sac to draw
@@ -846,16 +907,18 @@ void slowEval()
 
     white &= compMove("5k2/2P2q2/8/8/4R3/5K2/8/8 w - -", "e4f4", depth, 4);      //Pins
     black &= compMove("5k2/4r3/8/8/5Q2/5K2/2p5/8 b - -", "e7f7", depth, 4);
-
+    /*
     white &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", depth, 5);          //Rook promotion
     black &= compMove("8/8/8/8/8/2k5/K1p5/8 b - -", "c2c1r", depth, 5);
-    
+    */
     white &= compMove("1q4k1/2pN3R/8/6B1/5K2/8/2p5/4q3 w - -", "d7f6", depth, 4);//Mate
     black &= compMove("1Q4Q1/2P5/8/8/1b3k2/8/r3n3/1K6 b - -", "e2c3", depth, 4);
 
     white &= compMove("5Q2/7k/1K6/5pP1/4B1b1/8/8/8 w - f6", "g5f6", depth, 4);   //EnPass mate
     black &= compMove("5Q2/5p1k/1K6/6P1/4B1b1/8/8/8 b - -", "f7f5", depth, 4);
-    
+
+    black &= compMove("8/2r5/K7/2q4k/5p2/8/8/8 b - -", "c7a7", depth, 4);
+    white &= compMove("8/2R5/k7/2Q4K/5P2/8/8/8 w - -", "c7a7", depth, 4);
 
     white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
     //black &= compMove("r1bqk2r/pp3ppp/2n2n2/3pp1B1/1b6/1BNP4/PPP1NPPP/R2QK2R b KQkq -", "d5d4", depth, 4);
@@ -867,7 +930,6 @@ void slowEval()
     
     white &= compMove("7k/8/5KPP/8/8/8/8/8 w - -", "g6g7", depth, 4);
     black &= compMove("8/8/8/8/8/ppk5/8/K7 b - -", "b3b2", depth, 4);
-
 
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);
@@ -956,4 +1018,7 @@ void runTests()
   
     //Eval
     printf("[+] Eval: %d\n",            testEvaluation());
+
+    //Hash
+    printf("[+] Hash: %d\n",            testHashing());
 }

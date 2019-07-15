@@ -15,11 +15,12 @@
 #define ATTACKED_BY_PAWN 20 //Bonus if a pawn can easily attack a piece
 #define E_ADVANCED_KING 3 //Endgame, bonus for advanced king
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
-#define N_PIECE_SLOW_DEV -25 //Penalization for keeping the pieces in the back-rank
+#define N_PIECE_SLOW_DEV 0 //-25 //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
 #define SAFE_KING 20 //TODO //Bonus for pawns surrounding the king
-#define PASSED_PAWN 30 //TODO: Generate new array in memoization which is vert[i-1], vert[i], vert[i+1] but just from the pawn onwards, maybe one for each color. Or maybe get the pawn structure and shift it up, right, forward and see the intersections.
-#define N_ISOLATED_PAWN -20 //TODO
+#define PASSED_PAWN 30 //Bonus for passed pawns
+#define N_ISOLATED_PAWN -20 //Penalization for isolated pawns
+#define CLEAN_PAWN 20 //TODO //Bonus for a pawn that doesnt have any pieces in front
 //#define BLOCKED_PAWNS 0
 
 #include "../include/global.h"
@@ -106,14 +107,10 @@ int isDraw(Board b)
 }
 
 //It is considered an endgame if there are 3 pieces or less in each side, (<=8 taking into account the kings)
-int isEndgame(Board b)
-{
-    return POPCOUNT(b.allPieces ^ (b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN])) < 10;
-}
 
 int eval(Board b)
 {
-    if (isEndgame(b))
+    if (POPCOUNT(b.allPieces ^ (b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN])) < 10)
     {
         return   allPiecesValue(b)
                 +matricesEnd(b)
@@ -167,10 +164,30 @@ inline int pawns(Board b)
     uint64_t attW = pawnAttacks(wPawn, WHITE);
     uint64_t attB = pawnAttacks(bPawn, BLACK);
 
+    int isolW = 0, isolB = 0, passW = 0, passB = 0;
+    int lsb;
+    uint64_t tempW = wPawn, tempB = bPawn;
+    while(tempW)
+    {
+        lsb = LSB_INDEX(tempW);
+        isolW += (getPawnLanes(lsb) & wPawn) != 0;
+        passW += (getWPassedPawn(lsb) & bPawn) == 0;
+        REMOVE_LSB(tempW);
+    }
+    while(tempB)
+    {
+        lsb = LSB_INDEX(tempB);
+        isolB += (getPawnLanes(lsb) & bPawn) != 0;
+        passB += (getBPassedPawn(lsb) & wPawn) == 0;
+        REMOVE_LSB(tempB);
+    }
+
     return   PAWN_CHAIN * (POPCOUNT(wPawn & attW) - POPCOUNT(bPawn & attB))
             +PAWN_PROTECTION * (POPCOUNT(attW & (b.piece[WHITE][BISH] | b.piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b.piece[BLACK][BISH] | b.piece[BLACK][KNIGHT])))
             +N_DOUBLED_PAWNS * (POPCOUNT(wPawn & (wPawn * 0x10100)) - POPCOUNT(bPawn & (bPawn >> 8 | bPawn >> 16)))
-            +ATTACKED_BY_PAWN * (POPCOUNT((attW * 0x101) & b.color[BLACK]) - POPCOUNT((attB | (attB >> 8)) & b.color[WHITE]));
+            +ATTACKED_BY_PAWN * (POPCOUNT((attW * 0x101) & b.color[BLACK]) - POPCOUNT((attB | (attB >> 8)) & b.color[WHITE]))
+            +N_ISOLATED_PAWN * (isolW - isolB) 
+            +PASSED_PAWN * (passW - passB);
 }
 
 inline int endgameAnalysis(Board b)

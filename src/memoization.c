@@ -298,6 +298,32 @@ void genIntersectionArrs()
     }
 }
 
+void genWPassedPawn()
+{
+    for (int i = 0; i < 64; ++i)
+    {
+        if ((i & 7) == 0)
+            wPassedPawn[i] = upMoves[i] | upMoves[i + 1];
+        else if ((i & 7) == 7)
+            wPassedPawn[i] = upMoves[i - 1] | upMoves[i];
+        else
+            wPassedPawn[i] = upMoves[i - 1] | upMoves[i] | upMoves[i + 1];
+    }
+}
+
+void genBPassedPawn()
+{
+    for (int i = 0; i < 64; ++i)
+    {
+        if ((i & 7) == 0)
+            bPassedPawn[i] = downMoves[i] | downMoves[i + 1];
+        else if ((i & 7) == 7)
+            bPassedPawn[i] = downMoves[i - 1] | downMoves[i];
+        else
+            bPassedPawn[i] = downMoves[i - 1] | downMoves[i] | downMoves[i + 1];
+    }
+}
+
 void initialize()
 {
     initializePOW2();
@@ -312,6 +338,7 @@ void initialize()
     genDownRightMoves();
     genDownLeftMoves();
 
+    genIntersectionArrs();
     genStraDiagMoves();
 
     genKingMoves();
@@ -326,6 +353,6 @@ void initialize()
     genHoriz();
 
     genPawnLanes();
-
-    genIntersectionArrs();
+    genWPassedPawn();
+    genBPassedPawn();
 }
