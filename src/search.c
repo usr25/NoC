@@ -10,12 +10,14 @@
 
 #include <stdio.h>
 
+#define CAPT_DEPTH 1
+
 #define PLUS_MATE 99999
 #define MINS_MATE -99999
 #define PLUS_INF 99999999
 #define MINS_INF -99999999
 
-int alphaBeta(Board b, int alpha, int beta, int depth, uint64_t prevHash);
+int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash);
 int bestMoveBruteValue(Board b, int depth);
 
 void sort(Move* list, const int numMoves);
@@ -41,10 +43,12 @@ Move bestMoveAB(Board b, int depth, int tree)
 
     uint64_t hash = hashPosition(&b);
 
+    int alpha = MINS_INF, beta = PLUS_INF;
+
     for (int i = 0; i < numMoves; ++i)
     {
         makeMove(&b, list[i], &h);
-        val = alphaBeta(b, MINS_INF, PLUS_INF, depth - 1, makeMoveHash(hash, &b, list[i], h));
+        val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, makeMoveHash(hash, &b, list[i], h));
         undoMove(&b, list[i], &h);
 
         if (tree)
@@ -57,20 +61,20 @@ Move bestMoveAB(Board b, int depth, int tree)
         {
             currBest = list[i];
             best = val;
+            alpha = val;
         }
         else if (!color && val < best)
         {
             currBest = list[i];
             best = val;
+            beta = val;
         }
     }
 
     return currBest;
 }
-int alphaBeta(Board b, int alpha, int beta, int depth, uint64_t prevHash)
+int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash)
 {
-    if (! depth) return eval(b);
-
     Move list[200];
     History h;
     int numMoves = legalMoves(&b, list, b.turn);
@@ -102,7 +106,15 @@ int alphaBeta(Board b, int alpha, int beta, int depth, uint64_t prevHash)
                 if (val > PLUS_MATE) val -= depth;
             }
             else{
-                val = alphaBeta(b, alpha, beta, depth - 1, newHash);
+                if (depth == 1)
+                {
+                    if (list[i].capture > 0 && capt)
+                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash);
+                    else
+                        val = eval(b);
+                }
+                else
+                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash);
                 table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
             }
 
@@ -135,7 +147,15 @@ int alphaBeta(Board b, int alpha, int beta, int depth, uint64_t prevHash)
                 if (val < MINS_MATE) val += depth;
             }
             else{
-                val = alphaBeta(b, alpha, beta, depth - 1, newHash);
+                if (depth == 1)
+                {
+                    if (list[i].capture > 0 && capt)
+                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash);
+                    else
+                        val = eval(b);
+                }
+                else
+                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash);
                 table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
             }
 

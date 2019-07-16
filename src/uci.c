@@ -129,7 +129,7 @@ void eval_(Board b)
 void best_(Board b, char* beg)
 {
     Move best;
-    char mv[6];
+    char mv[6] = "";
     
     best = bestMoveAB(b, DEPTH, 0);
     
