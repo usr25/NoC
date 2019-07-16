@@ -25,7 +25,7 @@ void sort(Move* list, const int numMoves);
 Move bestMoveAB(Board b, int depth, int tree)
 {
     if (depth == 0) return (Move) {};
-    initializeTable();
+    //initializeTable();
     
     const int color = b.turn;
 
@@ -77,11 +77,12 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
 {
     Move list[200];
     History h;
-    int numMoves = legalMoves(&b, list, b.turn);
+    int lgm = legalMovesCheck(&b, list, b.turn);
 
+    int numMoves = lgm >> 1;
     if (! numMoves)
     {
-        if (isInCheck(&b, b.turn))
+        if (lgm)
             return b.turn ? MINS_MATE - depth : PLUS_MATE + depth;
         else
             return 0;
@@ -108,7 +109,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
             else{
                 if (depth == 1)
                 {
-                    if (list[i].capture > 0 && capt)
+                    if ((list[i].capture > 0 || (lgm & 1)) && capt)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash);
                     else
                         val = eval(b);
@@ -140,6 +141,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
             makeMove(&b, list[i], &h);
             uint64_t newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
+
             if (isDraw(b))
                 val = 0;
             else if (table[index].key == newHash && table[index].depth >= depth){
@@ -149,7 +151,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
             else{
                 if (depth == 1)
                 {
-                    if (list[i].capture > 0 && capt)
+                    if ((list[i].capture > 0 || (lgm & 1)) && capt)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash);
                     else
                         val = eval(b);

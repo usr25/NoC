@@ -40,6 +40,22 @@ int legalMoves(Board* b, Move* list, const int color)
         return movesKingFree(b, list, b->turn, forbidden);
 }
 
+int legalMovesCheck(Board* b, Move* list, const int color)
+{    
+    //Squares attacked by opp pieces
+    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | controlledKingPawnKnight(b, 1 ^ b->turn);
+
+    //All the pinned pieces for one side
+    uint64_t pinned = pinnedPieces(b, b->turn);
+    
+    if (forbidden & b->piece[b->turn][KING]) //The king is in check
+        return (movesCheck(b, list, b->turn, forbidden, pinned) << 1) | 1;
+    else if (pinned) //The king isnt in check but there are pinned pieces
+        return movesPinnedPiece(b, list, b->turn, forbidden, pinned) << 1;
+    else //All pieces can move freely (Except enPassand captures)
+        return movesKingFree(b, list, b->turn, forbidden) << 1;
+}
+
 //Returns a bitboard with a 1 for every pinned piece, works similarly to isInCheck
 uint64_t pinnedPieces(Board* b, const int color)
 {

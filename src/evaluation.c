@@ -15,7 +15,7 @@
 #define ATTACKED_BY_PAWN 20 //Bonus if a pawn can easily attack a piece
 #define E_ADVANCED_KING 3 //Endgame, bonus for advanced king
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
-#define N_PIECE_SLOW_DEV 0 //-25 //Penalization for keeping the pieces in the back-rank
+#define N_PIECE_SLOW_DEV -10 //-25 //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
 #define SAFE_KING 20 //TODO //Bonus for pawns surrounding the king
 #define PASSED_PAWN 30 //Bonus for passed pawns

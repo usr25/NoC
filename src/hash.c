@@ -4,6 +4,7 @@
 #include "../include/hash.h"
 
 #include <stdio.h>
+#include <string.h>
 
 uint64_t random[781] = 
 {0xa4eb873de16a53d0, 0xadaba31f919ffb63, 0x3463394ba75e4d58, 0xc2856572e6e47f50,
@@ -205,8 +206,9 @@ uint64_t random[781] =
 
 void initializeTable()
 {
+    Eval empty = (Eval) {.key = 0};
     for (int i = 0; i < NUM_ENTRIES; ++i)
-        table[i] = (Eval) {.key = 0};
+        table[i] = empty;
 }
 
 uint64_t hashPosition(Board* b)
