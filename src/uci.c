@@ -7,6 +7,7 @@
 #include "../include/perft.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/hash.h"
 #include "../include/search.h"
 #include "../include/io.h"
 #include "../include/evaluation.h"
@@ -21,16 +22,17 @@ void uci();
 void isready();
 void perft_(Board b, int depth);
 void eval_(Board b);
-void best_(Board b, char* beg);
-int move_(Board* b, char* beg);
-Board gen_(char* beg);
-Board gen_def(char* beg);
+void best_(Board b, char* beg, Repetition* rep);
+int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash);
+Board gen_(char* beg, Repetition* rep);
+Board gen_def(char* beg, Repetition* rep);
 
 Move evalPos(char* beg);
 
 void loop()
 {
     Board b;
+    Repetition rep = (Repetition) {.index = 0};
 
     char input[LEN];
     char* res, *beg;
@@ -44,6 +46,7 @@ void loop()
 
         if (strncmp(beg, "ucinewgame", 10) == 0){
             b = defaultBoard();
+            rep.hashTable[rep.index++] = hashPosition(&b);
             break;
         }
         else if (strncmp(beg, "uci", 3) == 0){
@@ -79,22 +82,19 @@ void loop()
             perft_(b, atoi(beg + 6));
         
         else if (strncmp(beg, "position startpos", 17) == 0)
-            b = gen_def(beg + 18);
+            b = gen_def(beg + 18, &rep);
 
         else if (strncmp(beg, "position fen", 12) == 0)
-            b = gen_(beg + 13);
+            b = gen_(beg + 13, &rep);
 
         else if(strncmp(beg, "position", 8) == 0)
-            b = gen_(beg + 9);
+            b = gen_(beg + 9, &rep);
 
         else if (strncmp(beg, "eval", 4) == 0)
             eval_(b);
         
         else if (strncmp(beg, "best", 4) == 0 || strncmp(beg, "go", 2) == 0 || strncmp(beg, "bestmove", 8) == 0)
-            best_(b, beg + 5);
-
-        else if (strncmp(beg, "move", 4) == 0)
-            move_(&b, beg + 5);
+            best_(b, beg + 5, &rep);
 
         else if (strncmp(beg, "quit", 4) == 0)
             quit = 1;
@@ -126,18 +126,19 @@ void eval_(Board b)
 {
     printf("%d\n", eval(b));
 }
-void best_(Board b, char* beg)
+void best_(Board b, char* beg, Repetition* rep)
 {
     Move best;
     char mv[6] = "";
-    
-    best = bestMoveAB(b, DEPTH, 0);
+
+    best = bestMoveAB(b, DEPTH, 0, *rep); //WARNING: Remove the 1
     
     moveToText(best, mv);
     fprintf(stdout, "bestmove %s\n", mv);
     fflush(stdout);
 }
-int move_(Board* b, char* beg)
+//TODO: make use of prevhash, for convinience it is recalculated
+int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
 {
     int prom = 0, from, to;
     from = getIndex(beg[0], beg[1]);
@@ -169,39 +170,47 @@ int move_(Board* b, char* beg)
         }
         if (abs(from - to) == 16)
             b->enPass = to;
-    }
 
-    if (m.pieceThatMoves == PAWN)
-    {
         if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[1 ^ b->turn][PAWN] & POW2[b->enPass]))
             m.enPass = b->enPass;
-        if (b->enPass - from == -1 && (from & 7) != 0 && (b->piece[1 ^b->turn][PAWN] & POW2[b->enPass]))
+        else if (b->enPass - from == -1 && (from & 7) != 0 && (b->piece[1 ^b->turn][PAWN] & POW2[b->enPass]))
             m.enPass = b->enPass;
     }
 
     History h;
     makeMove(b, m, &h);
 
+    if (m.pieceThatMoves == PAWN || m.capture > 0)
+        rep->index = 0;
+    else
+        rep->hashTable[rep->index++] = hashPosition(b);
+
     return 4 + prom;
 }
-Board gen_def(char* beg)
+Board gen_def(char* beg, Repetition* rep)
 {
     Board b = defaultBoard();
+    uint64_t startHash = hashPosition(&b);
+
+    rep->hashTable[rep->index++] = startHash;
 
     if (strncmp(beg, "moves", 5) == 0)
     {
         beg += 6;
         while(beg[0] != ' ' && beg[0] != '\0' && beg[0] <= 'h' && beg[0] >= 'a')
-            beg += move_(&b, beg) + 1;
+            beg += move_(&b, beg, rep, rep->hashTable[rep->index - 1]) + 1;
     }
 
     return b;
 }
 
-Board gen_(char* beg)
+Board gen_(char* beg, Repetition* rep)
 {
     int counter;
     Board b = genFromFen(beg, &counter);
+    uint64_t startHash = hashPosition(&b);
+    
+    rep->hashTable[rep->index++] = startHash;
     
     beg += counter + 1;
 
@@ -209,7 +218,7 @@ Board gen_(char* beg)
     {
         beg += 6;
         while(beg[0] != ' ' && beg[0] != '\0' && beg[0] <= 'h' && beg[0] >= 'a')
-            beg += move_(&b, beg) + 1;
+            beg += move_(&b, beg, rep, rep->hashTable[rep->index - 1]) + 1;
     }
 
     return b;
@@ -219,7 +228,7 @@ Move evalPos(char* beg)
 {
     int a;
     Board b = genFromFen(beg, &a);
-    Move best = bestMoveAB(b, DEPTH, 1);
+    Move best = bestMoveAB(b, DEPTH, 1, (Repetition){});
     drawMove(best);
     printf("\n");
     return best;

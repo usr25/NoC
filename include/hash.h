@@ -7,6 +7,7 @@
 #define EPAS_OFFSET 768 //Index in the array of enPass for a given col arr[E_O + (eP & 7)]
 #define CAST_OFFSET 776 //Index in the array of the first castle. arr[C_O + color * 2 | castle >> 1]
 
+
 typedef struct
 {
     uint64_t key;
@@ -15,8 +16,16 @@ typedef struct
     Move m; //This isnt used so
 } Eval;
 
+typedef struct
+{
+    uint64_t hashTable[60];
+    int index;
+} Repetition;
+
 Eval table[NUM_ENTRIES];
+Repetition rep;
 
 void initializeTable();
+int isThreeRep(Repetition* r, uint64_t hash);
 uint64_t hashPosition(Board* b);
-uint64_t makeMoveHash(uint64_t prev, Board* b, Move m, History h);
+uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h);

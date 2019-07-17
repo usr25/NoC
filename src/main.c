@@ -14,14 +14,15 @@
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
 #include "../include/perft.h"
+#include "../include/hash.h"
 #include "../include/uci.h"
 #include "../include/search.h"
 #include "../include/evaluation.h"
-#include "../include/hash.h"
 
 #include "../include/io.h"
 
 //position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
+//best results -> depth 6 capt 1
 
 int main(const int argc, char* const argv[])
 {
@@ -29,11 +30,11 @@ int main(const int argc, char* const argv[])
 
     //runTests();
     //slowTests();  //58'8s
-    //slowEval();   //15'6s, 11'0 without initialization
+    //slowEval();   //-, 8'6 without initialization
 
     //printf("%d\n", perft(6, 1)); //5'9s
-
-    loop();
     
+    loop();
+
     return 0;
 }

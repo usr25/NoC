@@ -3,9 +3,9 @@
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
+#include "../include/hash.h"
 #include "../include/search.h"
 #include "../include/evaluation.h"
-#include "../include/hash.h"
 #include "../include/io.h"
 
 #include <stdio.h>
@@ -17,12 +17,12 @@
 #define PLUS_INF 99999999
 #define MINS_INF -99999999
 
-int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash, Move m);
+int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash, Move m, Repetition* rep);
 int bestMoveBruteValue(Board b, int depth);
 
 void sort(Move* list, const int numMoves, const int to);
 
-Move bestMoveAB(Board b, int depth, int tree)
+Move bestMoveAB(Board b, int depth, int tree, Repetition rep)
 {
     if (depth == 0) return (Move) {};
     //initializeTable();
@@ -41,14 +41,21 @@ Move bestMoveAB(Board b, int depth, int tree)
     Move currBest = list[0];
     int val;
 
-    uint64_t hash = hashPosition(&b);
-
+    uint64_t hash = hashPosition(&b); //The position should be already added to res
     int alpha = MINS_INF, beta = PLUS_INF;
 
     for (int i = 0; i < numMoves; ++i)
     {
         makeMove(&b, list[i], &h);
-        val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, makeMoveHash(hash, &b, list[i], h), list[i]);
+        uint64_t newHash = makeMoveHash(hash, &b, list[i], h);
+        if (isDraw(b) || isThreeRep(&rep, newHash))
+            val = 0;
+        else
+        {
+            rep.hashTable[rep.index++] = newHash;
+            val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, newHash, list[i], &rep);
+            --rep.index;
+        }
         undoMove(&b, list[i], &h);
 
         if (tree)
@@ -73,7 +80,7 @@ Move bestMoveAB(Board b, int depth, int tree)
 
     return currBest;
 }
-int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash, Move m)
+int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash, Move m, Repetition* rep)
 {
     Move list[200];
     History h;
@@ -100,23 +107,26 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
             makeMove(&b, list[i], &h);
             uint64_t newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
-            if (isDraw(b))
+            if (isDraw(b) || isThreeRep(rep, newHash)){
                 val = 0;
+            }
             else if (table[index].key == newHash && table[index].depth >= depth){
                 val = table[index].val;
                 if (val > PLUS_MATE) val -= depth;
             }
             else{
+                rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
                     if (list[i].capture > 0 && capt)
-                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i]);
+                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
                     else
                         val = eval(b);
                 }
                 else
-                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i]);
+                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
                 table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                rep->index--;
             }
 
             if(val > best)
@@ -142,23 +152,26 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
             uint64_t newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
 
-            if (isDraw(b))
+            if (isDraw(b) || isThreeRep(rep, newHash)){
                 val = 0;
+            }
             else if (table[index].key == newHash && table[index].depth >= depth){
                 val = table[index].val;
                 if (val < MINS_MATE) val += depth;
             }
             else{
+                rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
                     if (list[i].capture > 0 && capt)
-                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i]);
+                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
                     else
                         val = eval(b);
                 }
                 else
-                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i]);
+                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
                 table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                rep->index--;
             }
 
             if(val < best)
@@ -177,7 +190,6 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
     
     return best;
 }
-
 
 Move bestMoveBrute(Board b, int depth, int tree)
 {
@@ -258,7 +270,7 @@ void sort(Move* list, const int numMoves, const int to)
     for (int i = 0; i < numMoves; ++i)
     {
         if(list[i].capture != NO_PIECE && list[i].capture)
-            list[i].score = score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4) + ((to == list[i].to) << 6);
+            list[i].score = score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4) + ((to == list[i].to) << 7);
     }
 
     //Insertion sort

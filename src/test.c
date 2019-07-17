@@ -5,8 +5,8 @@
 #include "../include/allmoves.h"
 #include "../include/io.h"
 #include "../include/evaluation.h"
-#include "../include/search.h"
 #include "../include/hash.h"
+#include "../include/search.h"
 #include "../include/perft.h"
 
 #include <stdio.h>
@@ -807,7 +807,7 @@ int compMove(char* fen, char* target, int depth, int len)
     int a;
     char mv[6];
     Board b = genFromFen(fen, &a);
-    Move best = bestMoveAB(b, depth, 0);
+    Move best = bestMoveAB(b, depth, 0, (Repetition){});
 
     moveToText(best, mv);
     //printf("%s\n", mv);
@@ -882,14 +882,14 @@ void slowEval()
     
     printf("[+] Eval equal position: ");
     Board b = defaultBoard();
-    drawMove(bestMoveAB(b, depth, 0));
+    drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
     printf(" ");
     b.turn ^= 1;
-    drawMove(bestMoveAB(b, depth, 0));
+    drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
     printf("\n");
     
     int white = 1, black = 1;
-    depth = 7;
+    depth = 6;
     
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
     
@@ -907,10 +907,10 @@ void slowEval()
 
     white &= compMove("5k2/2P2q2/8/8/4R3/5K2/8/8 w - -", "e4f4", depth, 4);      //Pins
     black &= compMove("5k2/4r3/8/8/5Q2/5K2/2p5/8 b - -", "e7f7", depth, 4);
-    /*
+    
     white &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", depth, 5);          //Rook promotion
     black &= compMove("8/8/8/8/8/2k5/K1p5/8 b - -", "c2c1r", depth, 5);
-    */
+    
     white &= compMove("1q4k1/2pN3R/8/6B1/5K2/8/2p5/4q3 w - -", "d7f6", depth, 4);//Mate
     black &= compMove("1Q4Q1/2P5/8/8/1b3k2/8/r3n3/1K6 b - -", "e2c3", depth, 4);
 
@@ -920,7 +920,11 @@ void slowEval()
     black &= compMove("8/2r5/K7/2q4k/5p2/8/8/8 b - -", "c7a7", depth, 4);
     white &= compMove("8/2R5/k7/2Q4K/5P2/8/8/8 w - -", "c7a7", depth, 4);
 
-    white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
+    black &= ! compMove("r1bq1rk1/p1pnppbp/1pnp2p1/8/3PP3/3Q1NPP/PPP2PB1/RNB2RK1 b - -", "c6d4", depth, 4);
+    black &= ! compMove("7r/p3k3/1p2p2n/2p2p1R/2P5/4K2B/7P/8 b - -", "h8g8", depth, 4);
+
+    //Need depth >= 7
+    //white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
     //black &= compMove("r1bqk2r/pp3ppp/2n2n2/3pp1B1/1b6/1BNP4/PPP1NPPP/R2QK2R b KQkq -", "d5d4", depth, 4);
     
     depth = 10;

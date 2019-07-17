@@ -211,6 +211,17 @@ void initializeTable()
         table[i] = empty;
 }
 
+int isThreeRep(Repetition* r, uint64_t hash)
+{
+    int count = 0;
+    for (int i = r->index - 2; i >= 0; i -= 2)
+    {
+        if (r->hashTable[i] == hash)
+            ++count;
+    }
+    return count > 1;
+}
+
 uint64_t hashPosition(Board* b)
 {
     //Turn
@@ -241,7 +252,7 @@ uint64_t hashPosition(Board* b)
     return resultHash;
 }
 
-uint64_t makeMoveHash(uint64_t prev, Board* b, Move m, History h)
+uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
 {
     prev ^= random[TURN_OFFSET];
     //Piece from
