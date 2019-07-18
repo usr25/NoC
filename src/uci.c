@@ -1,3 +1,7 @@
+/* uci.c
+ * File in charge of the interaction with the user and chess interfaces
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,8 +22,8 @@
 #define LEN 4096
 #define DEPTH 6
 
-void uci();
-void isready();
+void uci(void);
+void isready(void);
 void perft_(Board b, int depth);
 void eval_(Board b);
 void best_(Board b, char* beg, Repetition* rep);
@@ -29,7 +33,11 @@ Board gen_def(char* beg, Repetition* rep);
 
 Move evalPos(char* beg);
 
-void loop()
+/*
+ * Main loop, listens to user input and performs the desired actions
+ */
+//TODO: Implement time management
+void loop(void)
 {
     Board b;
     Repetition rep = (Repetition) {.index = 0};
@@ -106,14 +114,14 @@ void loop()
     }
 }
 
-void uci()
+void uci(void)
 {
     fprintf(stdout, "id name %s\n", ENGINE_NAME);
     fprintf(stdout, "id author %s\n", ENGINE_AUTHOR);
     fprintf(stdout, "uciok\n");
     fflush(stdout);
 }
-void isready()
+void isready(void)
 {
     fprintf(stdout, "readyok\n");
     fflush(stdout);

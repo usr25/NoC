@@ -1,10 +1,12 @@
+/* hash.c
+ * Performs the zobrist hashing as well as 3fold repetition
+ */
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/hash.h"
 
-#include <stdio.h>
-#include <string.h>
 
 uint64_t random[781] = 
 {0xa4eb873de16a53d0, 0xadaba31f919ffb63, 0x3463394ba75e4d58, 0xc2856572e6e47f50,
@@ -204,13 +206,18 @@ uint64_t random[781] =
 0x89e921a9a45eeb6, 0x613102a85c0bab6c, 0x79e85d0669719a02, 0x431823972da34798,
 0xeba616ad483651dc};
 
-void initializeTable()
+/* Ensures that all the keys are 0
+ */
+void initializeTable(void)
 {
     Eval empty = (Eval) {.key = 0};
     for (int i = 0; i < NUM_ENTRIES; ++i)
         table[i] = empty;
 }
 
+/* Detects if the last move makes a 3fold repetion
+ * hash isnt in the array
+ */
 int isThreeRep(Repetition* r, uint64_t hash)
 {
     int count = 0;
@@ -222,6 +229,8 @@ int isThreeRep(Repetition* r, uint64_t hash)
     return count > 1;
 }
 
+/* Hashes a position
+ */
 uint64_t hashPosition(Board* b)
 {
     //Turn
@@ -231,7 +240,7 @@ uint64_t hashPosition(Board* b)
     //Castling
     for (int i = 1; i < 5; ++i)
     {
-        if (b->posInfo & POW2[i])
+        if (b->castleInfo & POW2[i])
             resultHash ^= random[CAST_OFFSET + i - 1];
     }
 
@@ -252,22 +261,27 @@ uint64_t hashPosition(Board* b)
     return resultHash;
 }
 
+/* Updates the hash of the position, prev is the hash of the position before the move
+ *
+ */
 uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
 {
     prev ^= random[TURN_OFFSET];
     //Piece from
     prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.pieceThatMoves * PIECE_OFFSET + m.from];
-    int xorPosInfos = b->posInfo ^ h.posInfo;
+    int xorPosInfos = b->castleInfo ^ h.castleInfo;
+
     if (m.capture > 0)
         prev ^= random[b->turn * COLOR_OFFSET + m.capture * PIECE_OFFSET + m.to];
+
     switch (m.pieceThatMoves)
     {
         case PAWN:
-            if (m.promotion){
+            if (m.promotion)
                 prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.promotion * PIECE_OFFSET + m.to];
-            }
             else
                 prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.pieceThatMoves * PIECE_OFFSET + m.to];
+
             if (b->enPass)
                 prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
             if (m.enPass)

@@ -1,6 +1,11 @@
+void initialize(void);
+
 uint64_t kingMoves[64];
 uint64_t knightMoves[64];
 
+/* ...Int are the intersection tiles, since it isnt really necessary to calculate the intersection
+ * against a piece that is on the edge because the possible sqrs will stay the same
+ */
 uint64_t rightMoves[64];        uint64_t rightMovesInt[64];
 uint64_t leftMoves[64];         uint64_t leftMovesInt[64];
 uint64_t upMoves[64];           uint64_t upMovesInt[64];
@@ -13,7 +18,6 @@ uint64_t downleftMoves[64];     uint64_t downleftMovesInt[64];
 uint64_t straMoves[64];
 uint64_t diagMoves[64];
 
-//It can be made to be 64 - 8 but the impact in memory is tiny and the runtime performance would worsen
 uint64_t whitePawnMoves[64];
 uint64_t whitePawnCaptures[64];
 uint64_t blackPawnMoves[64];
@@ -61,5 +65,3 @@ uint64_t bPassedPawn[64];
 #define getPawnLanes(i) pawnLanes[i]
 #define getWPassedPawn(i) wPassedPawn[i]
 #define getBPassedPawn(i) bPassedPawn[i]
-
-void initialize();

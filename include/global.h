@@ -1,6 +1,5 @@
-#define ALL 0xffffffffffffffffULL
+#define ALL 0xffffffffffffffffULL //(~0ULL)
 
-#define BOOL(x) ((x)?"true":"false")
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)
 #define LSB_INDEX(ll) __builtin_ctzll(ll)

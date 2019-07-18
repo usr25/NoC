@@ -1,3 +1,9 @@
+/* evaluation.c
+ * Returns the evaluation of a given position
+ * eval < 0 -> It is good for black
+ * eval > 0 -> It is good for white
+ */
+
 #define VQUEEN 950
 #define VROOK 520
 #define VBISH 335
@@ -31,20 +37,20 @@
 
 #include <stdio.h>
 
-int matricesBeg(Board b);
-int matricesEnd(Board b);
-int allPiecesValue(Board b);
-int analyzePawnStructure(Board b);
-int pieceActivity(Board b);
-int endgameAnalysis(Board b);
-int pieceDevelopment(Board b);
+int matricesBeg(const Board b);
+int matricesEnd(const Board b);
+int allPiecesValue(const Board b);
+int analyzePawnStructure(const Board b);
+int pieceActivity(const Board b);
+int endgameAnalysis(const Board b);
+int pieceDevelopment(const Board b);
 int multiply(int vals[64], uint64_t mask);
-int pawns(Board b);
+int pawns(const Board b);
 
-int hasMatingMat(Board b, int color);
+int hasMatingMat(const Board b, int color);
 
 int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp);
-int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces);
+int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all);
 int twoBishops(uint64_t wh, uint64_t bl);
 int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all);
 
@@ -99,11 +105,6 @@ int insuffMat(Board b)
     }
 
     return 0;
-}
-
-int isDraw(Board b)
-{
-    return insuffMat(b);
 }
 
 //It is considered an endgame if there are 3 pieces or less in each side, (<=8 taking into account the kings)
@@ -229,7 +230,7 @@ inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all)
                              -(POPCOUNT(diagonal(MSB_INDEX(bl), all)) + POPCOUNT(diagonal(LSB_INDEX(bl), all))));
 }
 
-inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces)
+inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all)
 {
     int res = 0;
 
@@ -238,11 +239,11 @@ inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces)
         int hi = MSB_INDEX(wh), lo = LSB_INDEX(wh);
         if ((hi >> 3) == (lo >> 3)) //Same row
         {
-            res += LSB_INDEX(getLeftMoves(lo) & allPieces) == hi;
+            res += LSB_INDEX(getLeftMoves(lo) & all) == hi;
         }
         else if((hi & 7) == (lo & 7)) //Same col
         {
-            res += LSB_INDEX(getUpMoves(lo) & allPieces) == hi;
+            res += LSB_INDEX(getUpMoves(lo) & all) == hi;
         }
     }
     if (bl & (bl - 1))
@@ -250,11 +251,11 @@ inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t allPieces)
         int hi = MSB_INDEX(bl), lo = LSB_INDEX(bl);
         if ((hi >> 3) == (lo >> 3)) //Same row
         {
-            res -= LSB_INDEX(getLeftMoves(lo) & allPieces) == hi;
+            res -= LSB_INDEX(getLeftMoves(lo) & all) == hi;
         }
         else if((hi & 7) == (lo & 7)) //Same col
         {
-            res -= LSB_INDEX(getUpMoves(lo) & allPieces) == hi;
+            res -= LSB_INDEX(getUpMoves(lo) & all) == hi;
         }
     }
 

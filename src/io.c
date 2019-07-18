@@ -1,3 +1,7 @@
+/* io.c
+ * Has the functions related to io and string representation
+ */
+
 #include <stdio.h>
 
 #include "../include/global.h"
@@ -7,7 +11,7 @@
 
 char pieces[6] = {'k', 'q', 'r', 'b', 'n', 'p'};
 
-void drawPosition(Board b, const int drawCoords){
+void drawPosition(const Board b, const int drawCoords){
     uint64_t pos = POW2[63];
     int i, j;
     for (i = 0; i < 8; ++i)
@@ -66,7 +70,7 @@ void drawBitboard(uint64_t b)
     printf("\n");
 }
 
-void drawMove(Move m)
+void drawMove(const Move m)
 {
     char a = 'h' - (m.from % 8);
     char a1 = '1' + (m.from / 8);
@@ -82,7 +86,7 @@ void drawMove(Move m)
     else if (m.castle & 2)
         printf(" O-O-O");
 }
-void moveToText(Move m, char* mv)
+void moveToText(const Move m, char* mv)
 {
     mv[0] = (char)('h' - (m.from % 8));
     mv[1] = (char)('1' + (m.from / 8));
@@ -93,7 +97,7 @@ void moveToText(Move m, char* mv)
         mv[4] = pieces[m.promotion];
 }
 
-void generateFen(Board b, char* c)
+void generateFen(const Board b, char* c)
 {
     int counter = 0;
     for (int i = 7; i >= 0; --i)
@@ -156,15 +160,15 @@ void generateFen(Board b, char* c)
     }
 
     c[counter++] = ' ';
-    c[counter++] = (b.posInfo & 1) ? 'w' : 'b';
+    c[counter++] = (b.castleInfo & 1) ? 'w' : 'b';
     c[counter++] = ' ';
 
-    if(b.posInfo & 0b11110)
+    if(b.castleInfo & 0b11110)
     {
-        if(b.posInfo & WCASTLEK) c[counter++] = 'K';
-        if(b.posInfo & WCASTLEQ) c[counter++] = 'Q';
-        if(b.posInfo & BCASTLEK) c[counter++] = 'k';
-        if(b.posInfo & BCASTLEQ) c[counter++] = 'q';
+        if(b.castleInfo & WCASTLEK) c[counter++] = 'K';
+        if(b.castleInfo & WCASTLEQ) c[counter++] = 'Q';
+        if(b.castleInfo & BCASTLEK) c[counter++] = 'k';
+        if(b.castleInfo & BCASTLEQ) c[counter++] = 'q';
     }
     else
         c[counter++] = '-';

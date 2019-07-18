@@ -8,10 +8,11 @@
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 
-//This file makes changes to the board, moves.c generates the moves themselves
+/*
+ * Returns the piece in the determined sqr, pos has to be a bitboard (POW2)
+ * Returns NO_PIECE (-1) if there is no piece
+ */
 
-//returns the piece CAPTURED
-//returns -1 otherwise
 inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 {
     if (pos & b->allPieces)
@@ -56,7 +57,7 @@ static inline void unsetBit(Board* b, const uint64_t from, const int piece, cons
 }
 
 //It is assumed that the castling direction has already been decided, and is placed in move.castle (1 -> kingside, 2-> queenside)
-static void makeCastle(Board* b, Move move, const int color)
+static void makeCastle(Board* b, const Move move, const int color)
 {
     uint64_t fromRook, toRook;
 
@@ -75,7 +76,7 @@ static void makeCastle(Board* b, Move move, const int color)
     setBit(b, POW2[move.to], KING, color);
     setBit(b, toRook, ROOK, color);
 }
-static void undoCastle(Board* b, Move move, const int color)
+static void undoCastle(Board* b, const Move move, const int color)
 {
     uint64_t fromRook, toRook;
     const uint64_t fromKing = POW2[move.from], toKing = POW2[move.to];
@@ -97,12 +98,12 @@ static void undoCastle(Board* b, Move move, const int color)
 }
 
 //Alters the board to make a move
-void makeMove(Board* b, Move move, History* h)
+void makeMove(Board* b, const Move move, History* h)
 {
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
     //Save the data
-    h->posInfo = b->posInfo;
+    h->castleInfo = b->castleInfo;
     h->allPieces = b->allPieces;
     h->enPass = b->enPass;
 
@@ -134,11 +135,11 @@ void makeMove(Board* b, Move move, History* h)
         else
             setBit(b, toBit, KING, b->turn);
 
-        b->posInfo &= kingMoved(b->turn);
+        b->castleInfo &= kingMoved(b->turn);
         break;
         
         case ROOK:
-        b->posInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
+        b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
 
         default:
         setBit(b, toBit, move.pieceThatMoves, b->turn);
@@ -153,11 +154,11 @@ void makeMove(Board* b, Move move, History* h)
 }
 
 //Alters the board to undo a move, (undo . make) should be the identity function 
-void undoMove(Board* b, Move move, History* h)
+void undoMove(Board* b, const Move move, History* h)
 {
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
-    b->posInfo = h->posInfo;
+    b->castleInfo = h->castleInfo;
     b->allPieces = h->allPieces;
     b->enPass = h->enPass;
     

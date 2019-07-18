@@ -1,3 +1,14 @@
+/* Struct that holds all the information necessary to undo moves
+ * pieceThatMoves -> Int representing the piece that moves
+ * from -> Index from where the piece moves
+ * to -> Index where the piece moves
+ * capture -> Int representing the piece captured (0/-1 is no piece)
+ * castle -> Int representing if it is a castle, only when KING moves (1 -> Kingside, 2 -> Queenside)
+ * promotion -> Int representing the piece to which a PAWN promotes
+ * enPass -> Index of where the opp pawn is located when capturing En Passand
+ * score -> Score used for the LVA - MVA ordering
+ */
+
 typedef struct 
 {
     int pieceThatMoves;
@@ -12,14 +23,24 @@ typedef struct
     int score;
 }Move;
 
+/* Struct to make it easier to undo moves
+ * allPieces -> bb representing all the pieces in the board
+ * castleInfo -> Castle info
+ * enPass -> A pawn moved 2 squares and thus allowed En Passand
+ */
+
 typedef struct
 {
     uint64_t allPieces;
-    int posInfo;
+    int castleInfo;
     int enPass;
 }History;
 
-typedef struct
+/* Struct that holds the information about the number of attackers
+ * tiles -> bb Where all the 1s are tiles where a piece placed will stop a check
+ * num -> number of attackers
+ */
+const typedef struct
 {
     uint64_t tiles;
     int num;
@@ -36,12 +57,13 @@ uint64_t diagonal(const int lsb, const uint64_t allPieces);
 uint64_t straight(const int lsb, const uint64_t allPieces);
 
 int canCastle(Board* b, const int color, const uint64_t forbidden);
-int canCastleCheck(Board* b, const int color); //Slower version if forbidden hasnt been calculated
 Move castleKSide(const int color);
 Move castleQSide(const int color);
 
 uint64_t controlledKingPawnKnight(Board* b, const int inverse);
 uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles);
 AttacksOnK getCheckTiles(Board* b, const int color);
+
 int isInCheck(Board* b, const int kingsColor);
+int slidingCheck(Board* b, const int kingsColor);
 int checkInPosition(Board* b, const int lsb, const int kingsColor);

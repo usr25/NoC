@@ -1,15 +1,16 @@
 /* board.c
  * Generates the board in which the game is played along with useful functionality
  */
+
 /*
-Black pieces
-Black pawns
--
--
--
--
-White pawns
-White pieces
+ Black pieces
+ Black pawns
+ -
+ -
+ -
+ -
+ White pawns
+ White pieces
 */
 #include <stdio.h>
 #include "../include/global.h"
@@ -125,7 +126,7 @@ Board genFromFen(char* const fen, int* counter)
                 break;
         }
     }
-    b.posInfo = castleInfo;
+    b.castleInfo = castleInfo;
 
     i++;
 
@@ -177,7 +178,7 @@ Board defaultBoard()
     b.color[AV_BLACK] = ~ INITIAL_BPIECES;
     b.color[AV_WHITE] = ~ INITIAL_WPIECES;
 
-    b.posInfo =  0b11110;
+    b.castleInfo =  0b11110;
     b.allPieces = INITIAL_WPIECES | INITIAL_BPIECES;
     b.turn = WHITE;
 
@@ -187,7 +188,7 @@ Board defaultBoard()
 int equal(Board* a, Board* b)
 {
     int data = 
-        (a->posInfo == b->posInfo) && (a->allPieces == b->allPieces);
+        (a->castleInfo == b->castleInfo) && (a->allPieces == b->allPieces);
     
     int pieces = 1;
 
@@ -204,9 +205,8 @@ int equal(Board* a, Board* b)
     return data && pieces && other;
 }
 
-Board duplicate(Board b)
+Board duplicate(const Board b)
 {
-    
     Board a = (Board) {};
 
     for (int i = 0; i < 6; ++i)
@@ -217,7 +217,7 @@ Board duplicate(Board b)
     for (int i = 0; i < 4; ++i)
         a.color[i] = b.color[i];
 
-    a.posInfo = b.posInfo;
+    a.castleInfo = b.castleInfo;
     a.allPieces = b.allPieces;
     a.enPass = b.enPass;
     a.turn = b.turn;
@@ -225,7 +225,7 @@ Board duplicate(Board b)
     return a;
 }
 
-int getIndex(char row, char col)
+int getIndex(const char row, const char col)
 {
     return ((col - '1') << 3) + (7 + 'a' - row);
 }

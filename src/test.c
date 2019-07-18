@@ -1,3 +1,7 @@
+/* test.c
+ * File which holds some tests to quickly ensure everything is working
+ */
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -12,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+//TODO: Add support #include <assert.h>
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
 //8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns
@@ -46,11 +50,11 @@ int validStartingPos(Board b)
     int avAreCorrect = (b.color[WHITE] & b.color[AV_WHITE]) == 0 && (b.color[BLACK] & b.color[AV_BLACK]) == 0;
     int whiteAreInAvBlack = (b.color[WHITE] & b.color[AV_BLACK]) == b.color[WHITE];
     int blackAreInAvWhite = (b.color[BLACK] & b.color[AV_WHITE]) == b.color[BLACK];
-    int posInfoCorrect = b.posInfo == 0b11110;
+    int castleInfoCorrect = b.castleInfo == 0b11110;
     int turn = b.turn == WHITE;
 
     return 
-    correctNumOfPieces && piecesAddUp && availableAddUp && avAreCorrect && whiteAreInAvBlack && blackAreInAvWhite && posInfoCorrect && turn;
+    correctNumOfPieces && piecesAddUp && availableAddUp && avAreCorrect && whiteAreInAvBlack && blackAreInAvWhite && castleInfoCorrect && turn;
 }
 
 int validPieces(Board b)
@@ -287,53 +291,52 @@ int testChecks()
 int testCheckInterfTiles()
 {
     Board b;
-    AttacksOnK att;
     uint64_t expected;
 
     int emptyBoard = 1;
     b = genFromFen("8/8/2Q3Q1/8/2R1K1B1/8/2R3B1/8 w - -", &ignore);
-    att = getCheckTiles(&b, WHITE);
-    emptyBoard &= att.tiles == 0ULL && att.num == 0;
+    AttacksOnK att1 = getCheckTiles(&b, WHITE);
+    emptyBoard &= att1.tiles == 0ULL && att1.num == 0;
     b = genFromFen("8/8/2q3q1/8/2r1k1b1/8/2r3b1/8 b - -", &ignore);
-    att = getCheckTiles(&b, BLACK);
-    emptyBoard &= att.tiles == 0ULL && att.num == 0;
+    AttacksOnK att2 = getCheckTiles(&b, BLACK);
+    emptyBoard &= att2.tiles == 0ULL && att2.num == 0;
 
     int slidingPieces = 1;
     expected = 37470100259328ULL;
 
     b = genFromFen("8/8/2q3q1/8/2r1K1b1/8/2r3b1/8 w - -", &ignore);
-    att = getCheckTiles(&b, WHITE);
-    slidingPieces &= att.tiles == expected && att.num == 4;
+    AttacksOnK att3 = getCheckTiles(&b, WHITE);
+    slidingPieces &= att3.tiles == expected && att3.num == 4;
     b = genFromFen("8/8/2Q3Q1/8/2R1k1B1/8/2R3B1/8 b - -", &ignore);
-    att = getCheckTiles(&b, BLACK);
-    slidingPieces &= att.tiles == expected && att.num == 4;
+    AttacksOnK att4 = getCheckTiles(&b, BLACK);
+    slidingPieces &= att4.tiles == expected && att4.num == 4;
 
     int pawns = 1;
     b = genFromFen("8/8/8/3P1p2/4K3/3p1P2/8/8 w - -", &ignore);
-    att = getCheckTiles(&b, WHITE);
-    pawns &= att.tiles == 17179869184ULL && att.num == 1;
+    AttacksOnK att5 = getCheckTiles(&b, WHITE);
+    pawns &= att5.tiles == 17179869184ULL && att5.num == 1;
     b = genFromFen("8/8/8/3p1P2/4k3/3P1p2/8/8 b - -", &ignore);
-    att = getCheckTiles(&b, BLACK);
-    pawns &= att.tiles == 1048576ULL && att.num == 1;
+    AttacksOnK att6 = getCheckTiles(&b, BLACK);
+    pawns &= att6.tiles == 1048576ULL && att6.num == 1;
 
     int knights = 1;
     expected = 4535485469696ULL;
     b = genFromFen("8/8/3N1n2/2n3N1/4K3/2N3N1/3n1n2/8 w - -", &ignore);
-    att = getCheckTiles(&b, WHITE);
-    knights &= att.tiles == expected && att.num == 4;
+    AttacksOnK att7 = getCheckTiles(&b, WHITE);
+    knights &= att7.tiles == expected && att7.num == 4;
     b = genFromFen("8/8/3n1N2/2N3n1/4k3/2n3n1/3N1N2/8 b - -", &ignore);
-    att = getCheckTiles(&b, BLACK);
-    knights &= att.tiles == expected && att.num == 4;
+    AttacksOnK att8 = getCheckTiles(&b, BLACK);
+    knights &= att8.tiles == expected && att8.num == 4;
 
     int misc = 1;
     b = genFromFen("q7/1b5b/2Qq4/5P2/1bb1K1Qr/3r4/2rp1qQ1/7b w - -", &ignore);
-    att = getCheckTiles(&b, WHITE);
-    misc &= att.tiles == 0ULL && att.num == 0;
+    AttacksOnK att9 = getCheckTiles(&b, WHITE);
+    misc &= att9.tiles == 0ULL && att9.num == 0;
     b = genFromFen("q7/1B5B/2qQ4/5p2/1BB1k1qR/3R4/2RP1Qq1/7B b - -", &ignore);
-    att = getCheckTiles(&b, BLACK);
-    misc &= att.tiles == 0ULL && att.num == 0;
+    AttacksOnK att10 = getCheckTiles(&b, BLACK);
+    misc &= att10.tiles == 0ULL && att10.num == 0;
 
-    return 1;
+    return emptyBoard && slidingPieces && pawns && knights && misc;
 }
 
 int testUndoMoves()
@@ -448,7 +451,7 @@ int testCastleNoCheck()
     //White kingside
     b = genFromFen("8/8/8/8/8/8/8/4K2R w K -", &ignore);
     uint64_t forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
-    int dataIsOk = b.posInfo == WCASTLEK;
+    int dataIsOk = b.castleInfo == WCASTLEK;
     int can = canCastle(&b, BLACK, forbidden) == 0 && canCastle(&b, WHITE, forbidden) == 1;
 
     Move moveWK = castleKSide(WHITE);
@@ -462,7 +465,7 @@ int testCastleNoCheck()
     //White queenside
     b = genFromFen("8/8/8/8/8/8/8/R3K3 w Q -", &ignore);
     forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
-    dataIsOk &= b.posInfo == WCASTLEQ;
+    dataIsOk &= b.castleInfo == WCASTLEQ;
     can &= canCastle(&b, BLACK, forbidden) == 0 && canCastle(&b, WHITE, forbidden) == 2;
 
     Move moveWQ = castleQSide(WHITE);
@@ -476,7 +479,7 @@ int testCastleNoCheck()
     //Black kingside
     b = genFromFen("4k2r/8/8/8/8/8/8/8 b k -", &ignore);
     forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
-    dataIsOk &= b.posInfo == BCASTLEK;
+    dataIsOk &= b.castleInfo == BCASTLEK;
     can &= canCastle(&b, BLACK, forbidden) == 1 && canCastle(&b, WHITE, forbidden) == 0;
 
     Move moveBK = castleKSide(BLACK);
@@ -490,7 +493,7 @@ int testCastleNoCheck()
     //Black queenside
     b = genFromFen("r3k3/8/8/8/8/8/8/8 b q -", &ignore);
     forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
-    dataIsOk &= b.posInfo == BCASTLEQ;
+    dataIsOk &= b.castleInfo == BCASTLEQ;
     can &= canCastle(&b, BLACK, forbidden) == 2 && canCastle(&b, WHITE, forbidden) == 0;
 
     Move moveBQ = castleQSide(BLACK);
@@ -505,7 +508,7 @@ int testCastleNoCheck()
     //White
     b = genFromFen("1r6/8/8/8/8/8/8/R3K3 w Q -", &ignore);
     forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
-    dataIsOk &= b.posInfo == WCASTLEQ;
+    dataIsOk &= b.castleInfo == WCASTLEQ;
     can &= canCastle(&b, BLACK, forbidden) == 0 && canCastle(&b, WHITE, forbidden) == 2;
 
     Move moveWQ2 = castleQSide(WHITE);
@@ -519,7 +522,7 @@ int testCastleNoCheck()
     //Black
     b = genFromFen("r3k3/8/8/8/8/8/8/1R6 b q -", &ignore);
     forbidden = allSlidingAttacks(&b, 1 ^ b.turn, b.allPieces) | controlledKingPawnKnight(&b, 1 ^ b.turn);
-    dataIsOk &= b.posInfo == BCASTLEQ;
+    dataIsOk &= b.castleInfo == BCASTLEQ;
     can &= (canCastle(&b, BLACK, forbidden) == 2) && (canCastle(&b, WHITE, forbidden) == 0);
 
     Move moveBQ2 = castleQSide(BLACK);
@@ -584,7 +587,7 @@ int testStartMoveListing()
     Board b = defaultBoard();
     Move moves[100];
 
-    int numMovesWhite = legalMoves(&b, moves, WHITE);
+    int numMovesWhite = legalMoves(&b, moves, WHITE) >> 1;
     int whiteMovesAreAccurate = 1;
     for (int i = 0; i < 8; ++i)
     {
@@ -600,7 +603,7 @@ int testStartMoveListing()
     whiteKnight &= (moves[16].from == moves[17].from) && (moves[18].from == moves[19].from);
 
     b.turn ^= 1;
-    int numMovesBlack = legalMoves(&b, moves, BLACK);
+    int numMovesBlack = legalMoves(&b, moves, BLACK) >> 1;
     int blackMovesAreAccurate = 1;
     
     for (int i = 0; i < 8; ++i)
@@ -628,8 +631,8 @@ int testPromotion()
 
     b = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -", &ignore);
 
-    int numMovesB = legalMoves(&b, moves, BLACK);
-    int numMovesW = legalMoves(&b, moves, WHITE);
+    int numMovesB = legalMoves(&b, moves, BLACK) >> 1;
+    int numMovesW = legalMoves(&b, moves, WHITE) >> 1;
 
     int correctNum = (numMovesW == 12) && (numMovesB == 12);
     int piecesAddUp = 1;
@@ -821,7 +824,7 @@ int testHashingInPos(char* fen)
     Move list[256];
     History h;
 
-    int numMoves = legalMoves(&b, list,b.turn);
+    int numMoves = legalMoves(&b, list,b.turn) >> 1;
 
     uint64_t initialHash = hashPosition(&b);
 
@@ -934,6 +937,8 @@ void slowEval()
     
     white &= compMove("7k/8/5KPP/8/8/8/8/8 w - -", "g6g7", depth, 4);
     black &= compMove("8/8/8/8/8/ppk5/8/K7 b - -", "b3b2", depth, 4);
+
+    white &= compMove("3r1nk1/1b1R4/8/8/3B4/4K3/8/8 w - -", "d7g7", depth, 4);
 
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);

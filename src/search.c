@@ -1,3 +1,7 @@
+/* search.c
+ * Performs the actual search to find the best move
+ */
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -10,19 +14,20 @@
 
 #include <stdio.h>
 
+//If there is a capture, this is the search will continue for CAPT_DEPTH
 #define CAPT_DEPTH 1
 
-#define PLUS_MATE 99999
-#define MINS_MATE -99999
-#define PLUS_INF 99999999
+#define PLUS_MATE    99999
+#define MINS_MATE   -99999
+#define PLUS_INF  99999999
 #define MINS_INF -99999999
 
-int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash, Move m, Repetition* rep);
-int bestMoveBruteValue(Board b, int depth);
+int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep);
+int bestMoveBruteValue(Board b, const int depth);
 
 void sort(Move* list, const int numMoves, const int to);
 
-Move bestMoveAB(Board b, int depth, int tree, Repetition rep)
+Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 {
     if (depth == 0) return (Move) {};
     //initializeTable();
@@ -32,11 +37,9 @@ Move bestMoveAB(Board b, int depth, int tree, Repetition rep)
     Move list[200];
     History h;
 
-    int numMoves = legalMoves(&b, list, color);
+    int numMoves = legalMoves(&b, list, color) >> 1;
 
     sort(list, numMoves, -1);
-
-    int best = color ? MINS_INF : PLUS_INF;
     
     Move currBest = list[0];
     int val;
@@ -48,7 +51,7 @@ Move bestMoveAB(Board b, int depth, int tree, Repetition rep)
     {
         makeMove(&b, list[i], &h);
         uint64_t newHash = makeMoveHash(hash, &b, list[i], h);
-        if (isDraw(b) || isThreeRep(&rep, newHash))
+        if (insuffMat(b) || isThreeRep(&rep, newHash))
             val = 0;
         else
         {
@@ -64,27 +67,25 @@ Move bestMoveAB(Board b, int depth, int tree, Repetition rep)
             printf(": %d\n", val);
         }
 
-        if (color && val > best)
+        if (color && val > alpha)
         {
             currBest = list[i];
-            best = val;
             alpha = val;
         }
-        else if (!color && val < best)
+        else if (!color && val < beta)
         {
             currBest = list[i];
-            best = val;
             beta = val;
         }
     }
 
     return currBest;
 }
-int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHash, Move m, Repetition* rep)
+int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
 {
     Move list[200];
     History h;
-    int lgm = legalMovesCheck(&b, list, b.turn);
+    int lgm = legalMoves(&b, list, b.turn);
 
     int numMoves = lgm >> 1;
     if (! numMoves)
@@ -107,14 +108,18 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
             makeMove(&b, list[i], &h);
             uint64_t newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
-            if (isDraw(b) || isThreeRep(rep, newHash)){
+            
+            if (insuffMat(b) || isThreeRep(rep, newHash))
+            {
                 val = 0;
             }
-            else if (table[index].key == newHash && table[index].depth >= depth){
+            else if (table[index].key == newHash && table[index].depth >= depth)
+            {
                 val = table[index].val;
                 if (val > PLUS_MATE) val -= depth;
             }
-            else{
+            else
+            {
                 rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
@@ -126,7 +131,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
                 else
                     val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
                 table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
-                rep->index--;
+                --rep->index;
             }
 
             if(val > best)
@@ -152,7 +157,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
             uint64_t newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
 
-            if (isDraw(b) || isThreeRep(rep, newHash)){
+            if (insuffMat(b) || isThreeRep(rep, newHash)){
                 val = 0;
             }
             else if (table[index].key == newHash && table[index].depth >= depth){
@@ -171,7 +176,7 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
                 else
                     val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
                 table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
-                rep->index--;
+                --rep->index;
             }
 
             if(val < best)
@@ -191,12 +196,12 @@ int alphaBeta(Board b, int alpha, int beta, int depth, int capt, uint64_t prevHa
     return best;
 }
 
-Move bestMoveBrute(Board b, int depth, int tree)
+Move bestMoveBrute(Board b, const int depth, int tree)
 {
     Move list[200];
     History h;
 
-    int numMoves = legalMoves(&b, list, b.turn);
+    int numMoves = legalMoves(&b, list, b.turn) >> 1;
     int best = b.turn ? MINS_INF : PLUS_INF;
     int val;
     Move currBest = list[0];
@@ -234,11 +239,12 @@ int bestMoveBruteValue(Board b, int depth)
     Move list[200];
     History h;
 
-    int numMoves = legalMoves(&b, list, b.turn);
+    int lgm = legalMoves(&b, list, b.turn);
+    int numMoves = lgm >> 1;
     
     if (! numMoves)
     {
-        if (isInCheck(&b, b.turn))
+        if (lgm)
             return depth * (b.turn ? MINS_MATE : PLUS_MATE);
         else
             return 0;
@@ -263,6 +269,9 @@ int bestMoveBruteValue(Board b, int depth)
 }
 
 
+/* Sorts all the moves based on their score
+ * It is currently based on the LVA - MVV and a bonus if the piece captures the piece that moved the last time
+ */
 void sort(Move* list, const int numMoves, const int to)
 {
     static const int score[6] = {80, 160, 240, 320, 400, 480};

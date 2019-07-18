@@ -13,12 +13,12 @@ SRC:=$(wildcard $(SDIR)/*)
 
 _OBJ:=$(foreach wrd, $(SRC), $(subst .c,.o,$(wrd)))
 OBJ:=$(foreach wrd, $(_OBJ), $(subst $(SDIR),$(ODIR),$(wrd)))
-OBJO:=$(foreach wrd, $(OBJ), $(subst .o,.o.o,$(wrd)))
+OBJO:=$(foreach wrd, $(OBJ), $(subst .o,O.o,$(wrd)))
 
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(ODIR)/%.o.o: $(SDIR)/%.c $(DEPS)
+$(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) -O3
 
 main: $(OBJ)
