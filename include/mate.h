@@ -1,0 +1,1 @@
+Move rookMate(const Board b);

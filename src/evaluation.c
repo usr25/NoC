@@ -23,11 +23,13 @@
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
 #define N_PIECE_SLOW_DEV -10 //-25 //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
-#define SAFE_KING 20 //TODO //Bonus for pawns surrounding the king
 #define PASSED_PAWN 30 //Bonus for passed pawns
 #define N_ISOLATED_PAWN -20 //Penalization for isolated pawns
-#define CLEAN_PAWN 20 //TODO //Bonus for a pawn that doesnt have any pieces in front
-//#define BLOCKED_PAWNS 0
+//TODO:
+#define SAFE_KING 20 //Bonus for pawns surrounding the king
+#define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front
+#define N_BACKWR_PAWN 20 //Penalization for a backwards pawn
+
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -69,12 +71,12 @@ int ewPawnMatrix[64];
 int bPawnMatrix[64];
 int ebPawnMatrix[64];
 
-inline int hasMatingMat(Board b, int color)
+inline int hasMatingMat(const Board b, int color)
 {
     return b.piece[color][PAWN] || b.piece[color][ROOK] || b.piece[color][QUEEN] || POPCOUNT(b.piece[color][BISH] | b.piece[color][KNIGHT]) > 1;
 }
 
-int insuffMat(Board b)
+int insuffMat(const Board b)
 {
     switch(POPCOUNT(b.color[WHITE]))
     {
@@ -107,9 +109,8 @@ int insuffMat(Board b)
     return 0;
 }
 
-//It is considered an endgame if there are 3 pieces or less in each side, (<=8 taking into account the kings)
-
-int eval(Board b)
+//It is considered an endgame if there are 7 pieces or less in each side, (< 10 taking into account the kings)
+int eval(const Board b)
 {
     if (POPCOUNT(b.allPieces ^ (b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN])) < 10)
     {
@@ -151,14 +152,14 @@ uint64_t pawnAttacks(uint64_t pawns, int color)
 
 //TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
 //TODO: Disable piece_slow_dev if all the pieces have already moved or if it is the middlegame
-inline int pieceDevelopment(Board b)
+inline int pieceDevelopment(const Board b)
 {
     return 
          N_PIECE_SLOW_DEV * (POPCOUNT(0x66ULL & b.color[WHITE]) - POPCOUNT(0x6600000000000000ULL & b.color[BLACK]))
         +STABLE_KING * (((0x6b & b.piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b.piece[BLACK][KING]) != 0));
 }
 
-inline int pawns(Board b)
+inline int pawns(const Board b)
 {
     uint64_t wPawn = b.piece[WHITE][PAWN];
     uint64_t bPawn = b.piece[BLACK][PAWN];
@@ -191,7 +192,7 @@ inline int pawns(Board b)
             +PASSED_PAWN * (passW - passB);
 }
 
-inline int endgameAnalysis(Board b)
+inline int endgameAnalysis(const Board b)
 {
     int wAvg = b.piece[WHITE][PAWN] ? 
     (LSB_INDEX(b.piece[WHITE][PAWN]) + MSB_INDEX(b.piece[WHITE][PAWN])) >> 1 
@@ -205,7 +206,7 @@ inline int endgameAnalysis(Board b)
         +E_ADVANCED_PAWN * ((wAvg >> 3) - ((64 - bAvg) >> 3));
 }
 
-inline int pieceActivity(Board b)
+inline int pieceActivity(const Board b)
 {
     return   connectedRooks(b.piece[WHITE][ROOK], b.piece[BLACK][ROOK], b.allPieces ^ b.piece[WHITE][QUEEN] ^ b.piece[BLACK][QUEEN])
             +rookOnOpenFile(b.piece[WHITE][ROOK], b.piece[WHITE][PAWN], b.piece[BLACK][ROOK], b.piece[BLACK][PAWN])
@@ -213,13 +214,13 @@ inline int pieceActivity(Board b)
             +bishopMobility(b.piece[WHITE][BISH], b.piece[BLACK][BISH], b.allPieces);
 }
 
-inline int matricesBeg(Board b)
+inline int matricesBeg(const Board b)
 {
     return   multiply(wPawnMatrix, b.piece[WHITE][PAWN]) - multiply(bPawnMatrix, b.piece[BLACK][PAWN])
             +multiply(bishMatrix, b.piece[WHITE][BISH]) - multiply(bishMatrix, b.piece[BLACK][BISH])
             +multiply(knightMatrix, b.piece[WHITE][KNIGHT]) - multiply(knightMatrix, b.piece[BLACK][KNIGHT]);
 }
-inline int matricesEnd(Board b)
+inline int matricesEnd(const Board b)
 {
     return   multiply(ewPawnMatrix, b.piece[WHITE][PAWN]) - multiply(ebPawnMatrix, b.piece[BLACK][PAWN]);
 }
@@ -278,7 +279,7 @@ inline int twoBishops(uint64_t wh, uint64_t bl)
     return TWO_BISH * ((POPCOUNT(wh) == 2) - (POPCOUNT(bl) == 2));
 }
 
-int allPiecesValue(Board bo)
+int allPiecesValue(const Board bo)
 {
     return   VQUEEN     *(POPCOUNT(bo.piece[1][QUEEN])    - POPCOUNT(bo.piece[0][QUEEN]))
             +VROOK      *(POPCOUNT(bo.piece[1][ROOK])     - POPCOUNT(bo.piece[0][ROOK]))

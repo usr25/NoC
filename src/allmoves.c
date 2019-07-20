@@ -14,15 +14,14 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
 int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 
-
 /* Generates all the legal moves for a given position and color
  */
 int legalMoves(Board* b, Move* list, const int color)
 {    
-    //Squares attacked by opp pieces
+    //Squares attacked by opp pieces, to detect checks and castling
     uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | controlledKingPawnKnight(b, 1 ^ b->turn);
 
-    //All the pinned pieces for one side
+    //All the pinned pieces for the side to move
     uint64_t pinned = pinnedPieces(b, b->turn);
     
     if (forbidden & b->piece[b->turn][KING]) //The king is in check
@@ -33,7 +32,7 @@ int legalMoves(Board* b, Move* list, const int color)
         return movesKingFree(b, list, b->turn, forbidden) << 1;
 }
 
-/* Detects if there is a check given by the queen / bish / rook
+/* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves
  */
 static inline int moveIsValidSliding(Board* b, Move m, History h)
 {
@@ -115,7 +114,7 @@ uint64_t pinnedPieces(Board* b, const int color)
         const uint64_t inteUpRight = getUpRightMovesInt(lsb) & b->allPieces;
         const uint64_t inteUpLeft = getUpLeftMovesInt(lsb) & b->allPieces;
         const uint64_t inteDownRight = getDownRightMovesInt(lsb) & b->allPieces;
-        const uint64_t inteDownLeft = getDownLeftMoves(lsb) & b->allPieces;
+        const uint64_t inteDownLeft = getDownLeftMovesInt(lsb) & b->allPieces;
 
         if (inteUpRight){
             obstacle = LSB_INDEX(inteUpRight);

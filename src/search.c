@@ -10,6 +10,7 @@
 #include "../include/hash.h"
 #include "../include/search.h"
 #include "../include/evaluation.h"
+#include "../include/mate.h"
 #include "../include/io.h"
 
 #include <stdio.h>
@@ -27,8 +28,14 @@ int bestMoveBruteValue(Board b, const int depth);
 
 void sort(Move* list, const int numMoves, const int to);
 
+static inline int rookVSKing(Board b)
+{
+    return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
+}
+
 Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 {
+    if (rookVSKing(b)) return rookMate(b);
     if (depth == 0) return (Move) {};
     //initializeTable();
     
@@ -71,11 +78,15 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
         {
             currBest = list[i];
             alpha = val;
+            if (val >= PLUS_MATE + depth - 2)
+                break;
         }
         else if (!color && val < beta)
         {
             currBest = list[i];
             beta = val;
+            if (val <= MINS_MATE - depth + 2)
+                break;
         }
     }
 
@@ -89,12 +100,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
 
     int numMoves = lgm >> 1;
     if (! numMoves)
-    {
-        if (lgm)
-            return b.turn ? MINS_MATE - depth : PLUS_MATE + depth;
-        else
-            return 0;
-    }
+        return lgm * (b.turn ? MINS_MATE - depth : PLUS_MATE + depth);
 
     sort(list, numMoves, m.to);
 
@@ -243,12 +249,8 @@ int bestMoveBruteValue(Board b, int depth)
     int numMoves = lgm >> 1;
     
     if (! numMoves)
-    {
-        if (lgm)
-            return depth * (b.turn ? MINS_MATE : PLUS_MATE);
-        else
-            return 0;
-    }
+        return lgm * (b.turn ? MINS_MATE - depth : PLUS_MATE + depth);
+
 
     int best = b.turn ? MINS_INF : PLUS_INF;
     int val;
@@ -270,16 +272,19 @@ int bestMoveBruteValue(Board b, int depth)
 
 
 /* Sorts all the moves based on their score
- * It is currently based on the LVA - MVV and a bonus if the piece captures the piece that moved the last time
+ * It is currently based on the LVA - MVV and a bonus if the piece captures the piece that moved the last time,
+ * since it is likely it wont be protected
  */
+static const int score[6] = {80, 160, 240, 320, 400, 480};
+
 void sort(Move* list, const int numMoves, const int to)
 {
-    static const int score[6] = {80, 160, 240, 320, 400, 480};
-
     for (int i = 0; i < numMoves; ++i)
     {
         if(list[i].capture != NO_PIECE && list[i].capture)
-            list[i].score = score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4) + ((to == list[i].to) << 7);
+            list[i].score = 
+                score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4)  //LVA - MVV
+                +((to == list[i].to) << 7); //Bonus if it captures the piece that moved last time
     }
 
     //Insertion sort
