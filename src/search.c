@@ -35,7 +35,7 @@ static inline int rookVSKing(Board b)
 
 Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 {
-    if (rookVSKing(b)) return rookMate(b);
+    if (0 && rookVSKing(b)) return rookMate(b);
     if (depth == 0) return (Move) {};
     //initializeTable();
     

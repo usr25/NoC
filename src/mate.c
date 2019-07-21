@@ -41,6 +41,28 @@ static inline int rookCutsOff(const int lkCol, const int wrCol, const int wKingI
     else
         return wrCol - lkCol == 1;
 }
+static inline int makeWaitingMove(const int wrRow, const int wrCol, const int lkRow, const int wKingIsHigher)
+{
+    if(wKingIsHigher)
+    {
+        if (wrRow > lkRow)
+            return 8 * (wrRow - 1) + wrCol;
+        else if (wrRow < lkRow - 3)
+            return 8 * (wrRow + 1) + wrCol;
+        else
+            return shiftRook(8 * wrRow + wrCol, wrCol);
+    }
+    else
+    {
+        if (wrRow < lkRow)
+            return 8 * (wrRow + 1) + wrCol;
+        else if (wrRow > lkRow + 3)
+            return 8 * (wrRow - 1) + wrCol;
+        else
+            return shiftRook(8 * wrRow + wrCol, wrCol);
+    }
+}
+
 //This algorithm is made to be simple, not efficient
 /* How it works:
  * The algorithm starts checking conditions to see which the best move to play
@@ -70,8 +92,11 @@ Move rookMate(const Board b)
     
     const int wrRow = wrLSB / 8;
     const int wkRow = wkLSB / 8;
+    const int lkRow = lkLSB / 8;
 
-    const int opposition = abs(wkLSB - lkLSB) == 2 || (abs(wkLSB - lkLSB) == 10 && (lkLSB < 8 || lkLSB > 55)); //Opposition or the los king is on the edge besides the win king
+    const int kingsDist = abs(wkLSB - lkLSB);
+
+    const int opposition = kingsDist == 2 || ((kingsDist == 10 || kingsDist == 6) && (lkLSB < 8 || lkLSB > 55)); //Opposition or the los king is on the edge besides the win king
     const int wKingIsHigher = wkLSB / 8 > lkLSB / 8;
     const int wKingIsToTheRight = (wkLSB & 7) < (lkLSB & 7);
 
@@ -93,7 +118,9 @@ Move rookMate(const Board b)
     }
     else if (rookCutsOff(lkCol, wrCol, wKingIsToTheRight)) //The rook is already cutting off the opp king
     {
-        if (abs(wkCol - lkCol) == 2) //rook is betw and k is looking for opposition, chase the king
+        if (kingsDist == 10 || kingsDist == 6)
+            move = (Move) {.pieceThatMoves = ROOK, .from = wrLSB, .to = makeWaitingMove(wrRow, wrCol, lkRow, wKingIsHigher)};
+        else if (abs(wkCol - lkCol) == 2) //rook is betw and k is looking for opposition, chase the king
             move = (Move) {.pieceThatMoves = KING, .from = wkLSB, .to = 8 * (wkRow - (2 * wKingIsHigher - 1)) + wkCol};
         else
             move = (Move) {.pieceThatMoves = KING, .from = wkLSB, .to = 8 * (wkRow - (2 * wKingIsHigher - 1)) + wkCol + (2 * wKingIsToTheRight - 1)};
