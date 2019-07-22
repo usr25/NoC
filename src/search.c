@@ -35,7 +35,7 @@ static inline int rookVSKing(Board b)
 
 Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 {
-    if (0 && rookVSKing(b)) return rookMate(b);
+    if (rookVSKing(b)) return rookMate(b);
     if (depth == 0) return (Move) {};
     //initializeTable();
     
@@ -78,14 +78,15 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
         {
             currBest = list[i];
             alpha = val;
-            if (val >= PLUS_MATE + depth - 2)
+            //No need to keep searching once it has found a mate in 1
+            if (val > PLUS_MATE + depth - 2)
                 break;
         }
         else if (!color && val < beta)
         {
             currBest = list[i];
             beta = val;
-            if (val <= MINS_MATE - depth + 2)
+            if (val < MINS_MATE - depth + 2)
                 break;
         }
     }
@@ -96,7 +97,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
 {
     Move list[200];
     History h;
-    int lgm = legalMoves(&b, list, b.turn);
+    int lgm = legalMoves(&b, list, b.turn); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate
 
     int numMoves = lgm >> 1;
     if (! numMoves)
@@ -105,6 +106,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
     sort(list, numMoves, m.to);
 
     int val, best, index;
+    uint64_t newHash;
     if (b.turn)
     {
         best = MINS_INF;
@@ -112,7 +114,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
         for (int i = 0; i < numMoves; ++i)
         {
             makeMove(&b, list[i], &h);
-            uint64_t newHash = makeMoveHash(prevHash, &b, list[i], h);
+            newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
             
             if (insuffMat(b) || isThreeRep(rep, newHash))
@@ -129,7 +131,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
-                    if (list[i].capture > 0 && capt)
+                    if (capt && list[i].capture > 0)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
                     else
                         val = eval(b);
@@ -146,7 +148,8 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 if(val > alpha)
                 {
                     alpha = val;
-                    if (beta < alpha) break;
+                    if (beta < alpha || val > PLUS_MATE + depth - 2)
+                        break; //Pruning or it has found a mate in 1
                 }
             }
 
@@ -160,21 +163,23 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
         for (int i = 0; i < numMoves; ++i)
         {
             makeMove(&b, list[i], &h);
-            uint64_t newHash = makeMoveHash(prevHash, &b, list[i], h);
+            newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
 
             if (insuffMat(b) || isThreeRep(rep, newHash)){
                 val = 0;
             }
-            else if (table[index].key == newHash && table[index].depth >= depth){
+            else if (table[index].key == newHash && table[index].depth >= depth)
+            {
                 val = table[index].val;
                 if (val < MINS_MATE) val += depth;
             }
-            else{
+            else
+            {
                 rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
-                    if (list[i].capture > 0 && capt)
+                    if (capt && list[i].capture > 0)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
                     else
                         val = eval(b);
@@ -191,7 +196,8 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 if(val < beta)
                 {
                     beta = val;
-                    if (beta < alpha) break;
+                    if (beta < alpha || val < MINS_MATE - depth + 2)
+                        break; //Prunning or it has found a mate in 1
                 }
             }
 
@@ -204,6 +210,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
 
 Move bestMoveBrute(Board b, const int depth, int tree)
 {
+    if (rookVSKing(b)) return rookMate(b);
     Move list[200];
     History h;
 

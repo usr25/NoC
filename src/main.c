@@ -25,8 +25,8 @@ int main(const int argc, char* const argv)
     initialize();
 
     //runTests();
-    //slowTests();  //57'6s
-    //slowEval();   //14'1 without initialization
+    //slowTests();  //56'5s
+    //slowEval();   //13'9 without initialization
 
     //printf("%d\n", perft(6, 1)); //5'75s
     //printf("%d\n", perft(7, 1)); //2:22m
