@@ -912,16 +912,17 @@ void slowEval()
     printf("\n---= This will take a long time =---\n");
     
     int depth = 6;
+    int white = 1, black = 1;
+    Board b;
     
     printf("[+] Eval equal position: ");
-    Board b = defaultBoard();
+    b = defaultBoard();
     drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
     printf(" ");
     b.turn ^= 1;
     drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
     printf("\n");
     
-    int white = 1, black = 1;
     depth = 6;
     
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
@@ -943,7 +944,7 @@ void slowEval()
     
     white &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", depth, 5);          //Rook promotion
     black &= compMove("8/8/8/8/8/2k5/K1p5/8 b - -", "c2c1r", depth, 5);
-    
+
     white &= compMove("1q4k1/2pN3R/8/6B1/5K2/8/2p5/4q3 w - -", "d7f6", depth, 4);//Mate
     black &= compMove("1Q4Q1/2P5/8/8/1b3k2/8/r3n3/1K6 b - -", "e2c3", depth, 4);
 
@@ -967,9 +968,9 @@ void slowEval()
     
     white &= compMove("7k/8/5KPP/8/8/8/8/8 w - -", "g6g7", depth, 4);
     black &= compMove("8/8/8/8/8/ppk5/8/K7 b - -", "b3b2", depth, 4);
-
-    white &= compMove("3r1nk1/1b1R4/8/8/3B4/4K3/8/8 w - -", "d7g7", depth, 4);
-
+    
+    //white &= compMove("3r1nk1/1b1R4/8/8/3B4/4K3/8/8 w - -", "d7g7", depth, 4); //Windmill
+    
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);
 

@@ -15,6 +15,7 @@
 #include "../include/search.h"
 #include "../include/uci.h"
 #include "../include/mate.h"
+#include "../include/evaluation.h"
 #include "../include/io.h"
 
 //position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
@@ -26,7 +27,7 @@ int main(const int argc, char* const argv)
 
     //runTests();
     //slowTests();  //56'5s
-    //slowEval();   //13'9 without initialization
+    //slowEval();   //9'32 without initialization
 
     //printf("%d\n", perft(6, 1)); //5'75s
     //printf("%d\n", perft(7, 1)); //2:22m

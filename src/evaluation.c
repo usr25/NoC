@@ -15,20 +15,20 @@
 #define TWO_BISH 20 //Bonus for having the bishop pair
 #define ROOK_OPEN_FILE 25 //Bonus for a rook on an open file (No same color pawns)
 #define BISHOP_MOBILITY 2 //Bonus for sqares available to the bish
-#define N_DOUBLED_PAWNS -40 //Penalization for doubled pawns (proportional to the pawns in line - 1)
+#define N_DOUBLED_PAWNS -36 //Penalization for doubled pawns (proportional to the pawns in line - 1)
 #define PAWN_CHAIN 20 //Bonus for making a pawn chain
 #define PAWN_PROTECTION 15 //Bonus for Bish / Knight protected by pawn
-#define ATTACKED_BY_PAWN 20 //Bonus if a pawn can easily attack a piece
+#define ATTACKED_BY_PAWN 30 //Bonus if a pawn can easily attack a piece
+#define ATTACKED_BY_PAWN_LATER 12 //Bonus if a pawn can attack a piece after moving once
 #define E_ADVANCED_KING 3 //Endgame, bonus for advanced king
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
 #define N_PIECE_SLOW_DEV -10 //-25 //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
 #define PASSED_PAWN 30 //Bonus for passed pawns
 #define N_ISOLATED_PAWN -20 //Penalization for isolated pawns
-//TODO:
-#define SAFE_KING 20 //Bonus for pawns surrounding the king
-#define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front
-#define N_BACKWR_PAWN 20 //Penalization for a backwards pawn
+#define N_BACKWR_PAWN -10 //Penalization for a backwards pawn
+#define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
+#define SAFE_KING 2 //Bonus for pawns surrounding the king
 
 
 #include "../include/global.h"
@@ -39,30 +39,26 @@
 
 #include <stdio.h>
 
-int matricesBeg(const Board b);
-int matricesEnd(const Board b);
-int allPiecesValue(const Board b);
-int analyzePawnStructure(const Board b);
-int pieceActivity(const Board b);
-int endgameAnalysis(const Board b);
-int pieceDevelopment(const Board b);
-int multiply(int vals[64], uint64_t mask);
-int pawns(const Board b);
+inline int matricesBeg(const Board b);
+inline int matricesEnd(const Board b);
+inline int allPiecesValue(const Board b);
+inline int pieceActivity(const Board b);
+inline int endgameAnalysis(const Board b);
+inline int pieceDevelopment(const Board b);
+inline int multiply(int vals[64], uint64_t mask);
+inline int pawns(const Board b);
 
-int hasMatingMat(const Board b, int color);
+inline int hasMatingMat(const Board b, int color);
 
 int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp);
 int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all);
 int twoBishops(uint64_t wh, uint64_t bl);
 int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all);
+int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp);
 
 //TO implement:
 int knightCoordination(); //Two knights side by side are better
-int passedPawns();
-int knightForks(); //Probably not necessary
-int materialHit(); //? 
-int pins(); //?
-int skewers();  //?
+int materialHit(); //?
 
 int bishMatrix[64];
 int knightMatrix[64];
@@ -128,7 +124,7 @@ int eval(const Board b)
             +pawns(b);
 }
 
-uint64_t pawnAttacks(uint64_t pawns, int color)
+inline uint64_t pawnAttacks(uint64_t pawns, int color)
 {
     uint64_t res = 0ULL;
     if (color)
@@ -166,7 +162,7 @@ inline int pawns(const Board b)
     uint64_t attW = pawnAttacks(wPawn, WHITE);
     uint64_t attB = pawnAttacks(bPawn, BLACK);
 
-    int isolW = 0, isolB = 0, passW = 0, passB = 0;
+    int isolW = 0, isolB = 0, passW = 0, passB = 0, backW = 0, backB = 0, cleanW = 0, cleanB = 0;
     int lsb;
     uint64_t tempW = wPawn, tempB = bPawn;
     while(tempW)
@@ -174,6 +170,8 @@ inline int pawns(const Board b)
         lsb = LSB_INDEX(tempW);
         isolW += (getPawnLanes(lsb) & wPawn) != 0;
         passW += (getWPassedPawn(lsb) & bPawn) == 0;
+        backW += POPCOUNT(getBPassedPawn(lsb + 8) & wPawn) == 1;
+        cleanW += (lsb > 31) * ((POW2[lsb + 8] & b.allPieces) == 0);
         REMOVE_LSB(tempW);
     }
     while(tempB)
@@ -181,15 +179,19 @@ inline int pawns(const Board b)
         lsb = LSB_INDEX(tempB);
         isolB += (getPawnLanes(lsb) & bPawn) != 0;
         passB += (getBPassedPawn(lsb) & wPawn) == 0;
+        backB += POPCOUNT(getWPassedPawn(lsb - 8) & bPawn) == 1;
+        cleanB += (lsb < 32) * ((POW2[lsb - 8] & b.allPieces) == 0);
         REMOVE_LSB(tempB);
     }
 
     return   PAWN_CHAIN * (POPCOUNT(wPawn & attW) - POPCOUNT(bPawn & attB))
             +PAWN_PROTECTION * (POPCOUNT(attW & (b.piece[WHITE][BISH] | b.piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b.piece[BLACK][BISH] | b.piece[BLACK][KNIGHT])))
             +N_DOUBLED_PAWNS * (POPCOUNT(wPawn & (wPawn * 0x10100)) - POPCOUNT(bPawn & (bPawn >> 8 | bPawn >> 16)))
-            +ATTACKED_BY_PAWN * (POPCOUNT((attW * 0x101) & b.color[BLACK]) - POPCOUNT((attB | (attB >> 8)) & b.color[WHITE]))
+            +ATTACKED_BY_PAWN * (POPCOUNT(attW & b.color[BLACK]) - POPCOUNT(attB & b.color[WHITE]))
+            +ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b.color[BLACK]) - POPCOUNT((attB >> 8) & b.color[WHITE]))
             +N_ISOLATED_PAWN * (isolW - isolB) 
-            +PASSED_PAWN * (passW - passB);
+            +PASSED_PAWN * (passW - passB)
+            +N_BACKWR_PAWN * (backW - backB);
 }
 
 inline int endgameAnalysis(const Board b)
@@ -211,6 +213,7 @@ inline int pieceActivity(const Board b)
     return   connectedRooks(b.piece[WHITE][ROOK], b.piece[BLACK][ROOK], b.allPieces ^ b.piece[WHITE][QUEEN] ^ b.piece[BLACK][QUEEN])
             +rookOnOpenFile(b.piece[WHITE][ROOK], b.piece[WHITE][PAWN], b.piece[BLACK][ROOK], b.piece[BLACK][PAWN])
             +twoBishops(b.piece[WHITE][BISH], b.piece[BLACK][BISH])
+            +safeKing(b.piece[WHITE][KING], b.piece[BLACK][KING], b.piece[WHITE][PAWN], b.piece[BLACK][PAWN])
             +bishopMobility(b.piece[WHITE][BISH], b.piece[BLACK][BISH], b.allPieces);
 }
 
@@ -229,6 +232,12 @@ inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all)
 {
     return BISHOP_MOBILITY * ((POPCOUNT(diagonal(MSB_INDEX(wh), all)) + POPCOUNT(diagonal(LSB_INDEX(wh), all))) 
                              -(POPCOUNT(diagonal(MSB_INDEX(bl), all)) + POPCOUNT(diagonal(LSB_INDEX(bl), all))));
+}
+
+inline int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp)
+{
+    return SAFE_KING *  (POPCOUNT(getKingMoves(LSB_INDEX(wk)) & wp)
+                        -POPCOUNT(getKingMoves(LSB_INDEX(bk)) & bp));
 }
 
 inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all)
@@ -279,7 +288,7 @@ inline int twoBishops(uint64_t wh, uint64_t bl)
     return TWO_BISH * ((POPCOUNT(wh) == 2) - (POPCOUNT(bl) == 2));
 }
 
-int allPiecesValue(const Board bo)
+inline int allPiecesValue(const Board bo)
 {
     return   VQUEEN     *(POPCOUNT(bo.piece[1][QUEEN])    - POPCOUNT(bo.piece[0][QUEEN]))
             +VROOK      *(POPCOUNT(bo.piece[1][ROOK])     - POPCOUNT(bo.piece[0][ROOK]))
