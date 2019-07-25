@@ -16,8 +16,8 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
 
 /* Generates all the legal moves for a given position and color
  */
-int legalMoves(Board* b, Move* list, const int color)
-{    
+int legalMoves(Board* b, Move* list)
+{
     //Squares attacked by opp pieces, to detect checks and castling
     uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | controlledKingPawnKnight(b, 1 ^ b->turn);
 
@@ -34,7 +34,7 @@ int legalMoves(Board* b, Move* list, const int color)
 
 /* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves
  */
-static inline int moveIsValidSliding(Board* b, Move m, History h)
+static inline int moveIsValidSliding(Board* b, const Move m, History h)
 {
     makeMove(b, m, &h);
     int chk = slidingCheck(b, 1 ^ b->turn);
@@ -52,14 +52,13 @@ uint64_t pinnedPieces(Board* b, const int color)
     3- Retrace from that piece in the direction and detect if there is a Rook / Bish / Queen
     4- Return a bitboard of 1s where each 1 is a pinned piece
     */
-    uint64_t res = 0;
-    uint64_t retrace;
+    uint64_t res = 0, retrace;
     int obstacle;
 
     const int lsb = LSB_INDEX(b->piece[color][KING]);
 
-    uint64_t stra = b->piece[1 ^ color][QUEEN] | b->piece[1 ^ color][ROOK];
-    uint64_t diag = b->piece[1 ^ color][QUEEN] | b->piece[1 ^ color][BISH];
+    const uint64_t stra = b->piece[1 ^ color][QUEEN] | b->piece[1 ^ color][ROOK];
+    const uint64_t diag = b->piece[1 ^ color][QUEEN] | b->piece[1 ^ color][BISH];
 
     if (stra)
     {

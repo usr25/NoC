@@ -143,3 +143,81 @@ Move rookMate(const Board b)
 
     return move;
 }
+
+int kingIsStalemate(const int wkLSB, const int wqLSB, const int lkLSB)
+{
+    return (getKingMoves(lkLSB) & ~(getKingMoves(wkLSB) | straight(wqLSB, POW2[wkLSB]) | diagonal(wqLSB, POW2[wkLSB]))) == 0ULL;
+}
+
+Move queenMate(const Board b)
+{
+    const int color = b.turn;
+
+    const int wkLSB = LSB_INDEX(b.piece[color][KING]);
+    const int wqLSB = LSB_INDEX(b.piece[color][QUEEN]);
+    const int lkLSB = LSB_INDEX(b.piece[1 ^ color][KING]);
+
+    const int wkRow = wkLSB / 8;
+    const int wqRow = wqLSB / 8;
+    const int lkRow = lkLSB / 8;
+
+    const int lkCol = lkLSB & 7;
+    const int wqCol = wqLSB & 7;
+
+    const uint64_t wkMoves = getKingMoves(wkLSB);
+    const uint64_t lkMoves = getKingMoves(lkLSB);
+    const uint64_t wqMoves = straight(wqLSB, POW2[wkLSB]) | diagonal(wqLSB, POW2[wkLSB]);
+    const uint64_t safeSquares = (~lkMoves) | wkMoves;
+    const int queenIsKnightAway = (getKnightMoves(lkLSB) & POW2[wqLSB]) != 0;
+
+    const int wKingIsHigher = wkLSB / 8 > lkLSB / 8;
+    const int wKingIsToTheRight = (wkLSB & 7) < (lkLSB & 7);
+    const int lKingInCorner = (lkRow == 0 || lkRow == 7) && (lkCol == 0 || lkCol == 7);
+
+
+    Move move;
+
+    if (lKingInCorner && queenIsKnightAway)//Possible stalemate
+    {
+        if (POW2[lkLSB + 16 * wKingIsHigher - 8] & wkMoves) //There can be mate
+            move = (Move) {.pieceThatMoves = QUEEN, .from = wqLSB, .to = lkLSB + 16 * wKingIsHigher - 8};
+        else //Back off queen
+        {
+            int to;
+            
+            if (wqRow == 1 || wqRow == 6)
+                to = wqLSB + 2 * (wqCol == 2) - 1;
+            else
+                to = wqLSB + 16 * (wqRow == 2) - 8;
+
+            move = (Move) {.pieceThatMoves = QUEEN, .from = wqLSB, .to = to};
+        }
+    }
+    else if (lkRow == 0 || lkRow == 7) 
+    {
+        if (abs(wqRow - lkRow) == 1) //The queen is cutting off the king
+        {
+            if (abs(wkRow - lkRow) == 2)
+            {
+                if (POW2[lkLSB + 16 * wKingIsHigher - 8] & wkMoves)
+                    move = (Move) {.pieceThatMoves = QUEEN, .from = wqLSB, .to = lkLSB + 16 * wKingIsHigher - 8};
+                else
+                    move = (Move) {.pieceThatMoves = KING, .from = wkLSB, .to = wkLSB + 2 * wKingIsToTheRight - 1};
+            }
+            else //Get the king closer
+                move = (Move) {.pieceThatMoves = KING, .from = wkLSB, .to = wkLSB + 2 * wKingIsToTheRight - 1 - 16 * wKingIsHigher + 8};
+        }
+        else //Get the queen to cut off the king
+        {
+            //It currently stalemates the king if hes in the corner
+            uint64_t cutOffSqrs = wqMoves & getHoriz(2 * (lkRow == 0) - 1) & safeSquares;
+            move = (Move) {.pieceThatMoves = QUEEN, .from = wkLSB, .to = LSB_INDEX(cutOffSqrs)};
+        }
+    }
+    else //Use the queen to corner the king
+    {
+        
+    }
+
+    return move;
+}

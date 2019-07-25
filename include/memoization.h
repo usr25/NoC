@@ -15,8 +15,8 @@ uint64_t downrightMoves[64];    uint64_t downrightMovesInt[64];
 uint64_t upleftMoves[64];       uint64_t upleftMovesInt[64];
 uint64_t downleftMoves[64];     uint64_t downleftMovesInt[64];
 
-uint64_t straMoves[64];
-uint64_t diagMoves[64];
+uint64_t straMoves[64];         uint64_t straMovesInt[64];
+uint64_t diagMoves[64];         uint64_t diagMovesInt[64];
 
 uint64_t whitePawnMoves[64];
 uint64_t whitePawnCaptures[64];
@@ -53,6 +53,9 @@ uint64_t bPassedPawn[64];
 
 #define getStraMoves(i) straMoves[i]
 #define getDiagMoves(i) diagMoves[i]
+
+#define getStraInt(i) straMovesInt[i]
+#define getDiagInt(i) diagMovesInt[i]
 
 #define getWhitePawnMoves(i) whitePawnMoves[i]
 #define getWhitePawnCaptures(i) whitePawnCaptures[i]

@@ -39,16 +39,16 @@
 
 #include <stdio.h>
 
-inline int matricesBeg(const Board b);
-inline int matricesEnd(const Board b);
-inline int allPiecesValue(const Board b);
-inline int pieceActivity(const Board b);
-inline int endgameAnalysis(const Board b);
-inline int pieceDevelopment(const Board b);
-inline int multiply(int vals[64], uint64_t mask);
-inline int pawns(const Board b);
+int matricesBeg(const Board b);
+int matricesEnd(const Board b);
+int allPiecesValue(const Board b);
+int pieceActivity(const Board b);
+int endgameAnalysis(const Board b);
+int pieceDevelopment(const Board b);
+int multiply(int vals[64], uint64_t mask);
+int pawns(const Board b);
 
-inline int hasMatingMat(const Board b, int color);
+int hasMatingMat(const Board b, int color);
 
 int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp);
 int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all);
@@ -59,6 +59,8 @@ int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp);
 //TO implement:
 int knightCoordination(); //Two knights side by side are better
 int materialHit(); //?
+
+uint64_t pawnAttacks(uint64_t pawns, int color);
 
 int bishMatrix[64];
 int knightMatrix[64];

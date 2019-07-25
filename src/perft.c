@@ -20,7 +20,7 @@ uint64_t perftRecursive(Board b, const int depth)
     History h;
     uint64_t tot = 0;
     
-    int numMoves = legalMoves(&b, moves, b.turn) >> 1;
+    int numMoves = legalMoves(&b, moves) >> 1;
 
     if (depth == 1)
         tot = numMoves;
@@ -47,7 +47,7 @@ int perft(const int depth, int tree)
     History h;
     uint64_t tot = 0;
 
-    int numMoves = legalMoves(&b, moves, b.turn) >> 1;
+    int numMoves = legalMoves(&b, moves) >> 1;
     
     if (depth == 1)
         return numMoves == results[depth];

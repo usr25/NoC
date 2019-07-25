@@ -8,29 +8,49 @@
 #include "../include/moves.h"
 #include "../include/memoization.h"
 #include "../include/io.h"
+#include "../include/magic.h"
+
+/* How it works:
+ * 1- Get all the relevant bits for the attack using a mask getMoveTypeInt(index) & allPieces, it is not neccessary to include the bits of the blocking pieces in the mask
+ * 2- Multiply * magicType[index]
+ * 3- Bitshift the result 64 - 12 for rook and 64 - 9 for bish
+ * 4- Refer to the respective array and return getTypeMoves[index][multShifted]
+ * The return WILL include the blocking sqrs, so that the mask b.color[opp] can be applied
+ * to include the opp pieces for captures
+ */
+static inline uint64_t getRookMagicMoves(const int index, uint64_t allPieces)
+{
+    allPieces &= getStraInt(index);
+    allPieces *= rookMagic[index];
+    return rookMagicMoves[index][allPieces >> 52]; //64 - 12 == 52, worst case scenario. To make it variable use POPCOUNT(mask)
+}
+static inline uint64_t getBishMagicMoves(const int index, uint64_t allPieces)
+{
+    allPieces &= getDiagInt(index);
+    allPieces *= bishMagic[index];
+    return bishMagicMoves[index][allPieces >> 55]; //64 - 9 == 55, worst case scenario
+}
 
 
 inline uint64_t posKingMoves(Board* b, const int color)
 {
     return b->color[color | 2] & getKingMoves(LSB_INDEX(b->piece[color][KING]));
 }
-
 inline uint64_t posKnightMoves(Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & getKnightMoves(lsb);
 }
-
 inline uint64_t posRookMoves(Board* b, const int color, const int lsb)
 {
-    return b->color[color | 2] & straight(lsb, b->allPieces);
+    return b->color[color | 2] & getRookMagicMoves(lsb, b->allPieces);
 }
 inline uint64_t posBishMoves(Board* b, const int color, const int lsb)
 {
-    return b->color[color | 2] & diagonal(lsb, b->allPieces);
+    return b->color[color | 2] & getBishMagicMoves(lsb, b->allPieces);
 }
 inline uint64_t posQueenMoves(Board* b, const int color, const int lsb)
 {
-    return b->color[color | 2] & (straight(lsb, b->allPieces) | diagonal(lsb, b->allPieces));
+    return b->color[color | 2] & (getRookMagicMoves(lsb, b->allPieces) | getBishMagicMoves(lsb, b->allPieces));
 }
 
 /*
@@ -172,19 +192,19 @@ uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles)
     temp = b->piece[color][QUEEN];
     while(temp)
     {
-        res |= straight(LSB_INDEX(temp), obstacles) | diagonal(LSB_INDEX(temp), obstacles);
+        res |= getRookMagicMoves(LSB_INDEX(temp), obstacles) | getBishMagicMoves(LSB_INDEX(temp), obstacles);
         REMOVE_LSB(temp);
     }
     temp = b->piece[color][ROOK];
     while(temp)
     {
-        res |= straight(LSB_INDEX(temp), obstacles);
+        res |= getRookMagicMoves(LSB_INDEX(temp), obstacles);
         REMOVE_LSB(temp);
     }
     temp = b->piece[color][BISH];
     while(temp)
     {
-        res |= diagonal(LSB_INDEX(temp), obstacles);
+        res |= getBishMagicMoves(LSB_INDEX(temp), obstacles);
         REMOVE_LSB(temp);
     }
 
@@ -284,37 +304,33 @@ AttacksOnK getCheckTiles(Board* b, const int color)
     return (AttacksOnK) {.tiles = res, .num = num};
 }
 
-int checkInPosition(Board* b, const int lsb, const int kingsColor)
-{
-    const int opp = 1 ^ kingsColor;
-
-    if (b->piece[opp][KING] & getKingMoves(lsb)) return 1;
-    if (b->piece[opp][PAWN] & pawnCaptures(lsb, kingsColor)) return 1;
-    if (b->piece[opp][KNIGHT] & getKnightMoves(lsb)) return 1;
-    
-    const uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
-    if (stra && (stra & straight(lsb, b->allPieces))) return 1;
-
-    const uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
-    if (diag && (diag & diagonal(lsb, b->allPieces))) return 1;
-
-    return 0;
-}
-
 inline int slidingCheck(Board* b, const int kingsColor)
 {
     const int lsb = LSB_INDEX(b->piece[kingsColor][KING]);
 
-    const uint64_t stra = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][ROOK];
-    if (stra && (stra & straight(lsb, b->allPieces))) return 1;
+    uint64_t stra = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][ROOK];
+    if (stra && (stra & getRookMagicMoves(lsb, b->allPieces))) return 1;
 
-    const uint64_t diag = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][BISH];
-    if (diag && (diag & diagonal(lsb, b->allPieces))) return 1;
+    uint64_t diag = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][BISH];
+    if (diag && (diag & getBishMagicMoves(lsb, b->allPieces))) return 1;
 
     return 0;
 }
 
 inline int isInCheck(Board* b, const int kingsColor)
 {
-    return checkInPosition(b, LSB_INDEX(b->piece[kingsColor][KING]), kingsColor);
+    const int lsb = LSB_INDEX(b->piece[kingsColor][KING]);
+    const int opp = 1 ^ kingsColor;
+
+    if (b->piece[opp][KING] & getKingMoves(lsb)) return 1;
+    if (b->piece[opp][PAWN] & pawnCaptures(lsb, kingsColor)) return 1;
+    if (b->piece[opp][KNIGHT] & getKnightMoves(lsb)) return 1;
+    
+    uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
+    if (stra && (stra & getRookMagicMoves(lsb, b->allPieces))) return 1;
+
+    uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
+    if (diag && (diag & getBishMagicMoves(lsb, b->allPieces))) return 1;
+
+    return 0;
 }

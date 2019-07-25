@@ -587,7 +587,7 @@ int testStartMoveListing()
     Board b = defaultBoard();
     Move moves[100];
 
-    int numMovesWhite = legalMoves(&b, moves, WHITE) >> 1;
+    int numMovesWhite = legalMoves(&b, moves) >> 1;
     int whiteMovesAreAccurate = 1;
     for (int i = 0; i < 8; ++i)
     {
@@ -603,7 +603,7 @@ int testStartMoveListing()
     whiteKnight &= (moves[16].from == moves[17].from) && (moves[18].from == moves[19].from);
 
     b.turn ^= 1;
-    int numMovesBlack = legalMoves(&b, moves, BLACK) >> 1;
+    int numMovesBlack = legalMoves(&b, moves) >> 1;
     int blackMovesAreAccurate = 1;
     
     for (int i = 0; i < 8; ++i)
@@ -631,8 +631,8 @@ int testPromotion()
 
     b = genFromFen("8/4P1K1/8/8/8/1k6/3p4/8 w - -", &ignore);
 
-    int numMovesB = legalMoves(&b, moves, BLACK) >> 1;
-    int numMovesW = legalMoves(&b, moves, WHITE) >> 1;
+    int numMovesB = legalMoves(&b, moves) >> 1;
+    int numMovesW = legalMoves(&b, moves) >> 1;
 
     int correctNum = (numMovesW == 12) && (numMovesB == 12);
     int piecesAddUp = 1;
@@ -824,7 +824,7 @@ int testHashingInPos(char* fen)
     Move list[256];
     History h;
 
-    int numMoves = legalMoves(&b, list,b.turn) >> 1;
+    int numMoves = legalMoves(&b, list) >> 1;
 
     uint64_t initialHash = hashPosition(&b);
 

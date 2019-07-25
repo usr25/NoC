@@ -19,7 +19,7 @@
 
 #define ENGINE_AUTHOR "usr"
 #define ENGINE_NAME "DEV"
-#define LEN 4096
+#define LEN 5000
 #define DEPTH 6
 
 void uci(void);
@@ -107,7 +107,8 @@ void loop(void)
         else if (strncmp(beg, "quit", 4) == 0)
             quit = 1;
 
-        else{
+        else
+        {
             fprintf(stdout, "Invalid command\n");
             fflush(stdout);
         }

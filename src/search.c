@@ -44,7 +44,7 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
     Move list[200];
     History h;
 
-    int numMoves = legalMoves(&b, list, color) >> 1;
+    int numMoves = legalMoves(&b, list) >> 1;
 
     sort(list, numMoves, -1);
     
@@ -97,7 +97,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
 {
     Move list[200];
     History h;
-    int lgm = legalMoves(&b, list, b.turn); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate
+    int lgm = legalMoves(&b, list); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate
 
     int numMoves = lgm >> 1;
     if (! numMoves)
@@ -214,7 +214,7 @@ Move bestMoveBrute(Board b, const int depth, int tree)
     Move list[200];
     History h;
 
-    int numMoves = legalMoves(&b, list, b.turn) >> 1;
+    int numMoves = legalMoves(&b, list) >> 1;
     int best = b.turn ? MINS_INF : PLUS_INF;
     int val;
     Move currBest = list[0];
@@ -252,7 +252,7 @@ int bestMoveBruteValue(Board b, int depth)
     Move list[200];
     History h;
 
-    int lgm = legalMoves(&b, list, b.turn);
+    int lgm = legalMoves(&b, list);
     int numMoves = lgm >> 1;
     
     if (! numMoves)

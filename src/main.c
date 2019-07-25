@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../include/global.h"
 #include "../include/memoization.h"
@@ -17,6 +18,7 @@
 #include "../include/mate.h"
 #include "../include/evaluation.h"
 #include "../include/io.h"
+#include "../include/magic.h"
 
 //position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
 //best results -> depth 6 capt 1
@@ -25,14 +27,17 @@ int main(const int argc, char* const argv)
 {
     initialize();
 
-    //runTests();
-    //slowTests();  //56'5s
-    //slowEval();   //9'32 without initialization
+    srand(11);
+    genMagics();
 
-    //printf("%d\n", perft(6, 1)); //5'75s
-    //printf("%d\n", perft(7, 1)); //2:22m
+    //runTests();
+    //slowTests();  //51'5s
+    //slowEval();   //8'7 without initialization
+
+    //printf("%d\n", perft(6, 1)); //5s
+    //printf("%d\n", perft(7, 1)); //2:1m
 
     loop();
-    
+
     return 0;
 }

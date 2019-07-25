@@ -117,7 +117,6 @@ void makeMove(Board* b, const Move move, History* h)
         if (move.enPass)
         {
             setBit(b, toBit, PAWN, b->turn);
-            
             unsetBit(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
         }
         else
@@ -171,7 +170,6 @@ void undoMove(Board* b, const Move move, History* h)
         if (move.enPass)
         {
             unsetBit(b, toBit, PAWN, b->turn);
-            
             setBit(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
         }
         else

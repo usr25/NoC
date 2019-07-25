@@ -200,6 +200,9 @@ void genStraDiagMoves(void)
     {
         straMoves[i] = upMoves[i] | downMoves[i] | rightMoves[i] | leftMoves[i];
         diagMoves[i] = uprightMoves[i] | upleftMoves[i] | downrightMoves[i] | downleftMoves[i];
+        
+        straMovesInt[i] = upMovesInt[i] | downMovesInt[i] | rightMovesInt[i] | leftMovesInt[i];
+        diagMovesInt[i] = uprightMovesInt[i] | upleftMovesInt[i] | downrightMovesInt[i] | downleftMovesInt[i];
     }
 }
 
