@@ -4,7 +4,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "../include/global.h"
 #include "../include/memoization.h"
@@ -26,12 +25,10 @@
 int main(const int argc, char* const argv)
 {
     initialize();
-
-    srand(11);
-    genMagics();
+    populateMagics();
 
     //runTests();
-    //slowTests();  //51'5s
+    //slowTests();  //51'3s
     //slowEval();   //8'7 without initialization
 
     //printf("%d\n", perft(6, 1)); //5s

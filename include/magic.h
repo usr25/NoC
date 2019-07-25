@@ -1,4 +1,5 @@
 void genMagics(void);
+void populateMagics(void);
 
 //This arent optimal magics space wise
 uint64_t bishMagicMoves[64] [512];
