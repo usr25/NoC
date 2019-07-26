@@ -1024,6 +1024,9 @@ void slowTests()
 
     b = genFromFen("1k6/1b6/8/8/7R/8/8/4K2R b K -", &ignore);
     printf("Perfect 5: %d\n", perftRecursive(b, 5) == 1063513ULL);
+
+    b = genFromFen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -", &ignore);
+    printf("Complex: %d\n", perftRecursive(b, 6) == 706045033ULL);
 }
 
 void runTests()

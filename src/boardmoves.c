@@ -15,16 +15,13 @@
 
 inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 {
-    if (pos & b->allPieces)
-    {
-        if (pos & b->piece[color][PAWN])     return PAWN;
-        else if (pos & b->piece[color][ROOK]) return ROOK;
-        else if (pos & b->piece[color][BISH]) return BISH;
-        else if (pos & b->piece[color][KNIGHT]) return KNIGHT;
-        else if (pos & b->piece[color][QUEEN]) return QUEEN;
-        else if (pos & b->piece[color][KING]) return KING;
-    }
-    
+    if (pos & b->piece[color][PAWN])     return PAWN;
+    else if (pos & b->piece[color][ROOK]) return ROOK;
+    else if (pos & b->piece[color][BISH]) return BISH;
+    else if (pos & b->piece[color][KNIGHT]) return KNIGHT;
+    else if (pos & b->piece[color][QUEEN]) return QUEEN;
+    else if (pos & b->piece[color][KING]) return KING;
+     
     return NO_PIECE;
 }
 
@@ -145,11 +142,12 @@ void makeMove(Board* b, const Move move, History* h)
         break;
     }
 
+    b->turn ^= 1;
+
     if (move.capture && move.capture != NO_PIECE)
-        unsetBit(b, toBit, move.capture, 1 ^ b->turn);
+        unsetBit(b, toBit, move.capture, b->turn);
     
     b->allPieces = b->color[WHITE] | b->color[BLACK];
-    b->turn ^= 1;
 }
 
 //Alters the board to undo a move, (undo . make) should be the identity function 
@@ -161,6 +159,9 @@ void undoMove(Board* b, const Move move, History* h)
     b->allPieces = h->allPieces;
     b->enPass = h->enPass;
     
+    if (move.capture && move.capture != NO_PIECE)
+        setBit(b, toBit, move.capture, b->turn);
+
     b->turn ^= 1;
 
     setBit(b, fromBit, move.pieceThatMoves, b->turn);
@@ -189,10 +190,7 @@ void undoMove(Board* b, const Move move, History* h)
         break;
 
         default:
-        unsetBit(b, toBit, move.pieceThatMoves, b->turn);
+            unsetBit(b, toBit, move.pieceThatMoves, b->turn);
         break;
     }
-
-    if (move.capture && move.capture != NO_PIECE)
-        setBit(b, toBit, move.capture, 1 ^ b->turn);  
 }
