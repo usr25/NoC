@@ -121,11 +121,6 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
             {
                 val = 0;
             }
-            else if (table[index].key == newHash && table[index].depth >= depth)
-            {
-                val = table[index].val;
-                if (val > PLUS_MATE) val -= depth;
-            }
             else
             {
                 rep->hashTable[rep->index++] = newHash;
@@ -133,6 +128,11 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 {
                     if (capt && list[i].capture > 0)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
+                    else if (table[index].key == newHash)
+                    {
+                        val = table[index].val;
+                        if (val > PLUS_MATE) val -= 1;
+                    }
                     else
                         val = eval(b);
                 }
@@ -169,11 +169,6 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
             if (insuffMat(b) || isThreeRep(rep, newHash)){
                 val = 0;
             }
-            else if (table[index].key == newHash && table[index].depth >= depth)
-            {
-                val = table[index].val;
-                if (val < MINS_MATE) val += depth;
-            }
             else
             {
                 rep->hashTable[rep->index++] = newHash;
@@ -181,6 +176,11 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 {
                     if (capt && list[i].capture > 0)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
+                    else if (table[index].key == newHash)
+                    {
+                        val = table[index].val;
+                        if (val < MINS_MATE) val += 1;
+                    }
                     else
                         val = eval(b);
                 }
