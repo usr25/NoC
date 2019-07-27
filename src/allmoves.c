@@ -178,9 +178,16 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
 
-        tempMoves = posPawnMoves(b, color, from);
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        if (b->turn)
+        {
+            tempMoves = (256ULL << from) & b->allPieces ? 0 : getWhitePawnMoves(from) & ~b->allPieces;
+            tempMovesCapture = getWhitePawnCaptures(from) & b->color[BLACK];
+        }
+        else
+        {
+            tempMoves = (1ULL << (from - 8)) & b->allPieces ? 0 : getBlackPawnMoves(from) & ~b->allPieces;
+            tempMovesCapture = getBlackPawnCaptures(from) & b->color[WHITE];
+        }
         while (tempMoves)
         {
             to = LSB_INDEX(tempMoves);
@@ -514,7 +521,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
     {
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
-        if (! (pinned & POW2[from])) //Fun fact: A pinned knight cant move
+        if (!(pinned & POW2[from])) //Fun fact: A pinned knight cant move
         {
             tempMoves = posKnightMoves(b, color, from);
             tempMovesCapture = tempMoves & oppPieces;

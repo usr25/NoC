@@ -47,11 +47,11 @@ const typedef struct
 }AttacksOnK;
 
 uint64_t posKingMoves(Board* b, const int color);
-uint64_t posKnightMoves(Board* b, const int color, const int lsb);
-uint64_t posPawnMoves(Board* b, const int color, const int lsb);
 uint64_t posRookMoves(Board* b, const int color, const int lsb);
 uint64_t posBishMoves(Board* b, const int color, const int lsb);
 uint64_t posQueenMoves(Board* b, const int color, const int lsb);
+uint64_t posKnightMoves(Board* b, const int color, const int lsb);
+uint64_t posPawnMoves(Board* b, const int color, const int lsb);
 
 uint64_t diagonal(const int lsb, const uint64_t allPieces);
 uint64_t straight(const int lsb, const uint64_t allPieces);
@@ -66,4 +66,3 @@ AttacksOnK getCheckTiles(Board* b, const int color);
 
 int isInCheck(Board* b, const int kingsColor);
 int slidingCheck(Board* b, const int kingsColor);
-int checkInPosition(Board* b, const int lsb, const int kingsColor);

@@ -52,7 +52,6 @@ inline uint64_t posQueenMoves(Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & (getRookMagicMoves(lsb, b->allPieces) | getBishMagicMoves(lsb, b->allPieces));
 }
-
 /*
  * All the possible pawn moves without including enPass
  */
