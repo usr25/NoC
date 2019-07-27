@@ -18,19 +18,6 @@
  * The return WILL include the blocking sqrs, so that the mask b.color[opp] can be applied
  * to include the opp pieces for captures
  */
-static inline uint64_t getRookMagicMoves(const int index, uint64_t allPieces)
-{
-    allPieces &= getStraInt(index);
-    allPieces *= rookMagic[index];
-    return rookMagicMoves[index][allPieces >> 52]; //64 - 12 == 52, worst case scenario. To make it variable use POPCOUNT(mask)
-}
-static inline uint64_t getBishMagicMoves(const int index, uint64_t allPieces)
-{
-    allPieces &= getDiagInt(index);
-    allPieces *= bishMagic[index];
-    return bishMagicMoves[index][allPieces >> 55]; //64 - 9 == 55, worst case scenario
-}
-
 
 inline uint64_t posKingMoves(Board* b, const int color)
 {

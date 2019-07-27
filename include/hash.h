@@ -1,5 +1,5 @@
-#define NUM_ENTRIES 0x1000000 //16_777_216
-#define MOD_ENTRIES 0xffffff //NUM_ENTRIES - 1, since it is a pow of 2, mod can be done using & MOD_ENTRIES
+#define NUM_ENTRIES 0x100000 //16_777_216
+#define MOD_ENTRIES 0xfffff //NUM_ENTRIES - 1, since it is a pow of 2, mod can be done using & MOD_ENTRIES
 
 #define COLOR_OFFSET 383 //The first (almost) half of the table is for the black pieces
 #define PIECE_OFFSET 64 //Indeces for all the tiles for each piece, in order k,q,r,b,n,p

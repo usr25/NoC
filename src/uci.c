@@ -19,7 +19,7 @@
 
 #define ENGINE_AUTHOR "usr"
 #define ENGINE_NAME "DEV"
-#define LEN 5000
+#define LEN 4096
 #define DEPTH 6
 
 void uci(void);

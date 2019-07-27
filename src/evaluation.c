@@ -20,7 +20,7 @@
 #define PAWN_PROTECTION 15 //Bonus for Bish / Knight protected by pawn
 #define ATTACKED_BY_PAWN 30 //Bonus if a pawn can easily attack a piece
 #define ATTACKED_BY_PAWN_LATER 12 //Bonus if a pawn can attack a piece after moving once
-#define E_ADVANCED_KING 3 //Endgame, bonus for advanced king
+#define E_ADVANCED_KING 2 //Endgame, bonus for advanced king
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
 #define N_PIECE_SLOW_DEV -10 //-25 //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
@@ -30,11 +30,13 @@
 #define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
 #define SAFE_KING 2 //Bonus for pawns surrounding the king
 
+//TODO: Bonus for passed pawns depending on where they are on the board passPArr[6] = {1, 5, 15, 75, 125, 225}
 
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/memoization.h"
+#include "../include/magic.h"
 #include "../include/io.h"
 
 #include <stdio.h>
@@ -58,9 +60,6 @@ int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp);
 
 //TO implement:
 int knightCoordination(); //Two knights side by side are better
-int materialHit(); //?
-
-uint64_t pawnAttacks(uint64_t pawns, int color);
 
 int bishMatrix[64];
 int knightMatrix[64];
@@ -69,10 +68,6 @@ int ewPawnMatrix[64];
 int bPawnMatrix[64];
 int ebPawnMatrix[64];
 
-inline int hasMatingMat(const Board b, int color)
-{
-    return b.piece[color][PAWN] || b.piece[color][ROOK] || b.piece[color][QUEEN] || POPCOUNT(b.piece[color][BISH] | b.piece[color][KNIGHT]) > 1;
-}
 
 int insuffMat(const Board b)
 {
@@ -126,28 +121,6 @@ int eval(const Board b)
             +pawns(b);
 }
 
-inline uint64_t pawnAttacks(uint64_t pawns, int color)
-{
-    uint64_t res = 0ULL;
-    if (color)
-    {
-        while(pawns)
-        {
-            res |= getWhitePawnCaptures(LSB_INDEX(pawns));
-            REMOVE_LSB(pawns);
-        }
-    }
-    else
-    {
-        while(pawns)
-        {
-            res |= getBlackPawnCaptures(LSB_INDEX(pawns));
-            REMOVE_LSB(pawns);
-        }
-    }
-    return res;
-}
-
 //TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
 //TODO: Disable piece_slow_dev if all the pieces have already moved or if it is the middlegame
 inline int pieceDevelopment(const Board b)
@@ -161,8 +134,8 @@ inline int pawns(const Board b)
 {
     uint64_t wPawn = b.piece[WHITE][PAWN];
     uint64_t bPawn = b.piece[BLACK][PAWN];
-    uint64_t attW = pawnAttacks(wPawn, WHITE);
-    uint64_t attB = pawnAttacks(bPawn, BLACK);
+    uint64_t attW = (wPawn << 9) & 0xfefefefefefefefe | (wPawn << 7) & 0x7f7f7f7f7f7f7f7f;
+    uint64_t attB = (bPawn >> 9) & 0x7f7f7f7f7f7f7f7f | (bPawn >> 7) & 0xfefefefefefefefe;
 
     int isolW = 0, isolB = 0, passW = 0, passB = 0, backW = 0, backB = 0, cleanW = 0, cleanB = 0;
     int lsb;
@@ -203,11 +176,11 @@ inline int endgameAnalysis(const Board b)
     : 0;
     int bAvg = b.piece[BLACK][PAWN] ? 
     (LSB_INDEX(b.piece[BLACK][PAWN]) + MSB_INDEX(b.piece[BLACK][PAWN])) >> 1 
-    : 64;
+    : 63;
     
     return 
         E_ADVANCED_KING * ((LSB_INDEX(b.piece[WHITE][KING]) >> 3) - ((63 - LSB_INDEX(b.piece[BLACK][KING])) >> 3))
-        +E_ADVANCED_PAWN * ((wAvg >> 3) - ((64 - bAvg) >> 3));
+        +E_ADVANCED_PAWN * ((wAvg >> 3) - ((63 - bAvg) >> 3));
 }
 
 inline int pieceActivity(const Board b)
@@ -232,8 +205,8 @@ inline int matricesEnd(const Board b)
 
 inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all)
 {
-    return BISHOP_MOBILITY * ((POPCOUNT(diagonal(MSB_INDEX(wh), all)) + POPCOUNT(diagonal(LSB_INDEX(wh), all))) 
-                             -(POPCOUNT(diagonal(MSB_INDEX(bl), all)) + POPCOUNT(diagonal(LSB_INDEX(bl), all))));
+    return BISHOP_MOBILITY * ((POPCOUNT(getBishMagicMoves(MSB_INDEX(wh), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(wh), all))) 
+                             -(POPCOUNT(getBishMagicMoves(MSB_INDEX(bl), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(bl), all))));
 }
 
 inline int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp)
@@ -242,6 +215,8 @@ inline int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp)
                         -POPCOUNT(getKingMoves(LSB_INDEX(bk)) & bp));
 }
 
+//TODO: Substitute this function with the magics (without using [AV_C] mask) and compare
+//performance using a loop
 inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all)
 {
     int res = 0;
