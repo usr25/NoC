@@ -140,7 +140,7 @@ void best_(Board b, char* beg, Repetition* rep)
     Move best;
     char mv[6] = "";
 
-    best = bestMoveAB(b, DEPTH, 0, *rep); //WARNING: Remove the 1
+    best = bestMoveAB(b, DEPTH, 0, *rep);
     
     moveToText(best, mv);
     fprintf(stdout, "bestmove %s\n", mv);
@@ -231,14 +231,4 @@ Board gen_(char* beg, Repetition* rep)
     }
 
     return b;
-}
-
-Move evalPos(char* beg)
-{
-    int a;
-    Board b = genFromFen(beg, &a);
-    Move best = bestMoveAB(b, DEPTH, 1, (Repetition){});
-    drawMove(best);
-    printf("\n");
-    return best;
 }

@@ -17,6 +17,8 @@
 
 //If there is a capture, this is the search will continue for CAPT_DEPTH
 #define CAPT_DEPTH 1
+//Depth of the null move prunning
+#define R 2
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
@@ -33,10 +35,14 @@ static inline int rookVSKing(Board b)
     return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
 }
 
+int callDepth;
+int notCallDepthParity;
 Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 {
     if (rookVSKing(b)) return rookMate(b);
     if (depth == 0) return (Move) {};
+    callDepth = depth;
+    notCallDepthParity = 1 ^ (depth & 1);
     //initializeTable();
     
     const int color = b.turn;
@@ -90,7 +96,6 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
                 break;
         }
     }
-
     return currBest;
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
@@ -126,13 +131,13 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
-                    if (capt && list[i].capture > 0)
-                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                    else if (table[index].key == newHash)
+                    if (table[index].key == newHash)
                     {
                         val = table[index].val;
                         if (val > PLUS_MATE) val -= 1;
                     }
+                    else if (capt && list[i].capture > 0)
+                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
                     else
                         val = eval(b);
                 }
@@ -148,7 +153,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 if(val > alpha)
                 {
                     alpha = val;
-                    if (beta < alpha || val > PLUS_MATE + depth - 2)
+                    if (beta <= alpha || val > PLUS_MATE + depth - 2)
                         break; //Pruning or it has found a mate in 1
                 }
             }
@@ -174,13 +179,13 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
-                    if (capt && list[i].capture > 0)
-                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                    else if (table[index].key == newHash)
+                    if (table[index].key == newHash)
                     {
                         val = table[index].val;
                         if (val < MINS_MATE) val += 1;
                     }
+                    else if (capt && list[i].capture > 0)
+                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
                     else
                         val = eval(b);
                 }
@@ -196,7 +201,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 if(val < beta)
                 {
                     beta = val;
-                    if (beta < alpha || val < MINS_MATE - depth + 2)
+                    if (beta <= alpha || val < MINS_MATE - depth + 2)
                         break; //Prunning or it has found a mate in 1
                 }
             }
@@ -279,7 +284,7 @@ int bestMoveBruteValue(Board b, int depth)
 
 
 /* Sorts all the moves based on their score
- * It is currently based on the LVA - MVV and a bonus if the piece captures the piece that moved the last time,
+ * It is currently based on the MVV - LVA and a bonus if the piece captures the piece that moved the last time,
  * since it is likely it wont be protected
  */
 static const int score[6] = {80, 160, 240, 320, 400, 480};

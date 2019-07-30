@@ -808,7 +808,7 @@ int testEvaluation()
 int compMove(char* fen, char* target, int depth, int len)
 {
     int a;
-    char mv[6];
+    char mv[6] = "";
     Board b = genFromFen(fen, &a);
     Move best = bestMoveAB(b, depth, 0, (Repetition){});
 
@@ -965,9 +965,6 @@ void slowEval()
     
     white &= compMove("8/ppp5/8/PPP5/8/8/5K1k/8 w - -", "b5b6", depth, 4); //Pawn breaks
     black &= compMove("7K/5k2/8/8/ppp5/8/PPP5/8 b - -", "b4b3", depth, 4);
-    
-    white &= compMove("7k/8/5KPP/8/8/8/8/8 w - -", "g6g7", depth, 4);
-    black &= compMove("8/8/8/8/8/ppk5/8/K7 b - -", "b3b2", depth, 4);
     
     //white &= compMove("3r1nk1/1b1R4/8/8/3B4/4K3/8/8 w - -", "d7g7", depth, 4); //Windmill
     
