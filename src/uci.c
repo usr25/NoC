@@ -18,7 +18,7 @@
 #include "../include/uci.h"
 
 #define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "DEV"
+#define ENGINE_NAME "Np_NULL"
 #define LEN 4096
 #define DEPTH 6
 

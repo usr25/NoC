@@ -100,6 +100,30 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
 {
+    //Null move prunning, happens when the last move wasnt a capture and the side to move isnt in check
+    //TODO: Dont make null move prunning in the endgame to avoid zuzwang
+    if (m.capture < 1 && depth > R && (depth & 1) ^ notCallDepthParity && !isInCheck(&b, b.turn))
+    {
+        int score;
+        Repetition rep_ = (Repetition){.index = 0};
+        if (b.turn)
+        {
+            b.turn ^= 1;
+            score = alphaBeta(b, beta + 1, beta, R, capt, 0, m, &rep_);
+            b.turn ^= 1;
+            if (score >= beta)
+                return beta;
+        }
+        else
+        {
+            b.turn ^= 1;
+            score = alphaBeta(b, alpha, alpha - 1, R, capt, 0, m, &rep_);
+            b.turn ^= 1;
+            if (score <= alpha)
+                return alpha;
+        }
+    }
+
     Move list[200];
     History h;
     int lgm = legalMoves(&b, list); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate
@@ -154,7 +178,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 {
                     alpha = val;
                     if (beta <= alpha || val > PLUS_MATE + depth - 2)
-                        break; //Pruning or it has found a mate in 1
+                        break; //Pruning or it has found a mate in 1, either case, break
                 }
             }
 
@@ -202,7 +226,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                 {
                     beta = val;
                     if (beta <= alpha || val < MINS_MATE - depth + 2)
-                        break; //Prunning or it has found a mate in 1
+                        break; //Prunning or it has found a mate in 1, either case, break
                 }
             }
 
@@ -293,7 +317,7 @@ void sort(Move* list, const int numMoves, const int to)
 {
     for (int i = 0; i < numMoves; ++i)
     {
-        if(list[i].capture != NO_PIECE && list[i].capture)
+        if(list[i].capture > 0) //There has been a capture
             list[i].score = 
                 score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4)  //LVA - MVV
                 +((to == list[i].to) << 7); //Bonus if it captures the piece that moved last time
