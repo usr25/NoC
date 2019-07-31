@@ -14,6 +14,9 @@
 #include "../include/io.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
 
 //If there is a capture, this is the search will continue for CAPT_DEPTH
 #define CAPT_DEPTH 1
@@ -34,6 +37,33 @@ static inline int rookVSKing(Board b)
 {
     return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
 }
+
+double startT;
+double timeToMoveT;
+int calledTiming = 0;
+//Pass timeToMove with a small buffer
+Move bestTime(Board b, const double timeToMove, Repetition rep)
+{
+    calledTiming = 1;
+    timeToMoveT = timeToMove;
+    Move best;
+    clock_t start = clock();
+    startT = start;
+    
+    Move temp;
+    for (int i = 3; i <= 20; ++i)
+    {
+        temp = bestMoveAB(b, i, 0, rep);
+        clock_t elapsed = (double)(clock() - start);
+        if (elapsed > timeToMove){
+            break;
+        }
+        best = temp;
+    }
+
+    return best;
+}
+
 
 int callDepth;
 int notCallDepthParity;
@@ -100,30 +130,9 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
 {
-    //Null move prunning, happens when the last move wasnt a capture and the side to move isnt in check
-    //TODO: Dont make null move prunning in the endgame to avoid zuzwang
-    if (m.capture < 1 && depth > R && (depth & 1) ^ notCallDepthParity && !isInCheck(&b, b.turn))
-    {
-        int score;
-        Repetition rep_ = (Repetition){.index = 0};
-        if (b.turn)
-        {
-            b.turn ^= 1;
-            score = alphaBeta(b, beta + 1, beta, R, capt, 0, m, &rep_);
-            b.turn ^= 1;
-            if (score >= beta)
-                return beta;
-        }
-        else
-        {
-            b.turn ^= 1;
-            score = alphaBeta(b, alpha, alpha - 1, R, capt, 0, m, &rep_);
-            b.turn ^= 1;
-            if (score <= alpha)
-                return alpha;
-        }
+    if (calledTiming && (double)clock() - startT > timeToMoveT){
+        return 0;
     }
-
     Move list[200];
     History h;
     int lgm = legalMoves(&b, list); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate
@@ -134,7 +143,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
 
     sort(list, numMoves, m.to);
 
-    int val, best, index;
+    int val, best, index, addTT;
     uint64_t newHash;
     if (b.turn)
     {
@@ -145,7 +154,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
             makeMove(&b, list[i], &h);
             newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
-            
+            addTT = 1;
             if (insuffMat(b) || isThreeRep(rep, newHash))
             {
                 val = 0;
@@ -162,12 +171,15 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                     }
                     else if (capt && list[i].capture > 0)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                    else
+                    else{
                         val = eval(b);
+                        addTT = 0;
+                    }
                 }
                 else
                     val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
-                table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                if (addTT)
+                    table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
                 --rep->index;
             }
 
@@ -194,7 +206,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
             makeMove(&b, list[i], &h);
             newHash = makeMoveHash(prevHash, &b, list[i], h);
             index = newHash & MOD_ENTRIES;
-
+            addTT = 1;
             if (insuffMat(b) || isThreeRep(rep, newHash)){
                 val = 0;
             }
@@ -210,12 +222,15 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                     }
                     else if (capt && list[i].capture > 0)
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                    else
+                    else{
                         val = eval(b);
+                        addTT = 0;
+                    }
                 }
                 else
                     val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
-                table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                if (addTT)
+                    table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
                 --rep->index;
             }
 

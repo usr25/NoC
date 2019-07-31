@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -18,7 +19,7 @@
 #include "../include/uci.h"
 
 #define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "Np_NULL"
+#define ENGINE_NAME "Timing"
 #define LEN 4096
 #define DEPTH 6
 
@@ -27,6 +28,7 @@ void isready(void);
 void perft_(Board b, int depth);
 void eval_(Board b);
 void best_(Board b, char* beg, Repetition* rep);
+void best_time(Board, char* beg, Repetition* rep);
 int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash);
 Board gen_(char* beg, Repetition* rep);
 Board gen_def(char* beg, Repetition* rep);
@@ -101,8 +103,8 @@ void loop(void)
         else if (strncmp(beg, "eval", 4) == 0)
             eval_(b);
         
-        else if (strncmp(beg, "best", 4) == 0 || strncmp(beg, "go", 2) == 0 || strncmp(beg, "bestmove", 8) == 0)
-            best_(b, beg + 5, &rep);
+        else if (strncmp(beg, "go", 2) == 0)
+            best_time(b, beg + 3, &rep);
 
         else if (strncmp(beg, "quit", 4) == 0)
             quit = 1;
@@ -137,11 +139,61 @@ void eval_(Board b)
 }
 void best_(Board b, char* beg, Repetition* rep)
 {
+    char mv[6] = "";
+
+    Move best = bestMoveAB(b, DEPTH, 0, *rep);
+    
+    moveToText(best, mv);
+    fprintf(stdout, "bestmove %s\n", mv);
+    fflush(stdout);
+}
+void best_time(Board b, char* beg, Repetition* rep)
+{
+    int callDepth = 0;
+
+    int wtime, btime, winc, binc, movestogo;
+
+    while (beg[1] != '\0' && beg[1] != '\n') {
+        if (strncmp(beg, "wtime", 5) == 0) {
+            beg += 6;
+            wtime = atoi(beg);
+        } else if (strncmp(beg, "btime", 5) == 0) {
+            beg += 6;
+            btime = atoi(beg);
+        } else if (strncmp(beg, "winc", 4) == 0) {
+            beg += 5;
+            winc = atoi(beg);
+        } else if (strncmp(beg, "binc", 4) == 0) {
+            beg += 5;
+            binc = atoi(beg);
+        } else if (strncmp(beg, "movestogo", 9) == 0) {
+            beg += 10;
+            movestogo = atoi(beg);
+        } else if (strncmp(beg, "depth", 5) == 0) {
+            beg += 6;
+            callDepth = atoi(beg);
+        } else if (strncmp(beg, "movetime", 8) == 0) {
+            beg += 9;
+            //movetime = atoi(beg);
+        }
+
+        ++beg;
+    }
+
     Move best;
     char mv[6] = "";
 
-    best = bestMoveAB(b, DEPTH, 0, *rep);
-    
+    btime -= 50;
+    wtime -= 50;
+
+    if (callDepth == 0){
+        int relevantTime = (b.turn? wtime : btime) / 10.;
+        double calcTime = relevantTime * (CLOCKS_PER_SEC / 1000.);
+        best = bestTime(b, calcTime, *rep);
+    }
+    else{
+        best = bestMoveAB(b, callDepth, 0, *rep);
+    }
     moveToText(best, mv);
     fprintf(stdout, "bestmove %s\n", mv);
     fflush(stdout);
