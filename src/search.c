@@ -49,18 +49,26 @@ Move bestTime(Board b, const double timeToMove, Repetition rep)
     Move best;
     clock_t start = clock();
     startT = start;
-    
+    clock_t last = clock();
     Move temp;
     for (int i = 3; i <= 20; ++i)
     {
         temp = bestMoveAB(b, i, 0, rep);
-        clock_t elapsed = (double)(clock() - start);
-        if (elapsed > timeToMove){
+        last = clock();
+        clock_t elapsed = (double)(last - start);
+        if (elapsed > timeToMove)
             break;
-        }
+        
         best = temp;
+
+        //Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
+        //the program will be able to finish another depth
+        //(3 is a randomly chosen constant based on experience)
+        if (3 * (last - start) > timeToMove)
+            break;
     }
 
+    calledTiming = 0;
     return best;
 }
 
@@ -130,9 +138,31 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
 {
-    if (calledTiming && (double)clock() - startT > timeToMoveT){
-        return 0;
+    if (calledTiming && (double)clock() - startT > timeToMoveT)
+        return PLUS_INF; //So that the cutoff is produced sooner for white, it shouldnt make a big diff
+
+    if (depth > R && m.capture < 1 && (depth & 1) ^ notCallDepthParity && !isInCheck(&b, b.turn))
+    {
+        int score;
+        Repetition rep_ = (Repetition){.index = 0};
+        if (b.turn)
+        {
+            b.turn ^= 1;
+            score = alphaBeta(b, beta + 1, beta, R, capt, 0, m, &rep_);
+            b.turn ^= 1;
+            if (score >= beta)
+                return beta;
+        }
+        else
+        {
+            b.turn ^= 1;
+            score = alphaBeta(b, alpha, alpha - 1, R, capt, 0, m, &rep_);
+            b.turn ^= 1;
+            if (score <= alpha)
+                return alpha;
+        }
     }
+
     Move list[200];
     History h;
     int lgm = legalMoves(&b, list); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate

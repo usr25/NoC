@@ -29,7 +29,7 @@ int main(const int argc, char* const argv)
 
     //runTests();
     //slowTests();  //1:01s
-    //slowEval();   //4'8s null, 8'7s
+    //slowEval();   //6'9s null, 8'7s
 
     //printf("%d\n", perft(6, 1)); //4'25s
     //printf("%d\n", perft(7, 1)); //1:42m

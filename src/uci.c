@@ -19,7 +19,7 @@
 #include "../include/uci.h"
 
 #define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "Timing"
+#define ENGINE_NAME "DEV"
 #define LEN 4096
 #define DEPTH 6
 
@@ -111,7 +111,7 @@ void loop(void)
 
         else
         {
-            fprintf(stdout, "Invalid command\n");
+            fprintf(stdout, "# invalid command\n");
             fflush(stdout);
         }
     }
@@ -131,21 +131,13 @@ void isready(void)
 }
 void perft_(Board b, int depth)
 {
-    printf("%llu\n", perftRecursive(b, depth));
+    clock_t startTime = clock();
+    printf("Node count: %llu\n", perftRecursive(b, depth));
+    printf("Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
 }
 void eval_(Board b)
 {
     printf("%d\n", eval(b));
-}
-void best_(Board b, char* beg, Repetition* rep)
-{
-    char mv[6] = "";
-
-    Move best = bestMoveAB(b, DEPTH, 0, *rep);
-    
-    moveToText(best, mv);
-    fprintf(stdout, "bestmove %s\n", mv);
-    fflush(stdout);
 }
 void best_time(Board b, char* beg, Repetition* rep)
 {
@@ -258,7 +250,7 @@ Board gen_def(char* beg, Repetition* rep)
     if (strncmp(beg, "moves", 5) == 0)
     {
         beg += 6;
-        while(beg[0] != ' ' && beg[0] != '\0' && beg[0] <= 'h' && beg[0] >= 'a')
+        while(beg[0] <= 'h' && beg[0] >= 'a')
             beg += move_(&b, beg, rep, rep->hashTable[rep->index - 1]) + 1;
     }
 
