@@ -41,30 +41,34 @@ static inline int rookVSKing(Board b)
 double startT;
 double timeToMoveT;
 int calledTiming = 0;
+//TODO: Use Move.score to return if it has mate, so that it can end sooner
+//TODO: Sort the moves base on the result of the previous iteration
 //Pass timeToMove with a small buffer
 Move bestTime(Board b, const double timeToMove, Repetition rep)
 {
     calledTiming = 1;
     timeToMoveT = timeToMove;
-    Move best;
     clock_t start = clock();
     startT = start;
-    clock_t last = clock();
-    Move temp;
+    
+    Move best, temp;
     for (int i = 3; i <= 20; ++i)
     {
         temp = bestMoveAB(b, i, 0, rep);
-        last = clock();
+        clock_t last = clock();
         clock_t elapsed = (double)(last - start);
         if (elapsed > timeToMove)
             break;
         
         best = temp;
 
-        //Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
-        //the program will be able to finish another depth
-        //(3 is a randomly chosen constant based on experience)
-        if (3 * (last - start) > timeToMove)
+        /*Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
+         *the program will be able to finish another depth
+         *(3.5 is a randomly chosen constant based on experience)
+         * or
+         * it has found mate
+         */
+        if (3.5 * (last - start) > timeToMove || abs(best.score) >= PLUS_MATE)
             break;
     }
 
@@ -122,6 +126,7 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
         {
             currBest = list[i];
             alpha = val;
+            currBest.score = val;
             //No need to keep searching once it has found a mate in 1
             if (val > PLUS_MATE + depth - 2)
                 break;
@@ -130,6 +135,7 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
         {
             currBest = list[i];
             beta = val;
+            currBest.score = val;
             if (val < MINS_MATE - depth + 2)
                 break;
         }
@@ -139,7 +145,7 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
 {
     if (calledTiming && (double)clock() - startT > timeToMoveT)
-        return PLUS_INF; //So that the cutoff is produced sooner for white, it shouldnt make a big diff
+        return 0;
 
     if (depth > R && m.capture < 1 && (depth & 1) ^ notCallDepthParity && !isInCheck(&b, b.turn))
     {

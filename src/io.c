@@ -88,10 +88,10 @@ void drawMove(const Move m)
 }
 void moveToText(const Move m, char* mv)
 {
-    mv[0] = (char)('h' - (m.from % 8));
-    mv[1] = (char)('1' + (m.from / 8));
-    mv[2] = (char)('h' - (m.to % 8));
-    mv[3] = (char)('1' + (m.to / 8));
+    mv[0] = (char)('h' - (m.from & 7));
+    mv[1] = (char)('1' + (m.from >> 3));
+    mv[2] = (char)('h' - (m.to & 7));
+    mv[3] = (char)('1' + (m.to >> 3));
 
     if (m.promotion)
         mv[4] = pieces[m.promotion];

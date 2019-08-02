@@ -179,7 +179,7 @@ void best_time(Board b, char* beg, Repetition* rep)
     wtime -= 50;
 
     if (callDepth == 0){
-        int relevantTime = (b.turn? wtime : btime) / 10.;
+        int relevantTime = (b.turn? wtime : btime) / 41; // time / 32
         double calcTime = relevantTime * (CLOCKS_PER_SEC / 1000.);
         best = bestTime(b, calcTime, *rep);
     }

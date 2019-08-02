@@ -21,18 +21,18 @@
 #include "../include/magic.h"
 
 //position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
-
+//TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove
 int main(const int argc, char* const argv)
 {
     initialize();
     populateMagics();
 
     //runTests();
-    //slowTests();  //1:01s
-    //slowEval();   //6'9s null, 8'7s
+    //slowTests();  //59'3s
+    //slowEval();   //6'5s null, 8'7s
 
-    //printf("%d\n", perft(6, 1)); //4'25s
-    //printf("%d\n", perft(7, 1)); //1:42m
+    //printf("%d\n", perft(6, 1)); //3'93s
+    //printf("%d\n", perft(7, 1)); //1:37m
 
     loop();
 

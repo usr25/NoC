@@ -27,30 +27,24 @@ inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 
 static inline int kingMoved(const int color)
 {
-    return 0b111111 ^ (3 << ((color << 1) + 1));
+    return ~ (3 << ((color << 1) + 1));
 }
 static inline int rookMoved(const int color, const int from)
 {
     if (from == 56 * (1 ^ color))
-        return 0b111111 ^ (1 << ((color << 1) + 1));
+        return ~ (1 << ((color << 1) | 1));
 
     else if (from == 56 * (1 ^ color) + 7)
-        return 0b111111 ^ (2 << ((color << 1) + 1));
+        return ~ (2 << ((color << 1) | 1));
 
     return 0b111111;
 }
 
-static inline void setBit(Board* b, const uint64_t to, const int piece, const int color)
-{
-    b->piece[color][piece] |= to;
-    b->color[color] |= to;
-    b->color[color | 2] ^= to;
-}
-static inline void unsetBit(Board* b, const uint64_t from, const int piece, const int color)
+static inline void flipBits(Board* b, const uint64_t from, const int piece, const int color)
 {
     b->piece[color][piece] ^= from;
     b->color[color] ^= from;
-    b->color[color | 2] |= from;
+    b->color[color | 2] ^= from;
 }
 
 //It is assumed that the castling direction has already been decided, and is placed in move.castle (1 -> kingside, 2-> queenside)
@@ -69,14 +63,13 @@ static void makeCastle(Board* b, const Move move, const int color)
         toRook = POW2[move.to - 1];
     }
 
-    unsetBit(b, fromRook, ROOK, color);
-    setBit(b, POW2[move.to], KING, color);
-    setBit(b, toRook, ROOK, color);
+    flipBits(b, fromRook, ROOK, color);
+    flipBits(b, POW2[move.to], KING, color);
+    flipBits(b, toRook, ROOK, color);
 }
 static void undoCastle(Board* b, const Move move, const int color)
 {
     uint64_t fromRook, toRook;
-    const uint64_t fromKing = POW2[move.from], toKing = POW2[move.to];
 
     if (move.castle & 1) //Kingside
     {
@@ -89,9 +82,9 @@ static void undoCastle(Board* b, const Move move, const int color)
         toRook = POW2[move.to - 1];
     }
 
-    unsetBit(b, toKing, KING, color);
-    unsetBit(b, toRook, ROOK, color);
-    setBit(b, fromRook, ROOK, color);
+    flipBits(b, POW2[move.to], KING, color);
+    flipBits(b, toRook, ROOK, color);
+    flipBits(b, fromRook, ROOK, color);
 }
 
 //Alters the board to make a move
@@ -104,48 +97,51 @@ void makeMove(Board* b, const Move move, History* h)
     h->allPieces = b->allPieces;
     h->enPass = b->enPass;
 
-    unsetBit(b, fromBit, move.pieceThatMoves, b->turn);
     b->enPass = 0;
+
+    flipBits(b, fromBit, move.pieceThatMoves, b->turn);
     switch(move.pieceThatMoves)
     {
         case PAWN:
-        if (move.to - move.from == (2 * b->turn - 1) << 4)
-            b->enPass = move.to;
-        if (move.enPass)
-        {
-            setBit(b, toBit, PAWN, b->turn);
-            unsetBit(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
-        }
-        else
-        {
-            if (move.promotion)
-                setBit(b, toBit, move.promotion, b->turn);
+            if (move.to - move.from == (2 * b->turn - 1) << 4)
+                b->enPass = move.to;
+            if (move.enPass)
+            {
+                flipBits(b, toBit, PAWN, b->turn);
+                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
+            }
             else
-                setBit(b, toBit, PAWN, b->turn);
-        }
-        break;
-
-        case KING:
-        if (move.castle)
-            makeCastle(b, move, b->turn);
-        else
-            setBit(b, toBit, KING, b->turn);
-
-        b->castleInfo &= kingMoved(b->turn);
+            {
+                if (move.promotion)
+                    flipBits(b, toBit, move.promotion, b->turn);
+                else
+                    flipBits(b, toBit, PAWN, b->turn);
+            }
         break;
         
         case ROOK:
-        b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
+            b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
+            flipBits(b, toBit, ROOK, b->turn);
+        break;
+
+        case KING:
+            if (move.castle)
+                makeCastle(b, move, b->turn);
+            else
+                flipBits(b, toBit, KING, b->turn);
+
+            b->castleInfo &= kingMoved(b->turn);
+        break;        
 
         default:
-        setBit(b, toBit, move.pieceThatMoves, b->turn);
+            flipBits(b, toBit, move.pieceThatMoves, b->turn);
         break;
     }
 
     b->turn ^= 1;
 
-    if (move.capture && move.capture != NO_PIECE)
-        unsetBit(b, toBit, move.capture, b->turn);
+    if (move.capture > 0)
+        flipBits(b, toBit, move.capture, b->turn);
     
     b->allPieces = b->color[WHITE] | b->color[BLACK];
 }
@@ -159,38 +155,38 @@ void undoMove(Board* b, const Move move, History* h)
     b->allPieces = h->allPieces;
     b->enPass = h->enPass;
     
-    if (move.capture && move.capture != NO_PIECE)
-        setBit(b, toBit, move.capture, b->turn);
+    if (move.capture > 0)
+        flipBits(b, toBit, move.capture, b->turn);
 
     b->turn ^= 1;
 
-    setBit(b, fromBit, move.pieceThatMoves, b->turn);
+    flipBits(b, fromBit, move.pieceThatMoves, b->turn);
     switch(move.pieceThatMoves)
     {
         case PAWN:
-        if (move.enPass)
-        {
-            unsetBit(b, toBit, PAWN, b->turn);
-            setBit(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
-        }
-        else
-        {
-            if (move.promotion)
-                unsetBit(b, toBit, move.promotion, b->turn);
+            if (move.enPass)
+            {
+                flipBits(b, toBit, PAWN, b->turn);
+                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
+            }
             else
-                unsetBit(b, toBit, PAWN, b->turn);
-        }
+            {
+                if (move.promotion)
+                    flipBits(b, toBit, move.promotion, b->turn);
+                else
+                    flipBits(b, toBit, PAWN, b->turn);
+            }
         break;
 
         case KING:
-        if (move.castle)
-            undoCastle(b, move, b->turn);
-        else
-            unsetBit(b, toBit, KING, b->turn);
+            if (move.castle)
+                undoCastle(b, move, b->turn);
+            else
+                flipBits(b, toBit, KING, b->turn);
         break;
 
         default:
-            unsetBit(b, toBit, move.pieceThatMoves, b->turn);
+            flipBits(b, toBit, move.pieceThatMoves, b->turn);
         break;
     }
 }

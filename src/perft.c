@@ -19,7 +19,7 @@ uint64_t perftRecursive(Board b, const int depth)
     Move moves[200];
     History h;
     uint64_t tot = 0;
-    
+
     int numMoves = legalMoves(&b, moves) >> 1;
 
     if (depth == 1)
@@ -33,16 +33,16 @@ uint64_t perftRecursive(Board b, const int depth)
             undoMove(&b, moves[i], &h);
         }
     }
-    
+
     return tot;
 }
 
-//Returns 1 if the perft of the starting position at a given depth is the number it should be
+//Returns 1 if the perft of the starting position at a given depth is correct
 //TODO: Delete this function and fix the tests
 int perft(const int depth, int tree)
 {
     if (depth == 0) return 1;
-    
+
     Move moves[200];
     Board b = defaultBoard();
     History h;
@@ -69,6 +69,6 @@ int perft(const int depth, int tree)
 
         undoMove(&b, moves[i], &h);
     }
-    
+
     return tot == results[depth];
 }

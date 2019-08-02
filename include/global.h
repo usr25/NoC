@@ -35,6 +35,7 @@
 #define EVEN_TILES  0x55aa55aa55aa55aaULL
 #define ODD_TILES   0xaa55aa55aa55aa55ULL
 #define EDGE        0xff818181818181ffULL
+#define EDGE_RANKS  0xff000000000000ffULL
 
 #define uint64_t unsigned long long
 

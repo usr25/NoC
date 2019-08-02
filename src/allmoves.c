@@ -9,6 +9,7 @@
 #include "../include/memoization.h"
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
+#include "../include/magic.h"
 
 int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
 int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
@@ -19,7 +20,7 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
 int legalMoves(Board* b, Move* list)
 {
     //Squares attacked by opp pieces, to detect checks and castling
-    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces) | controlledKingPawnKnight(b, 1 ^ b->turn);
+    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces ^ b->piece[b->turn][KING]) | controlledKingPawnKnight(b, 1 ^ b->turn);
 
     //All the pinned pieces for the side to move
     uint64_t pinned = pinnedPieces(b, b->turn);
@@ -52,16 +53,20 @@ uint64_t pinnedPieces(Board* b, const int color)
     3- Retrace from that piece in the direction and detect if there is a Rook / Bish / Queen
     4- Return a bitboard of 1s where each 1 is a pinned piece
     */
-    uint64_t res = 0, retrace;
-    int obstacle;
+    uint64_t res = 0;
 
     const int lsb = LSB_INDEX(b->piece[color][KING]);
+    const int opp = 1 ^ color;
 
-    const uint64_t stra = b->piece[1 ^ color][QUEEN] | b->piece[1 ^ color][ROOK];
-    const uint64_t diag = b->piece[1 ^ color][QUEEN] | b->piece[1 ^ color][BISH];
+    uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
+    uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
 
-    if (stra)
+    //This can be switched with getRookMagicMoves(, b->color[opp]), sacrificing a bit of performance for
+    //but reducing the ocasions in which the if is executed
+    if (stra & getStraMoves(lsb))
     {
+        uint64_t retrace;
+        int obstacle;
         const uint64_t inteUp = getUpMovesInt(lsb) & b->allPieces;
         const uint64_t inteDown = getDownMovesInt(lsb) & b->allPieces;
         const uint64_t inteRight = getRightMovesInt(lsb) & b->allPieces;
@@ -73,7 +78,7 @@ uint64_t pinnedPieces(Board* b, const int color)
             if (POW2[obstacle] & b->color[color])
             {
                 retrace = getUpMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[LSB_INDEX(retrace)] & stra))
+                if (retrace & -retrace & stra)
                     res |= POW2[obstacle];
             }
         }
@@ -103,37 +108,43 @@ uint64_t pinnedPieces(Board* b, const int color)
             if (POW2[obstacle] & b->color[color])
             {
                 retrace = getLeftMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[LSB_INDEX(retrace)] & stra))
+                if (retrace & -retrace & stra)
                     res |= POW2[obstacle];
             }
         }
     }
-    if (diag)
+    if (diag & getDiagMoves(lsb))
     {
+        uint64_t retrace;
+        int obstacle;
+
         const uint64_t inteUpRight = getUpRightMovesInt(lsb) & b->allPieces;
         const uint64_t inteUpLeft = getUpLeftMovesInt(lsb) & b->allPieces;
         const uint64_t inteDownRight = getDownRightMovesInt(lsb) & b->allPieces;
         const uint64_t inteDownLeft = getDownLeftMovesInt(lsb) & b->allPieces;
 
-        if (inteUpRight){
+        if (inteUpRight)
+        {
             obstacle = LSB_INDEX(inteUpRight);
             if (POW2[obstacle] & b->color[color])
             {
                 retrace = getUpRightMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[LSB_INDEX(retrace)] & diag))
+                if (retrace & -retrace & diag)
                     res |= POW2[obstacle];
             }
         }
-        if (inteUpLeft){
+        if (inteUpLeft)
+        {
             obstacle = LSB_INDEX(inteUpLeft);
             if (POW2[obstacle] & b->color[color])
             {
                 retrace = getUpLeftMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[LSB_INDEX(retrace)] & diag))
+                if (retrace & -retrace & diag)
                     res |= POW2[obstacle];
             }
         }
-        if (inteDownRight){
+        if (inteDownRight)
+        {
             obstacle = MSB_INDEX(inteDownRight);
             if (POW2[obstacle] & b->color[color])
             {
@@ -142,7 +153,8 @@ uint64_t pinnedPieces(Board* b, const int color)
                     res |= POW2[obstacle];
             }
         }
-        if (inteDownLeft){
+        if (inteDownLeft)
+        {
             obstacle = MSB_INDEX(inteDownLeft);
             if (POW2[obstacle] & b->color[color])
             {
@@ -162,7 +174,7 @@ uint64_t pinnedPieces(Board* b, const int color)
 int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden)
 {
     int from, to, numMoves = 0, opp = 1 ^ color;
-    uint64_t temp, tempMoves, tempMovesCapture, oppPieces = b->color[opp];
+    uint64_t temp, tempMoves, tempCaptures, oppPieces = b->color[opp];
     History h;
     Move m;
 
@@ -181,12 +193,29 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         if (b->turn)
         {
             tempMoves = (256ULL << from) & b->allPieces ? 0 : getWhitePawnMoves(from) & ~b->allPieces;
-            tempMovesCapture = getWhitePawnCaptures(from) & b->color[BLACK];
+            tempCaptures = getWhitePawnCaptures(from) & b->color[BLACK];
         }
         else
         {
             tempMoves = (1ULL << (from - 8)) & b->allPieces ? 0 : getBlackPawnMoves(from) & ~b->allPieces;
-            tempMovesCapture = getBlackPawnCaptures(from) & b->color[WHITE];
+            tempCaptures = getBlackPawnCaptures(from) & b->color[WHITE];
+        }
+
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            if (to < 8 || to > 55)
+            {
+                int capt = pieceAt(b, POW2[to], opp); 
+
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt};
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = KNIGHT, .capture = capt};
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = ROOK, .capture = capt};
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = BISH, .capture = capt};
+            }
+            else
+                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
         }
         while (tempMoves)
         {
@@ -202,35 +231,18 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
                 list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
         }
-        while (tempMovesCapture)
+
+        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
         {
-            to = LSB_INDEX(tempMovesCapture);
-            if (to < 8 || to > 55)
-            {
-                int capt = pieceAt(b, POW2[to], opp); 
-
-                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt};
-                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = KNIGHT, .capture = capt};
-                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = ROOK, .capture = capt};
-                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = BISH, .capture = capt};
-            }
-            else
-                list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
-        }
-
-        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass])){
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass};
             
-            if (moveIsValidSliding(b, m, h))
-                list[numMoves++] = m;
+            if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
         }
-        
-        else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+        else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
+        {
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
             
-            if (moveIsValidSliding(b, m, h))
-                list[numMoves++] = m;
+            if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
         }
     }
     
@@ -240,18 +252,18 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
         tempMoves = posQueenMoves(b, color, from);
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
         while(tempMoves)
         {
             list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-        }
-        while (tempMovesCapture)
-        {
-            to = LSB_INDEX(tempMovesCapture);
-            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
         }
     }
 
@@ -261,18 +273,18 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
         tempMoves = posRookMoves(b, color, from);
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
         while(tempMoves)
         {
             list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-        }
-        while (tempMovesCapture)
-        {
-            to = LSB_INDEX(tempMovesCapture);
-            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
         }
     }
 
@@ -283,18 +295,18 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
         tempMoves = posBishMoves(b, color, from);
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
         while(tempMoves)
         {
             list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-        }
-        while (tempMovesCapture)
-        {
-            to = LSB_INDEX(tempMovesCapture);
-            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
         }
     }
 
@@ -305,36 +317,35 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
         tempMoves = posKnightMoves(b, color, from);
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
         while(tempMoves)
         {
             list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
         }
-        while (tempMovesCapture)
-        {
-            to = LSB_INDEX(tempMovesCapture);
-            list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
-        }
     }
 
     tempMoves = posKingMoves(b, color) & ~forbidden;
-    temp = b->piece[color][KING];
-    from = LSB_INDEX(temp);
-    tempMovesCapture = tempMoves & oppPieces;
-    tempMoves ^= tempMovesCapture;
+    from = LSB_INDEX(b->piece[color][KING]);
+    tempCaptures = tempMoves & oppPieces;
+    tempMoves ^= tempCaptures;
+    while (tempCaptures)
+    {
+        to = LSB_INDEX(tempCaptures);
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+        REMOVE_LSB(tempCaptures);
+    }
     while(tempMoves)
     {
         list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = LSB_INDEX(tempMoves)};
         REMOVE_LSB(tempMoves);
-    }
-    while (tempMovesCapture)
-    {
-        to = LSB_INDEX(tempMovesCapture);
-        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-        REMOVE_LSB(tempMovesCapture);
     }
 
     return numMoves;
@@ -346,7 +357,7 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
 int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
     int from, to, numMoves = 0, opp = 1 ^ b->turn;
-    uint64_t temp, tempMoves, tempMovesCapture, oppPieces = b->color[opp];
+    uint64_t temp, tempMoves, tempCaptures, oppPieces = b->color[opp];
     History h;
     Move m;
 
@@ -356,25 +367,24 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
     if (castle & 2)
         list[numMoves++] = castleQSide(color);
 
-    temp = b->piece[color][KING];
     tempMoves = posKingMoves(b, color) & ~forbidden;
-    from = LSB_INDEX(temp);
+    from = LSB_INDEX(b->piece[color][KING]);
 
     uint64_t pinStra = getStraMoves(from);
     uint64_t pinDiag = getDiagMoves(from);
     
-    tempMovesCapture = tempMoves & oppPieces;
-    tempMoves ^= tempMovesCapture;
+    tempCaptures = tempMoves & oppPieces;
+    tempMoves ^= tempCaptures;
+    while (tempCaptures)
+    {
+        to = LSB_INDEX(tempCaptures);
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+        REMOVE_LSB(tempCaptures);
+    }
     while(tempMoves)
     {
         list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = LSB_INDEX(tempMoves)};
         REMOVE_LSB(tempMoves);
-    }
-    while (tempMovesCapture)
-    {
-        to = LSB_INDEX(tempMovesCapture);
-        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-        REMOVE_LSB(tempMovesCapture);
     }
 
     temp = b->piece[color][PAWN];
@@ -404,10 +414,11 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
                         list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .promotion = BISH, .capture = capt};
                     }
                 }
-                else{
+                else
+                {
                     m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .capture = capt};
-                    if (moveIsValidSliding(b, m, h))
-                        list[numMoves++] = m;
+                    
+                    if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
                 }
                 
             }
@@ -422,15 +433,17 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
                 list[numMoves++] = (Move){.pieceThatMoves = PAWN, .from = from, .to = to, .capture = capt};
         }
 
-        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass])){
+        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
+        {
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass};
-            if (moveIsValidSliding(b, m, h))
-                list[numMoves++] = m;
+            
+            if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
         }
-        else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+        else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
+        {
             m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
-            if (moveIsValidSliding(b, m, h))
-                list[numMoves++] = m;
+            
+            if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
         }
     }
     
@@ -444,23 +457,23 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
 
         if (pinned & POW2[from])
         {
-            movesR &= pinStra * ((pinStra & POW2[from]) != 0);
-            movesB &= pinDiag * ((pinDiag & POW2[from]) != 0);
+            movesR &= ((pinStra & POW2[from]) != 0) * pinStra ; //To avoid branching
+            movesB &= ((pinDiag & POW2[from]) != 0) * pinDiag;
         }
         
         tempMoves = movesR | movesB;
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
         while(tempMoves)
         {
             list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-        }
-        while (tempMovesCapture)
-        {
-            to = LSB_INDEX(tempMovesCapture);
-            list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
         }
     }
 
@@ -472,20 +485,20 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         tempMoves = posRookMoves(b, color, from);
         
         if (pinned & POW2[from])
-            tempMoves &= pinStra * ((pinStra & POW2[from]) != 0);
+            tempMoves &= ((pinStra & POW2[from]) != 0) * pinStra;
         
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
         while(tempMoves)
         {
             list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-        }
-        while (tempMovesCapture)
-        {
-            to = LSB_INDEX(tempMovesCapture);
-            list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
         }
     }
 
@@ -498,20 +511,20 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         tempMoves = posBishMoves(b, color, from);
         
         if (pinned & POW2[from]) 
-            tempMoves &= pinDiag * ((pinDiag & POW2[from]) != 0);
+            tempMoves &= ((pinDiag & POW2[from]) != 0) * pinDiag;
 
-        tempMovesCapture = tempMoves & oppPieces;
-        tempMoves ^= tempMovesCapture;
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
         while(tempMoves)
         {
             list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
-        }
-        while (tempMovesCapture)
-        {
-            to = LSB_INDEX(tempMovesCapture);
-            list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-            REMOVE_LSB(tempMovesCapture);
         }
     }
 
@@ -524,18 +537,18 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         if (!(pinned & POW2[from])) //Fun fact: A pinned knight cant move
         {
             tempMoves = posKnightMoves(b, color, from);
-            tempMovesCapture = tempMoves & oppPieces;
-            tempMoves ^= tempMovesCapture;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
             while(tempMoves)
             {
                 list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-            }
-            while (tempMovesCapture)
-            {
-                to = LSB_INDEX(tempMovesCapture);
-                list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-                REMOVE_LSB(tempMovesCapture);
             }
         }
     }
@@ -550,7 +563,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
 int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
     int from, to, numMoves = 0, opp = 1 ^ color;
-    uint64_t temp, tempMoves, tempMovesCapture, oppPieces = b->color[opp];
+    uint64_t temp, tempMoves, tempCaptures, oppPieces = b->color[opp];
     History h;
     Move m;
 
@@ -559,15 +572,12 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
     uint64_t pinnedMask = ~ pinned;
 
     tempMoves = posKingMoves(b, color) & ~forbidden;
-    temp = b->piece[color][KING];
-    from = LSB_INDEX(temp);
+    from = LSB_INDEX(b->piece[color][KING]);
     while(tempMoves)
     {
         to = LSB_INDEX(tempMoves);
-        m = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+        list[numMoves++] = (Move) {.pieceThatMoves = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
         REMOVE_LSB(tempMoves);
-        if (moveIsValidSliding(b, m, h))
-            list[numMoves++] = m;
     }
 
     if (att.num == 1)
@@ -596,15 +606,17 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
                     list[numMoves++] = (Move) {.pieceThatMoves = PAWN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
             }
 
-            if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass])){
+            if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
+            {
                 m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass};
-                if (moveIsValidSliding(b, m, h))
-                    list[numMoves++] = m;
+                
+                if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
             }
-            else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass])){
+            else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
+            {
                 m = (Move) {.pieceThatMoves = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass};
-                if (moveIsValidSliding(b, m, h))
-                    list[numMoves++] = m;
+                
+                if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
             }
         }
         
@@ -614,18 +626,18 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
             tempMoves = posQueenMoves(b, color, from) & interfere;
-            tempMovesCapture = tempMoves & oppPieces;
-            tempMoves ^= tempMovesCapture;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
             while(tempMoves)
             {
                 list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-            }
-            while (tempMovesCapture)
-            {
-                to = LSB_INDEX(tempMovesCapture);
-                list[numMoves++] = (Move) {.pieceThatMoves = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-                REMOVE_LSB(tempMovesCapture);
             }
         }
 
@@ -635,18 +647,18 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
             tempMoves = posRookMoves(b, color, from) & interfere;
-            tempMovesCapture = tempMoves & oppPieces;
-            tempMoves ^= tempMovesCapture;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
             while(tempMoves)
             {
                 list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-            }
-            while (tempMovesCapture)
-            {
-                to = LSB_INDEX(tempMovesCapture);
-                list[numMoves++] = (Move) {.pieceThatMoves = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-                REMOVE_LSB(tempMovesCapture);
             }
         }
 
@@ -656,18 +668,18 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
             tempMoves = posBishMoves(b, color, from) & interfere;
-            tempMovesCapture = tempMoves & oppPieces;
-            tempMoves ^= tempMovesCapture;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
             while(tempMoves)
             {
                 list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-            }
-            while (tempMovesCapture)
-            {
-                to = LSB_INDEX(tempMovesCapture);
-                list[numMoves++] = (Move) {.pieceThatMoves = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-                REMOVE_LSB(tempMovesCapture);
             }
         }
 
@@ -677,18 +689,18 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
             tempMoves = posKnightMoves(b, color, from) & interfere;
-            tempMovesCapture = tempMoves & oppPieces;
-            tempMoves ^= tempMovesCapture;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
             while(tempMoves)
             {
                 list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
                 REMOVE_LSB(tempMoves);
-            }
-            while (tempMovesCapture)
-            {
-                to = LSB_INDEX(tempMovesCapture);
-                list[numMoves++] = (Move) {.pieceThatMoves = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-                REMOVE_LSB(tempMovesCapture);
             }
         }
     }
