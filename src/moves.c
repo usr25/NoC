@@ -206,84 +206,67 @@ AttacksOnK getCheckTiles(Board* b, const int color)
     uint64_t res = 
         (b->piece[opp][PAWN] & pawnCaptures(lsb, color)) | (b->piece[opp][KNIGHT] & getKnightMoves(lsb));
 
-    int num = POPCOUNT(res);
+    int num = res != 0;
     int obstacle;
 
-    uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
-    uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
+    uint64_t stra = (b->piece[opp][QUEEN] | b->piece[opp][ROOK]) & getRookMagicMoves(lsb, b->allPieces);
+    uint64_t diag = (b->piece[opp][QUEEN] | b->piece[opp][BISH]) & getBishMagicMoves(lsb, b->allPieces);
 
     if (stra)
     {
-        const uint64_t inteUp = getUpMoves(lsb) & b->allPieces;
-        const uint64_t inteDown = getDownMoves(lsb) & b->allPieces;
-        const uint64_t inteRight = getRightMoves(lsb) & b->allPieces;
-        const uint64_t inteLeft = getLeftMoves(lsb) & b->allPieces;
+        const uint64_t inteUp = getUpMoves(lsb) & stra;
+        const uint64_t inteDown = getDownMoves(lsb) & stra;
+        const uint64_t inteRight = getRightMoves(lsb) & stra;
+        const uint64_t inteLeft = getLeftMoves(lsb) & stra;
 
-        if (inteUp){
-            obstacle = LSB_INDEX(inteUp);
-            if (POW2[obstacle] & stra){
-                ++num;
-                res |= getUpMoves(lsb) ^ getUpMoves(obstacle);
-            }
+        if (inteUp)
+        {
+            ++num;
+            res |= getUpMoves(lsb) ^ getUpMoves(LSB_INDEX(inteUp));
         }
-        if (inteDown){
-            obstacle = MSB_INDEX(inteDown);
-            if (POW2[obstacle] & stra){
-                ++num;
-                res |= getDownMoves(lsb) ^ getDownMoves(obstacle);
-            }
+        if (inteDown)
+        {
+            ++num;
+            res |= getDownMoves(lsb) ^ getDownMoves(LSB_INDEX(inteDown));
         }
-        if (inteRight){
-            obstacle = MSB_INDEX(inteRight);
-            if (POW2[obstacle] & stra){
-                ++num;
-                res |= getRightMoves(lsb) ^ getRightMoves(obstacle);
-            }
+        if (inteRight)
+        {
+            ++num;
+            res |= getRightMoves(lsb) ^ getRightMoves(LSB_INDEX(inteRight));
         }
-        if (inteLeft){
-            obstacle = LSB_INDEX(inteLeft);
-            if (POW2[obstacle] & stra){
-                ++num;
-                res |= getLeftMoves(lsb) ^ getLeftMoves(obstacle);
-            }
+        if (inteLeft)
+        {
+            ++num;
+            res |= getLeftMoves(lsb) ^ getLeftMoves(LSB_INDEX(inteLeft));
         }
     }
 
-    if (diag)
+    if (diag && num < 2)
     {
-        const uint64_t inteUpRight = getUpRightMoves(lsb) & b->allPieces;
-        const uint64_t inteUpLeft = getUpLeftMoves(lsb) & b->allPieces;
-        const uint64_t inteDownRight = getDownRightMoves(lsb) & b->allPieces;
-        const uint64_t inteDownLeft = getDownLeftMoves(lsb) & b->allPieces;
+        const uint64_t inteUpRight = getUpRightMoves(lsb) & diag;
+        const uint64_t inteUpLeft = getUpLeftMoves(lsb) & diag;
+        const uint64_t inteDownRight = getDownRightMoves(lsb) & diag;
+        const uint64_t inteDownLeft = getDownLeftMoves(lsb) & diag;
 
-        if (inteUpRight){
-            obstacle = LSB_INDEX(inteUpRight);
-            if (POW2[obstacle] & diag){
-                ++num;
-                res |= getUpRightMoves(lsb) ^ getUpRightMoves(obstacle);
-            }
+        if (inteUpRight)
+        {
+            ++num;
+            res |= getUpRightMoves(lsb) ^ getUpRightMoves(LSB_INDEX(inteUpRight));
         }
-        
-        if (inteUpLeft){
-            obstacle = LSB_INDEX(inteUpLeft);
-            if (POW2[obstacle] & diag){
-                ++num;
-                res |= getUpLeftMoves(lsb) ^ getUpLeftMoves(obstacle);
-            }
+        if (inteUpLeft)
+        {
+            ++num;
+            res |= getUpLeftMoves(lsb) ^ getUpLeftMoves(LSB_INDEX(inteUpLeft));
         }
-        if (inteDownRight){
-            obstacle = MSB_INDEX(inteDownRight);
-            if (POW2[obstacle] & diag){
-                ++num;
-                res |= getDownRightMoves(lsb) ^ getDownRightMoves(obstacle);
-            }
+        if (inteDownRight)
+        {
+            ++num;
+            res |= getDownRightMoves(lsb) ^ getDownRightMoves(LSB_INDEX(inteDownRight));
         }
-        if (inteDownLeft){
-            obstacle = MSB_INDEX(inteDownLeft);
-            if (POW2[obstacle] & diag){
-                ++num;
-                res |= getDownLeftMoves(lsb) ^ getDownLeftMoves(obstacle);
-            }
+        if (inteDownLeft)
+        {
+            ++num;
+            res |= getDownLeftMoves(lsb) ^ getDownLeftMoves(LSB_INDEX(inteDownLeft));
         }
     }
 

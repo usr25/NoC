@@ -58,110 +58,79 @@ uint64_t pinnedPieces(Board* b, const int color)
     const int lsb = LSB_INDEX(b->piece[color][KING]);
     const int opp = 1 ^ color;
 
-    uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
-    uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
+    uint64_t stra = (b->piece[opp][QUEEN] | b->piece[opp][ROOK]) & getStraMoves(lsb);
+    uint64_t diag = (b->piece[opp][QUEEN] | b->piece[opp][BISH]) & getDiagMoves(lsb);
 
     //This can be switched with getRookMagicMoves(, b->color[opp]), sacrificing a bit of performance for
     //but reducing the ocasions in which the if is executed
-    if (stra & getStraMoves(lsb))
+    if (stra)
     {
         uint64_t retrace;
-        int obstacle;
-        const uint64_t inteUp = getUpMovesInt(lsb) & b->allPieces;
-        const uint64_t inteDown = getDownMovesInt(lsb) & b->allPieces;
-        const uint64_t inteRight = getRightMovesInt(lsb) & b->allPieces;
-        const uint64_t inteLeft = getLeftMovesInt(lsb) & b->allPieces;
+        uint64_t obst = b->color[color] & getRookMagicMoves(lsb, b->allPieces);
+        
+        const uint64_t inteUp = getUpMovesInt(lsb) & obst;
+        const uint64_t inteDown = getDownMovesInt(lsb) & obst;
+        const uint64_t inteRight = getRightMovesInt(lsb) & obst;
+        const uint64_t inteLeft = getLeftMovesInt(lsb) & obst;
 
         if (inteUp)
         {
-            obstacle = LSB_INDEX(inteUp);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getUpMoves(obstacle) & b->allPieces;
-                if (retrace & -retrace & stra)
-                    res |= POW2[obstacle];
-            }
+            retrace = getUpMoves(LSB_INDEX(inteUp)) & b->allPieces;
+            if (retrace & -retrace & stra)
+                res |= inteUp;
         }
         if (inteDown)
         {
-            obstacle = MSB_INDEX(inteDown);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getDownMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[MSB_INDEX(retrace)] & stra))
-                    res |= POW2[obstacle];
-            }
+            retrace = getDownMoves(LSB_INDEX(inteDown)) & b->allPieces;
+            if (retrace && (POW2[MSB_INDEX(retrace)] & stra))
+                res |= inteDown;
         }
         if (inteRight)
         {
-            obstacle = MSB_INDEX(inteRight);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getRightMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[MSB_INDEX(retrace)] & stra))
-                    res |= POW2[obstacle];
-            }
+            retrace = getRightMoves(LSB_INDEX(inteRight)) & b->allPieces;
+            if (retrace && (POW2[MSB_INDEX(retrace)] & stra))
+                res |= inteRight;
         }
         if (inteLeft)
         {
-            obstacle = LSB_INDEX(inteLeft);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getLeftMoves(obstacle) & b->allPieces;
-                if (retrace & -retrace & stra)
-                    res |= POW2[obstacle];
-            }
+            retrace = getLeftMoves(LSB_INDEX(inteLeft)) & b->allPieces;
+            if (retrace & -retrace & stra)
+                res |= inteLeft;
         }
     }
-    if (diag & getDiagMoves(lsb))
+    if (diag)
     {
         uint64_t retrace;
-        int obstacle;
+        uint64_t obst = b->color[color] & getBishMagicMoves(lsb, b->allPieces);
 
-        const uint64_t inteUpRight = getUpRightMovesInt(lsb) & b->allPieces;
-        const uint64_t inteUpLeft = getUpLeftMovesInt(lsb) & b->allPieces;
-        const uint64_t inteDownRight = getDownRightMovesInt(lsb) & b->allPieces;
-        const uint64_t inteDownLeft = getDownLeftMovesInt(lsb) & b->allPieces;
+        const uint64_t inteUpRight = getUpRightMovesInt(lsb) & obst;
+        const uint64_t inteUpLeft = getUpLeftMovesInt(lsb) & obst;
+        const uint64_t inteDownRight = getDownRightMovesInt(lsb) & obst;
+        const uint64_t inteDownLeft = getDownLeftMovesInt(lsb) & obst;
 
         if (inteUpRight)
         {
-            obstacle = LSB_INDEX(inteUpRight);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getUpRightMoves(obstacle) & b->allPieces;
-                if (retrace & -retrace & diag)
-                    res |= POW2[obstacle];
-            }
+            retrace = getUpRightMoves(LSB_INDEX(inteUpRight)) & b->allPieces;
+            if (retrace & -retrace & diag)
+                res |= inteUpRight;
         }
         if (inteUpLeft)
         {
-            obstacle = LSB_INDEX(inteUpLeft);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getUpLeftMoves(obstacle) & b->allPieces;
-                if (retrace & -retrace & diag)
-                    res |= POW2[obstacle];
-            }
+            retrace = getUpLeftMoves(LSB_INDEX(inteUpLeft)) & b->allPieces;
+            if (retrace & -retrace & diag)
+                res |= inteUpLeft;
         }
         if (inteDownRight)
         {
-            obstacle = MSB_INDEX(inteDownRight);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getDownRightMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[MSB_INDEX(retrace)] & diag))
-                    res |= POW2[obstacle];
-            }
+            retrace = getDownRightMoves(LSB_INDEX(inteDownRight)) & b->allPieces;
+            if (retrace && (POW2[MSB_INDEX(retrace)] & diag))
+                res |= inteDownRight;
         }
         if (inteDownLeft)
         {
-            obstacle = MSB_INDEX(inteDownLeft);
-            if (POW2[obstacle] & b->color[color])
-            {
-                retrace = getDownLeftMoves(obstacle) & b->allPieces;
-                if (retrace && (POW2[MSB_INDEX(retrace)] & diag))
-                    res |= POW2[obstacle];
-            }
+            retrace = getDownLeftMoves(LSB_INDEX(inteDownLeft)) & b->allPieces;
+            if (retrace && (POW2[MSB_INDEX(retrace)] & diag))
+                res |= inteDownLeft;
         }
     }
 

@@ -19,6 +19,6 @@ static inline uint64_t getBishMagicMoves(const int index, const uint64_t allPiec
 {
     //allPieces &= getDiagInt(index);
     //allPieces *= bishMagic[index];
-     //64 - 9 == 55, worst case scenario
+    //64 - 9 == 55, worst case scenario
     return bishMagicMoves[index][((allPieces & getDiagInt(index)) * bishMagic[index]) >> 55];
 }

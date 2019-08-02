@@ -1,5 +1,4 @@
 /* main.c
- *
  * Main file, initializes memoization and calls loop, along with some tests if necessary
  */
 
