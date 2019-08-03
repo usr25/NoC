@@ -26,7 +26,7 @@
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
 #define PASSED_PAWN 30 //Bonus for passed pawns
 #define N_ISOLATED_PAWN -20 //Penalization for isolated pawns
-#define N_BACKWR_PAWN -10 //Penalization for a backwards pawn
+#define N_TARGET_PAWN -7 //Penalization for a pawn that cant be protected by another pawn
 #define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
 #define SAFE_KING 2 //Bonus for pawns surrounding the king
 
@@ -105,7 +105,7 @@ int insuffMat(const Board b)
 //It is considered an endgame if there are 7 pieces or less in each side, (< 10 taking into account the kings)
 int eval(const Board b)
 {
-    if (POPCOUNT(b.allPieces ^ (b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN])) < 10)
+    if (POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) < 10)
     {
         return   allPiecesValue(b)
                 +matricesEnd(b)
@@ -137,7 +137,7 @@ inline int pawns(const Board b)
     uint64_t attW = (wPawn << 9) & 0xfefefefefefefefe | (wPawn << 7) & 0x7f7f7f7f7f7f7f7f;
     uint64_t attB = (bPawn >> 9) & 0x7f7f7f7f7f7f7f7f | (bPawn >> 7) & 0xfefefefefefefefe;
 
-    int isolW = 0, isolB = 0, passW = 0, passB = 0, backW = 0, backB = 0, cleanW = 0, cleanB = 0;
+    int isolW = 0, isolB = 0, passW = 0, passB = 0, targW = 0, targB = 0, cleanW = 0, cleanB = 0;
     int lsb;
     uint64_t tempW = wPawn, tempB = bPawn;
     while(tempW)
@@ -145,7 +145,7 @@ inline int pawns(const Board b)
         lsb = LSB_INDEX(tempW);
         isolW += (getPawnLanes(lsb) & wPawn) != 0;
         passW += (getWPassedPawn(lsb) & bPawn) == 0;
-        backW += POPCOUNT(getBPassedPawn(lsb + 8) & wPawn) == 1;
+        targW += POPCOUNT(getBPassedPawn(lsb + 8) & wPawn) == 1;
         cleanW += (lsb > 31) * ((POW2[lsb + 8] & b.allPieces) == 0);
         REMOVE_LSB(tempW);
     }
@@ -154,7 +154,7 @@ inline int pawns(const Board b)
         lsb = LSB_INDEX(tempB);
         isolB += (getPawnLanes(lsb) & bPawn) != 0;
         passB += (getBPassedPawn(lsb) & wPawn) == 0;
-        backB += POPCOUNT(getWPassedPawn(lsb - 8) & bPawn) == 1;
+        targB += POPCOUNT(getWPassedPawn(lsb - 8) & bPawn) == 1;
         cleanB += (lsb < 32) * ((POW2[lsb - 8] & b.allPieces) == 0);
         REMOVE_LSB(tempB);
     }
@@ -166,7 +166,7 @@ inline int pawns(const Board b)
             +ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b.color[BLACK]) - POPCOUNT((attB >> 8) & b.color[WHITE]))
             +N_ISOLATED_PAWN * (isolW - isolB) 
             +PASSED_PAWN * (passW - passB)
-            +N_BACKWR_PAWN * (backW - backB);
+            +N_TARGET_PAWN * (targW - targB);
 }
 
 inline int endgameAnalysis(const Board b)

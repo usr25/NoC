@@ -319,7 +319,10 @@ int testCheckInterfTiles()
     AttacksOnK att6 = getCheckTiles(&b, BLACK);
     pawns &= att6.tiles == 1048576ULL && att6.num == 1;
 
+    
     int knights = 1;
+    /*
+    Removed for the time being since a king can only be checked by, at most, 2 pieces
     expected = 4535485469696ULL;
     b = genFromFen("8/8/3N1n2/2n3N1/4K3/2N3N1/3n1n2/8 w - -", &ignore);
     AttacksOnK att7 = getCheckTiles(&b, WHITE);
@@ -327,6 +330,7 @@ int testCheckInterfTiles()
     b = genFromFen("8/8/3n1N2/2N3n1/4k3/2n3n1/3N1N2/8 b - -", &ignore);
     AttacksOnK att8 = getCheckTiles(&b, BLACK);
     knights &= att8.tiles == expected && att8.num == 4;
+    */
 
     int misc = 1;
     b = genFromFen("q7/1b5b/2Qq4/5P2/1bb1K1Qr/3r4/2rp1qQ1/7b w - -", &ignore);

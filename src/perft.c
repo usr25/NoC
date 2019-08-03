@@ -39,7 +39,7 @@ uint64_t perftRecursive(Board b, const int depth)
 
 //Returns 1 if the perft of the starting position at a given depth is correct
 //TODO: Delete this function and fix the tests
-int perft(const int depth, int tree)
+int perft(const int depth, int divide)
 {
     if (depth == 0) return 1;
 
@@ -59,7 +59,7 @@ int perft(const int depth, int tree)
 
         int temp = perftRecursive(b, depth - 1);
 
-        if (tree)
+        if (divide)
         {
             drawMove(moves[i]);
             printf(": %d\n", temp);

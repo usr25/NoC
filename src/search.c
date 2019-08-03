@@ -64,7 +64,7 @@ Move bestTime(Board b, const double timeToMove, Repetition rep)
 
         /*Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
          *the program will be able to finish another depth
-         *(3.5 is a randomly chosen constant based on experience)
+         *(3.5 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
          * or
          * it has found mate
          */
@@ -79,7 +79,7 @@ Move bestTime(Board b, const double timeToMove, Repetition rep)
 
 int callDepth;
 int notCallDepthParity;
-Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
+Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
 {
     if (rookVSKing(b)) return rookMate(b);
     if (depth == 0) return (Move) {};
@@ -116,7 +116,9 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
         }
         undoMove(&b, list[i], &h);
 
-        if (tree)
+        list[i].score = val;
+
+        if (divide)
         {
             drawMove(list[i]);
             printf(": %d\n", val);
@@ -126,7 +128,6 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
         {
             currBest = list[i];
             alpha = val;
-            currBest.score = val;
             //No need to keep searching once it has found a mate in 1
             if (val > PLUS_MATE + depth - 2)
                 break;
@@ -135,7 +136,6 @@ Move bestMoveAB(Board b, const int depth, int tree, Repetition rep)
         {
             currBest = list[i];
             beta = val;
-            currBest.score = val;
             if (val < MINS_MATE - depth + 2)
                 break;
         }
@@ -179,7 +179,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
 
     sort(list, numMoves, m.to);
 
-    int val, best, index, addTT;
+    int val, best, index;
     uint64_t newHash;
     if (b.turn)
     {
@@ -189,33 +189,36 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
         {
             makeMove(&b, list[i], &h);
             newHash = makeMoveHash(prevHash, &b, list[i], h);
-            index = newHash & MOD_ENTRIES;
-            addTT = 1;
-            if (insuffMat(b) || isThreeRep(rep, newHash))
-            {
+            if (m.capture > 0 && insuffMat(b))
                 val = 0;
-            }
+            else if(isThreeRep(rep, newHash))
+                val = 0;
             else
             {
                 rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
+                    index = newHash & MOD_ENTRIES;
                     if (table[index].key == newHash)
                     {
                         val = table[index].val;
                         if (val > PLUS_MATE) val -= 1;
                     }
                     else if (capt && list[i].capture > 0)
+                    {
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                    else{
+                        table[index] = (Eval) {.key = newHash, .val = val, .depth = 1};
+                    }
+                    else
+                    {
                         val = eval(b);
-                        addTT = 0;
                     }
                 }
                 else
+                {
                     val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
-                if (addTT)
-                    table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                    table[newHash & MOD_ENTRIES] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                }
                 --rep->index;
             }
 
@@ -241,32 +244,36 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
         {
             makeMove(&b, list[i], &h);
             newHash = makeMoveHash(prevHash, &b, list[i], h);
-            index = newHash & MOD_ENTRIES;
-            addTT = 1;
-            if (insuffMat(b) || isThreeRep(rep, newHash)){
+            if (m.capture > 0 && insuffMat(b))
                 val = 0;
-            }
+            else if(isThreeRep(rep, newHash))
+                val = 0;
             else
             {
                 rep->hashTable[rep->index++] = newHash;
                 if (depth == 1)
                 {
+                    index = newHash & MOD_ENTRIES;
                     if (table[index].key == newHash)
                     {
                         val = table[index].val;
                         if (val < MINS_MATE) val += 1;
                     }
                     else if (capt && list[i].capture > 0)
+                    {
                         val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                    else{
+                        table[index] = (Eval) {.key = newHash, .val = val, .depth = 1};
+                    }
+                    else
+                    {
                         val = eval(b);
-                        addTT = 0;
                     }
                 }
                 else
+                {
                     val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
-                if (addTT)
-                    table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                    table[newHash & MOD_ENTRIES] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                }
                 --rep->index;
             }
 
@@ -288,7 +295,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
     return best;
 }
 
-Move bestMoveBrute(Board b, const int depth, int tree)
+Move bestMoveBrute(Board b, const int depth, int divide)
 {
     if (rookVSKing(b)) return rookMate(b);
     Move list[200];
@@ -305,7 +312,7 @@ Move bestMoveBrute(Board b, const int depth, int tree)
         val = bestMoveBruteValue(b, depth - 1);
         undoMove(&b, list[i], &h);
 
-        if (tree)
+        if (divide)
         {
             drawMove(list[i]);
             printf(": %d\n", val);
