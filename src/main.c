@@ -27,11 +27,11 @@ int main(const int argc, char* const argv)
     populateMagics();
 
     //runTests();
-    //slowTests();  //58'4s
+    //slowTests();  //58'0s
     //slowEval();   //6'4s null, 8'7s
 
     //printf("%d\n", perft(6, 1)); //3'8s
-    //printf("%d\n", perft(7, 1)); //1:36m
+    //printf("%d\n", perft(7, 1)); //1:35m
 
     loop();
 
