@@ -27,6 +27,8 @@
 //8/1p1p1Pk1/2N3K1/n3N3/2n3p1/qP1PQ3/8/8 w - -              Knight moves
 //8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8 w - -                   Pawn moves
 
+//8/5k2/P6K/8/8/8/4p3/8 w - -                               2x faster than sf10 at depth 9(!)
+
 int ignore;
 
 int validStartingPos(Board b)
@@ -995,6 +997,9 @@ void slowTests()
     b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -", &ignore);
     printf("En passand + promotion: %d\n", perftRecursive(b, 8) == 3558853ULL);
     
+    b = genFromFen("8/5k2/P4P1K/8/8/8/4p3/8 w - -", &ignore);
+    printf("Promotion: %d\n", perftRecursive(b, 8) == 38555705ULL);
+
     b = genFromFen("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -", &ignore);
     printf("Castle: %d\n", perftRecursive(b, 5) == 7288108ULL);
     

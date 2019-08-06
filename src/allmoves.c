@@ -11,6 +11,12 @@
 #include "../include/allmoves.h"
 #include "../include/magic.h"
 
+#define SEVENTH_RANK 0xff000000000000
+#define SECOND_RANK 0xff00
+
+#define NOT_SEVENTH_RANK 0xff00ffffffffffff
+#define NOT_SECOND_RANK 0xffffffffffff00ff
+
 int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
 int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
@@ -25,11 +31,11 @@ int legalMoves(Board* b, Move* list)
     //All the pinned pieces for the side to move
     uint64_t pinned = pinnedPieces(b, b->turn);
     
-    if (forbidden & b->piece[b->turn][KING]) //The king is in check
+    if (forbidden & b->piece[b->turn][KING])
         return (movesCheck(b, list, b->turn, forbidden, pinned) << 1) | 1;
-    else if (pinned) //The king isnt in check but there are pinned pieces
+    else if (pinned)
         return movesPinnedPiece(b, list, b->turn, forbidden, pinned) << 1;
-    else //All pieces can move freely (Except enPassand captures)
+    else
         return movesKingFree(b, list, b->turn, forbidden) << 1;
 }
 
@@ -44,15 +50,12 @@ static inline int moveIsValidSliding(Board* b, const Move m, History h)
 }
 
 /* Returns a bitboard with a 1 for every pinned piece, works similarly to isInCheck
+ *   1- Trace moves from the king as if it were a queen but separating each direction
+ *   2- Only pay attention to the lines that the first intersection is with a piece of the king's color
+ *   3- Retrace from that piece in the direction and detect if there is a Rook / Bish / Queen
  */
 uint64_t pinnedPieces(Board* b, const int color)
 {
-    /*
-    1- Trace moves from the king as if it were a queen but separating each direction
-    2- Only pay attention to the lines that the first intersection is with a piece of the king's color
-    3- Retrace from that piece in the direction and detect if there is a Rook / Bish / Queen
-    4- Return a bitboard of 1s where each 1 is a pinned piece
-    */
     uint64_t res = 0;
 
     const int lsb = LSB_INDEX(b->piece[color][KING]);
@@ -148,16 +151,17 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
     if (castle & 2)
         list[numMoves++] = castleQSide(color);
 
+
     //Promoting pawns
-    temp = b->piece[color][PAWN] & (color? 0xff000000000000 : 0xff00);
+    temp = b->piece[color][PAWN] & (color? SEVENTH_RANK : SECOND_RANK);
     while(temp)
     {
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
 
-        if (b->turn)
+        if (color)
         {
-            //Checks if there is a piece ahead, so the pawn cant move
+            //Checks if there is a piece ahead, if so, the pawn cant move
             tempMoves = getWhitePawnMoves(from) & ~b->allPieces;
             tempCaptures = getWhitePawnCaptures(from) & b->color[BLACK];
         }
@@ -192,15 +196,17 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
         }
     }
 
-    temp = b->piece[color][PAWN] & ~(color? 0xff000000000000 : 0xff00);
+
+    //Pawns that arent going to promote
+    temp = b->piece[color][PAWN] & (color? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
     while(temp)
     {
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
 
-        if (b->turn)
+        if (color)
         {
-            //Checks if there is a piece ahead, so the pawn cant move
+            //Checks if there is a piece ahead, if so, the pawn cant move
             tempMoves = (256ULL << from) & b->allPieces ? 0 : getWhitePawnMoves(from) & ~b->allPieces;
             tempCaptures = getWhitePawnCaptures(from) & b->color[BLACK];
         }
@@ -237,7 +243,8 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
             if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
         }
     }
-    
+
+
     temp = b->piece[color][QUEEN];
     while(temp)
     {
@@ -258,6 +265,7 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
             REMOVE_LSB(tempMoves);
         }
     }
+
 
     temp = b->piece[color][ROOK];
     while(temp)
@@ -378,7 +386,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
     }
     
     //Promoting pawns
-    temp = b->piece[color][PAWN] & (color? 0xff000000000000 : 0xff00);
+    temp = b->piece[color][PAWN] & (color? SEVENTH_RANK : SECOND_RANK);
     while(temp)
     {
         from = LSB_INDEX(temp);
@@ -432,7 +440,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
         }
     }
 
-    temp = b->piece[color][PAWN] & ~(color? 0xff000000000000 : 0xff00);
+    temp = b->piece[color][PAWN] & (color? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
     while(temp)
     {
         History h;
@@ -628,7 +636,7 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
     if (att.num == 1)
     {
         //Promoting pawns
-        temp = b->piece[color][PAWN] & pinnedMask & (color? 0xff000000000000 : 0xff00);
+        temp = b->piece[color][PAWN] & pinnedMask & (color? SEVENTH_RANK : SECOND_RANK);
         while(temp)
         {
             from = LSB_INDEX(temp);
@@ -648,7 +656,7 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
             }
         }
 
-        temp = b->piece[color][PAWN] & pinnedMask & ~(color? 0xff000000000000 : 0xff00);
+        temp = b->piece[color][PAWN] & pinnedMask & (color? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
         while(temp)
         {
             from = LSB_INDEX(temp);

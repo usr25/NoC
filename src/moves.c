@@ -127,15 +127,17 @@ int canCastle(Board* b, const int color, const uint64_t forbidden)
 {
     int canK, canQ;
 
+    uint64_t obstacles = b->allPieces | forbidden;
+
     if (color)
     {
-        canK = (b->castleInfo & WCASTLEK) && (1   & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_WK) && ! (C_MASK_WK & forbidden);
-        canQ = (b->castleInfo & WCASTLEQ) && (128 & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_WQ) && ! (0x30 & forbidden);
+        canK = (b->castleInfo & WCASTLEK) && (1    & b->piece[color][ROOK]) && ! (obstacles & C_MASK_WK);
+        canQ = (b->castleInfo & WCASTLEQ) && (0x80 & b->piece[color][ROOK]) && ! (obstacles & 0x30) && ! (b->allPieces & C_MASK_WQ);
     }
     else
     {
-        canK = (b->castleInfo & BCASTLEK) && (POW2[56] & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_BK) && ! (C_MASK_BK & forbidden);
-        canQ = (b->castleInfo & BCASTLEQ) && (POW2[63] & b->piece[color][ROOK]) && ! (b->allPieces & C_MASK_BQ) && ! (0x30ULL << 56 & forbidden);
+        canK = (b->castleInfo & BCASTLEK) && (0x100000000000000ULL  & b->piece[color][ROOK]) && ! (obstacles & C_MASK_BK);
+        canQ = (b->castleInfo & BCASTLEQ) && (0x8000000000000000ULL & b->piece[color][ROOK]) && ! (obstacles & 0x3000000000000000ULL) && ! (b->allPieces & C_MASK_BQ);
     }
 
     return (canQ << 1) | canK;

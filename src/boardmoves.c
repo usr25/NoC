@@ -48,7 +48,7 @@ static inline void flipBits(Board* b, const uint64_t from, const int piece, cons
 }
 
 //It is assumed that the castling direction has already been decided, and is placed in move.castle (1 -> kingside, 2-> queenside)
-static void makeCastle(Board* b, const Move move, const int color)
+static inline void flipCastle(Board* b, const Move move, const int color)
 {
     uint64_t fromRook, toRook;
 
@@ -66,25 +66,6 @@ static void makeCastle(Board* b, const Move move, const int color)
     flipBits(b, fromRook, ROOK, color);
     flipBits(b, POW2[move.to], KING, color);
     flipBits(b, toRook, ROOK, color);
-}
-static void undoCastle(Board* b, const Move move, const int color)
-{
-    uint64_t fromRook, toRook;
-
-    if (move.castle & 1) //Kingside
-    {
-        fromRook = POW2[move.to - 1];
-        toRook = POW2[move.to + 1];
-    }
-    else //Queenside
-    {
-        fromRook = POW2[move.to + 2];
-        toRook = POW2[move.to - 1];
-    }
-
-    flipBits(b, POW2[move.to], KING, color);
-    flipBits(b, toRook, ROOK, color);
-    flipBits(b, fromRook, ROOK, color);
 }
 
 //Alters the board to make a move
@@ -120,13 +101,14 @@ void makeMove(Board* b, const Move move, History* h)
         break;
         
         case ROOK:
-            b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
+            if ((fromBit | toBit) & 0x8100000000000081ULL) //to reduce the number of calls
+                b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
             flipBits(b, toBit, ROOK, b->turn);
         break;
 
         case KING:
             if (move.castle)
-                makeCastle(b, move, b->turn);
+                flipCastle(b, move, b->turn);
             else
                 flipBits(b, toBit, KING, b->turn);
 
@@ -180,7 +162,7 @@ void undoMove(Board* b, const Move move, History* h)
 
         case KING:
             if (move.castle)
-                undoCastle(b, move, b->turn);
+                flipCastle(b, move, b->turn);
             else
                 flipBits(b, toBit, KING, b->turn);
         break;
