@@ -928,9 +928,9 @@ void slowEval()
     b.turn ^= 1;
     drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
     printf("\n");
-    
+
     depth = 6;
-    
+
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
     
     white &= compMove("k7/pp6/8/4Q3/8/2r5/K7/2q5 w - -", "e5b8", depth, 4);      //Queen sac to draw
@@ -947,7 +947,7 @@ void slowEval()
 
     white &= compMove("5k2/2P2q2/8/8/4R3/5K2/8/8 w - -", "e4f4", depth, 4);      //Pins
     black &= compMove("5k2/4r3/8/8/5Q2/5K2/2p5/8 b - -", "e7f7", depth, 4);
-    
+
     white &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", depth, 5);          //Rook promotion
     black &= compMove("8/8/8/8/8/2k5/K1p5/8 b - -", "c2c1r", depth, 5);
 
@@ -966,14 +966,14 @@ void slowEval()
     //Need depth >= 7
     //white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
     //black &= compMove("r1bqk2r/pp3ppp/2n2n2/3pp1B1/1b6/1BNP4/PPP1NPPP/R2QK2R b KQkq -", "d5d4", depth, 4);
-    
+
     depth = 10;
-    
+
     white &= compMove("8/ppp5/8/PPP5/8/8/5K1k/8 w - -", "b5b6", depth, 4); //Pawn breaks
     black &= compMove("7K/5k2/8/8/ppp5/8/PPP5/8 b - -", "b4b3", depth, 4);
-    
+
     //white &= compMove("3r1nk1/1b1R4/8/8/3B4/4K3/8/8 w - -", "d7g7", depth, 4); //Windmill
-    
+
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);
 

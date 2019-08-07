@@ -21,7 +21,6 @@
 #define ENGINE_AUTHOR "usr"
 #define ENGINE_NAME "DEV"
 #define LEN 4096
-#define DEPTH 6
 
 void uci(void);
 void isready(void);
@@ -35,10 +34,8 @@ Board gen_def(char* beg, Repetition* rep);
 
 Move evalPos(char* beg);
 
-/*
- * Main loop, listens to user input and performs the desired actions
+/* Main loop, listens to user input and performs the desired actions
  */
-//TODO: Implement time management
 void loop(void)
 {
     Board b;

@@ -140,6 +140,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
                 break;
         }
     }
+
     return currBest;
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
@@ -147,6 +148,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
     if (calledTiming && (double)clock() - startT > timeToMoveT)
         return 0;
 
+    //Null move pruning
     if (depth > R && m.capture < 1 && (depth & 1) ^ notCallDepthParity && !isInCheck(&b, b.turn))
     {
         int score;
@@ -202,7 +204,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                     if (table[index].key == newHash)
                     {
                         val = table[index].val;
-                        if (val > PLUS_MATE) val -= 1;
+                        if (val > PLUS_MATE) val -= table[index].depth + 1;
                     }
                     else if (capt && list[i].capture > 0)
                     {
@@ -257,7 +259,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
                     if (table[index].key == newHash)
                     {
                         val = table[index].val;
-                        if (val < MINS_MATE) val += 1;
+                        if (val < MINS_MATE) val += table[index].depth + 1;
                     }
                     else if (capt && list[i].capture > 0)
                     {
