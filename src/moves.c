@@ -157,12 +157,11 @@ uint64_t controlledKingPawnKnight(Board* b, const int opp)
     uint64_t temp;
     uint64_t res = getKingMoves(LSB_INDEX(b->piece[opp][KING]));
 
-    temp = b->piece[opp][PAWN];
-    while(temp)
-    {
-        res |= pawnCaptures(LSB_INDEX(temp), opp);
-        REMOVE_LSB(temp);
-    }
+    if (opp)
+        res |= ((b->piece[WHITE][PAWN] << 9) & 0xfefefefefefefefe) | ((b->piece[WHITE][PAWN] << 7) & 0x7f7f7f7f7f7f7f7f);
+    else
+        res |= ((b->piece[BLACK][PAWN] >> 9) & 0x7f7f7f7f7f7f7f7f) | ((b->piece[BLACK][PAWN] >> 7) & 0xfefefefefefefefe);
+
     temp = b->piece[opp][KNIGHT];
     while(temp)
     {
