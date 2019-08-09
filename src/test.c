@@ -52,7 +52,7 @@ int validStartingPos(Board b)
     int avAreCorrect = (b.color[WHITE] & b.color[AV_WHITE]) == 0 && (b.color[BLACK] & b.color[AV_BLACK]) == 0;
     int whiteAreInAvBlack = (b.color[WHITE] & b.color[AV_BLACK]) == b.color[WHITE];
     int blackAreInAvWhite = (b.color[BLACK] & b.color[AV_WHITE]) == b.color[BLACK];
-    int castleInfoCorrect = b.castleInfo == 0b11110;
+    int castleInfoCorrect = b.castleInfo == 0b1111;
     int turn = b.turn == WHITE;
 
     return 
@@ -372,7 +372,6 @@ int testUndoMoves()
 
 int testBoardPawnMoves()
 {
-    int temp;
     History h;
     Board b;
     int pawnMovesNoCapture = 1;
@@ -683,7 +682,7 @@ int testSimplePerft()
 {
     Board b;
     int startPos = 
-        perft(1, 0) && perft(2, 0) && perft(3, 0);
+        (perft(defaultBoard(), 1, 0) == 20ULL) && (perft(defaultBoard(), 2, 0) == 400ULL) && (perft(defaultBoard(), 3, 0) == 8902ULL);
 
     b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -", &ignore);
     int noPawns = 
@@ -986,9 +985,9 @@ void slowTests()
     Board b;
 
     printf("\n");
-    printf("Start depth 4: %d\n", perft(4, 0));
-    printf("Start depth 5: %d\n", perft(5, 0));
-    printf("Start depth 6: %d\n", perft(6, 0));
+    printf("Start depth 4: %d\n", perft(defaultBoard(), 4, 0) == 197281ULL);
+    printf("Start depth 5: %d\n", perft(defaultBoard(), 5, 0) == 4865609ULL);
+    printf("Start depth 6: %d\n", perft(defaultBoard(), 6, 0) == 119060324ULL);
 
 
     b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -", &ignore);

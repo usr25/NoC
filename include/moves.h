@@ -40,7 +40,7 @@ typedef struct
  * tiles -> bb Where all the 1s are tiles where a piece placed will stop a check
  * num -> number of attackers
  */
-const typedef struct
+typedef const struct
 {
     uint64_t tiles;
     int num;

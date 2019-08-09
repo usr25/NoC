@@ -93,8 +93,8 @@ int insuffMat(const Board b)
                     return b.piece[WHITE][BISH] || b.piece[WHITE][KNIGHT];
                 case 2:
                     return 
-                              ((ODD_TILES & b.piece[WHITE][BISH]) && (ODD_TILES & b.piece[BLACK][BISH])
-                            ||(EVEN_TILES & b.piece[WHITE][BISH]) && (EVEN_TILES & b.piece[BLACK][BISH]));
+                              ((ODD_TILES & b.piece[WHITE][BISH]) && (ODD_TILES & b.piece[BLACK][BISH]))
+                            ||((EVEN_TILES & b.piece[WHITE][BISH]) && (EVEN_TILES & b.piece[BLACK][BISH]));
             }
             return 0;
     }
@@ -134,8 +134,8 @@ inline int pawns(const Board b)
 {
     uint64_t wPawn = b.piece[WHITE][PAWN];
     uint64_t bPawn = b.piece[BLACK][PAWN];
-    uint64_t attW = (wPawn << 9) & 0xfefefefefefefefe | (wPawn << 7) & 0x7f7f7f7f7f7f7f7f;
-    uint64_t attB = (bPawn >> 9) & 0x7f7f7f7f7f7f7f7f | (bPawn >> 7) & 0xfefefefefefefefe;
+    uint64_t attW = ((wPawn << 9) & 0xfefefefefefefefe) | ((wPawn << 7) & 0x7f7f7f7f7f7f7f7f);
+    uint64_t attB = ((bPawn >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bPawn >> 7) & 0xfefefefefefefefe);
 
     int isolW = 0, isolB = 0, passW = 0, passB = 0, targW = 0, targB = 0, cleanW = 0, cleanB = 0;
     int lsb;

@@ -3,7 +3,7 @@
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)
 #define LSB_INDEX(ll) __builtin_ctzll(ll)
-#define MSB_INDEX(ll) 63 - __builtin_clzll(ll)
+#define MSB_INDEX(ll) (63 - __builtin_clzll(ll))
 
 #define NO_PIECE -1
 #define KING    0
@@ -21,10 +21,10 @@
 #define AV_BLACK 2
 #define AV_WHITE 3
 
-#define BCASTLEK 0b10
-#define BCASTLEQ 0b100
-#define WCASTLEK 0b1000
-#define WCASTLEQ 0b10000
+#define BCASTLEK 0b1
+#define BCASTLEQ 0b10
+#define WCASTLEK 0b100
+#define WCASTLEQ 0b1000
 
 #define C_MASK_WK 0x6ULL
 #define C_MASK_WQ 0x70ULL

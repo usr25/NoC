@@ -178,7 +178,7 @@ Board defaultBoard()
     b.color[AV_BLACK] = ~ INITIAL_BPIECES;
     b.color[AV_WHITE] = ~ INITIAL_WPIECES;
 
-    b.castleInfo =  0b11110;
+    b.castleInfo =  0b1111;
     b.allPieces = INITIAL_WPIECES | INITIAL_BPIECES;
     b.turn = WHITE;
 

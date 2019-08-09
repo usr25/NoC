@@ -129,7 +129,7 @@ void isready(void)
 void perft_(Board b, int depth)
 {
     clock_t startTime = clock();
-    printf("Node count: %llu\n", perftRecursive(b, depth));
+    printf("Node count: %llu\n", perft(b, depth, 1));
     printf("Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
 }
 void eval_(Board b)

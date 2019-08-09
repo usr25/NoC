@@ -27,15 +27,15 @@ inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 
 static inline int kingMoved(const int color)
 {
-    return ~ (3 << ((color << 1) + 1));
+    return ~ (3 << (color << 1));
 }
 static inline int rookMoved(const int color, const int from)
 {
     if (from == 56 * (1 ^ color))
-        return ~ (1 << ((color << 1) | 1));
+        return ~ (1 << (color << 1));
 
     else if (from == 56 * (1 ^ color) + 7)
-        return ~ (2 << ((color << 1) | 1));
+        return ~ (2 << (color << 1));
 
     return 0b111111;
 }

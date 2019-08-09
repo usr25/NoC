@@ -210,7 +210,6 @@ AttacksOnK getCheckTiles(Board* b, const int color)
         (b->piece[opp][PAWN] & pawnCaptures(lsb, color)) | (b->piece[opp][KNIGHT] & getKnightMoves(lsb));
 
     int num = res != 0;
-    int obstacle;
 
     uint64_t stra = (b->piece[opp][QUEEN] | b->piece[opp][ROOK]) & getRookMagicMoves(lsb, b->allPieces);
     uint64_t diag = (b->piece[opp][QUEEN] | b->piece[opp][BISH]) & getBishMagicMoves(lsb, b->allPieces);
