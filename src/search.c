@@ -64,11 +64,11 @@ Move bestTime(Board b, const double timeToMove, Repetition rep)
 
         /*Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
          *the program will be able to finish another depth
-         *(3.5 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
+         *(3 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
          * or
          * it has found mate
          */
-        if (3.5 * (last - start) > timeToMove || abs(best.score) >= PLUS_MATE)
+        if (3 * (double)(last - start) > timeToMove || abs(best.score) >= PLUS_MATE)
             break;
     }
 
@@ -193,7 +193,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
             newHash = makeMoveHash(prevHash, &b, list[i], h);
             if (m.capture > 0 && insuffMat(b))
                 val = 0;
-            else if(isThreeRep(rep, newHash))
+            else if(isThreeRep(rep, newHash) || b.fifty >= 50)
                 val = 0;
             else
             {
@@ -248,7 +248,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
             newHash = makeMoveHash(prevHash, &b, list[i], h);
             if (m.capture > 0 && insuffMat(b))
                 val = 0;
-            else if(isThreeRep(rep, newHash))
+            else if(isThreeRep(rep, newHash) || b.fifty >= 50)
                 val = 0;
             else
             {

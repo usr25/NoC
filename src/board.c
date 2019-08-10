@@ -13,6 +13,7 @@
  White pieces
 */
 #include <stdio.h>
+#include <assert.h>
 #include "../include/global.h"
 #include "../include/board.h"
 
@@ -66,6 +67,7 @@ int color(char piece)
     return 'A' <= piece && piece <= 'Z';
 }
 
+//TODO: 50 moves in the fen are ignored, the moves are set to 0
 Board genFromFen(char* const fen, int* counter)
 {
     Board b = (Board) {};
@@ -134,22 +136,11 @@ Board genFromFen(char* const fen, int* counter)
         b.enPass = getIndex(fen[i], fen[i+1]) - (2 * b.turn - 1) * 8;
         i+=2;
     }
-    i++;
 
+    b.fifty = 0;
 
-    if (fen[i+1] >= '0' && fen[i+1] <= '9')
-    {
-        i++;
-        int fifty = (fen[i++] - '0'); //TODO: Implement this in the board struct for the fifty move rule
-        if (fen[i] != ' ')
-            fifty = 10 * fifty + fen[i++] - '0';
-
-        int numMoves = (fen[++i] - '0');
-        i++;
-
-        while(fen[i] != ' ' && fen[i] != '\0')
-            numMoves = 10 * numMoves + (fen[i++] - '0');
-    }
+    assert(POPCOUNT(b.piece[WHITE][KING]) == 1);
+    assert(POPCOUNT(b.piece[BLACK][KING]) == 1);
 
     *counter = i;
     return b;

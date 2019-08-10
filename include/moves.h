@@ -34,6 +34,7 @@ typedef struct
     uint64_t allPieces;
     int castleInfo;
     int enPass;
+    int fifty;
 }History;
 
 /* Struct that holds the information about the number of attackers

@@ -27,13 +27,13 @@ int main(const int argc, char** const argv)
     populateMagics();
 
     //runTests();
-    slowTests();  //57'5s
-    //slowEval();   //6'4s null, 8'7s
+    //slowTests();  //57'8s
+    //slowEval();   //6'6s null, 8'7s
 
     //printf("%d\n", perft(6, 1)); //3'7s
     //printf("%d\n", perft(7, 1)); //1:31m
 
-    //loop();
+    loop();
 
     return 0;
 }

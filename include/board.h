@@ -17,6 +17,7 @@ typedef struct
     int turn;
     int castleInfo;
     int enPass;
+    int fifty;
 } Board;
 
 int textToPiece(char piece);
