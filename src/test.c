@@ -18,6 +18,8 @@
 #include <string.h>
 //TODO: Add support #include <assert.h>
 
+#define PATH "/home/j/Desktop/Chess/Engine/perfts.fen"
+
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
 //8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns
 //5N2/5Pkq/5p2/3P4/3pKQ2/3n4/8/8 w - -                      King moves
@@ -912,7 +914,71 @@ int testRookMate()
     return white && black;
 }
 
-void slowEval()
+void clear(char* str)
+{
+    for (int i = 0; i < 256; ++i){
+        str[i] = '\0';
+    }
+}
+int upTo(FILE* fp, char* buf, char target)
+{
+    clear(buf);
+    int i = 0;
+    char ch = ' ';
+
+    while (ch != EOF){
+        ch = fgetc(fp);
+        if (ch == target)
+            break;
+        else
+            buf[i] = ch;
+        i++;
+    }
+
+    return (ch == EOF);
+}
+
+void parseFensFromFile(void)
+{
+    FILE* fp = fopen(PATH, "r");
+    if (fp == NULL)
+    {
+        printf("[-] Cant open file %s\n", PATH);
+        return;
+    }
+
+    Board b;
+    uint64_t tot = 0;
+    char buff[256] = "";
+    int hasEnded = 0;
+
+    int depth, perft, cnt = 0;
+    //fen,depth,perft(TODO:,move)
+    //Dont put spaces, except in the fen
+    while (!hasEnded)
+    {
+        hasEnded = upTo(fp, buff, ',');
+        if (hasEnded) break;
+        b = genFromFen(buff, &ignore);
+        hasEnded = upTo(fp, buff, ',');
+        depth = atoi(buff);
+        hasEnded = upTo(fp, buff, '\n');
+        perft = atoi(buff);
+
+        uint64_t temp = perftRecursive(b, depth);
+        tot += temp;
+        if (temp != perft)
+            printf("Error at %d\n", cnt + 1);
+        if (cnt % 10 == 0)
+            printf("%d\n", cnt);
+        cnt++;
+    }
+
+    fclose(fp);
+    printf("Evaluated %d positions and %llu nodes\n", cnt, tot);
+}
+
+void slowEval(void)
 {
     printf("\n---= This will take a long time =---\n");
     
@@ -975,11 +1041,10 @@ void slowEval()
 
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);
-
 }
 
 //This are deep perfts to ensure that everything is working, use this as well to benchmark
-void slowTests()
+void slowTests(void)
 {
     printf("\n---= This will take a long time =---\n");
     Board b;
@@ -1034,7 +1099,7 @@ void slowTests()
     printf("Complex: %d\n", perftRecursive(b, 6) == 706045033ULL);
 }
 
-void runTests()
+void runTests(void)
 {
     //Generation
     printf("[+] Generation: %d\n",      testGeneration());
@@ -1072,4 +1137,25 @@ void runTests()
 
     //Hash
     printf("[+] Hash: %d\n",            testHashing());
+}
+
+void chooseTest(int mode)
+{
+    switch (mode)
+    {
+        case 0:
+            runTests();
+            break;
+        case 1:
+            slowTests();
+            break;
+        case 2:
+            parseFensFromFile();
+            break;
+        case 3:
+            slowEval();
+            break;
+        default:
+            printf("Choose mode\n");
+    }
 }

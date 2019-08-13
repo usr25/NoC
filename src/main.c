@@ -26,12 +26,8 @@ int main(const int argc, char** const argv)
     initialize();
     populateMagics();
 
-    //runTests();
-    //slowTests();  //57'8s
-    //slowEval();   //6'6s null, 8'7s
-
-    //printf("%d\n", perft(6, 1)); //3'7s
-    //printf("%d\n", perft(7, 1)); //1:31m
+    //0, 1->57'8, 2->2:20, 3->6'6
+    //chooseTest(1);
 
     loop();
 

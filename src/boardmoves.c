@@ -37,7 +37,7 @@ static inline int rookMoved(const int color, const int from)
     else if (from == 56 * (1 ^ color) + 7)
         return ~ (2 << (color << 1));
 
-    return 0b111111;
+    return 0b1111;
 }
 
 static inline void flipBits(Board* b, const uint64_t from, const int piece, const int color)

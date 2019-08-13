@@ -3,7 +3,7 @@
 An attempt at making a chess engine from scratch. Under development.
 
 ### Warnings: 
-    * It works, however, there is currently no support for 50-move rule
+Currently the TTs give some trouble
 
 
 ### Use
