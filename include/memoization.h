@@ -1,4 +1,4 @@
-void initialize(void);
+void initMemo(void);
 
 uint64_t kingMoves[64];
 uint64_t knightMoves[64];

@@ -3,7 +3,6 @@
  */
 
 #include <stdio.h>
-#include <time.h>
 
 #include "../include/global.h"
 #include "../include/memoization.h"
@@ -23,10 +22,10 @@
 //TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove
 int main(const int argc, char** const argv)
 {
-    initialize();
-    populateMagics();
+    initMemo();
+    initMagics();
 
-    //0, 1->57'8, 2->2:20, 3->6'6
+    //0, 1->57'8, 2->2:20, 3->9'2, 7'9 TT
     //chooseTest(1);
 
     loop();

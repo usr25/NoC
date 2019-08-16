@@ -21,26 +21,32 @@
 //If there is a capture, this is the search will continue for CAPT_DEPTH
 #define CAPT_DEPTH 1
 //Depth of the null move prunning
-#define R 2
+#define R 3
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
 #define PLUS_INF  99999999
 #define MINS_INF -99999999
 
-int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep);
+int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep);
 int bestMoveBruteValue(Board b, const int depth);
 
 void sort(Move* list, const int numMoves, const int to);
 
-static inline int rookVSKing(Board b)
+static inline int rookVSKing(const Board b)
 {
     return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
+}
+
+static inline int onlyPawns(const Board b)
+{
+    return POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) == 2;
 }
 
 double startT;
 double timeToMoveT;
 int calledTiming = 0;
+uint64_t nodes = 0;
 //TODO: Use Move.score to return if it has mate, so that it can end sooner
 //TODO: Sort the moves base on the result of the previous iteration
 //Pass timeToMove with a small buffer
@@ -59,7 +65,7 @@ Move bestTime(Board b, const double timeToMove, Repetition rep)
         clock_t elapsed = (double)(last - start);
         if (elapsed > timeToMove)
             break;
-        
+
         best = temp;
 
         /*Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
@@ -81,6 +87,7 @@ int callDepth;
 int notCallDepthParity;
 Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
 {
+    nodes = 0;
     if (rookVSKing(b)) return rookMate(b);
     if (depth == 0) return (Move) {};
     callDepth = depth;
@@ -111,7 +118,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
         else
         {
             rep.hashTable[rep.index++] = newHash;
-            val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, newHash, list[i], &rep);
+            val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, 0, newHash, list[i], &rep);
             --rep.index;
         }
         undoMove(&b, list[i], &h);
@@ -141,22 +148,24 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
         }
     }
 
+    //printf("nodes: %llu\n", nodes);
     return currBest;
 }
-int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uint64_t prevHash, Move m, Repetition* rep)
+int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep)
 {
     if (calledTiming && (double)clock() - startT > timeToMoveT)
         return 0;
 
+    nodes++;
     //Null move pruning
-    if (depth > R && m.capture < 1 && (depth & 1) ^ notCallDepthParity && !isInCheck(&b, b.turn))
+    if (!null && depth > R && m.capture < 1 && !isInCheck(&b, b.turn) && !onlyPawns(b))
     {
         int score;
         Repetition rep_ = (Repetition){.index = 0};
         if (b.turn)
         {
             b.turn ^= 1;
-            score = alphaBeta(b, beta + 1, beta, R, capt, 0, m, &rep_);
+            score = alphaBeta(b, beta + 1, beta, depth - R, capt, 1, 0, m, &rep_);
             b.turn ^= 1;
             if (score >= beta)
                 return beta;
@@ -164,7 +173,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
         else
         {
             b.turn ^= 1;
-            score = alphaBeta(b, alpha, alpha - 1, R, capt, 0, m, &rep_);
+            score = alphaBeta(b, alpha, alpha - 1, depth - R, capt, 1, 0, m, &rep_);
             b.turn ^= 1;
             if (score <= alpha)
                 return alpha;
@@ -181,186 +190,72 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, const uin
 
     sort(list, numMoves, m.to);
 
-    int val, best, index;
+    int val, index, exit = 1;
     uint64_t newHash;
-    if (b.turn)
-    {
-        best = MINS_INF;
 
-        for (int i = 0; i < numMoves; ++i)
+    int best = b.turn? MINS_INF : PLUS_INF;
+    int mate = b.turn? PLUS_MATE : MINS_MATE;
+
+    for (int i = 0; i < numMoves && exit; ++i)
+    {
+        makeMove(&b, list[i], &h);
+        newHash = makeMoveHash(prevHash, &b, list[i], h);
+        if (m.capture > 0 && insuffMat(b))
+            val = 0;
+        else if(isThreeRep(rep, newHash))
+            val = 0;
+        else
         {
-            makeMove(&b, list[i], &h);
-            newHash = makeMoveHash(prevHash, &b, list[i], h);
-            if (m.capture > 0 && insuffMat(b))
-                val = 0;
-            else if(isThreeRep(rep, newHash) || b.fifty >= 50)
-                val = 0;
-            else
+            rep->hashTable[rep->index++] = newHash;
+            if (depth == 1)
             {
-                rep->hashTable[rep->index++] = newHash;
-                if (depth == 1)
+                nodes++;
+                index = newHash & MOD_ENTRIES;
+                if (table[index].key == newHash)
                 {
-                    index = newHash & MOD_ENTRIES;
-                    if (table[index].key == newHash)
-                    {
-                        val = table[index].val;
-                        if (val > PLUS_MATE) val -= table[index].depth + 1;
-                    }
-                    else if (capt && list[i].capture > 0)
-                    {
-                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                        table[index] = (Eval) {.key = newHash, .val = val, .depth = 1};
-                    }
-                    else
-                    {
-                        val = eval(b);
-                    }
+                    val = table[index].val;
+                    if (val > mate) val -= table[index].depth + 1;
+                }
+                else if (capt && list[i].capture > 0)
+                {
+                    val = alphaBeta(b, alpha, beta, 1, capt - 1, null, newHash, list[i], rep);
+                    table[index] = (Eval) {.key = newHash, .val = val, .depth = 1};
                 }
                 else
                 {
-                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
-                    table[newHash & MOD_ENTRIES] = (Eval) {.key = newHash, .val = val, .depth = depth};
-                }
-                --rep->index;
-            }
-
-            if(val > best)
-            {
-                best = val;
-                if(val > alpha)
-                {
-                    alpha = val;
-                    if (beta <= alpha || val > PLUS_MATE + depth - 2)
-                        break; //Pruning or it has found a mate in 1, either case, break
+                    val = eval(b);
                 }
             }
-
-            undoMove(&b, list[i], &h);
-        }
-    }
-    else
-    {
-        best = PLUS_INF;
-
-        for (int i = 0; i < numMoves; ++i)
-        {
-            makeMove(&b, list[i], &h);
-            newHash = makeMoveHash(prevHash, &b, list[i], h);
-            if (m.capture > 0 && insuffMat(b))
-                val = 0;
-            else if(isThreeRep(rep, newHash) || b.fifty >= 50)
-                val = 0;
             else
             {
-                rep->hashTable[rep->index++] = newHash;
-                if (depth == 1)
-                {
-                    index = newHash & MOD_ENTRIES;
-                    if (table[index].key == newHash)
-                    {
-                        val = table[index].val;
-                        if (val < MINS_MATE) val += table[index].depth + 1;
-                    }
-                    else if (capt && list[i].capture > 0)
-                    {
-                        val = alphaBeta(b, alpha, beta, 1, capt - 1, newHash, list[i], rep);
-                        table[index] = (Eval) {.key = newHash, .val = val, .depth = 1};
-                    }
-                    else
-                    {
-                        val = eval(b);
-                    }
-                }
-                else
-                {
-                    val = alphaBeta(b, alpha, beta, depth - 1, capt, newHash, list[i], rep);
-                    table[newHash & MOD_ENTRIES] = (Eval) {.key = newHash, .val = val, .depth = depth};
-                }
-                --rep->index;
+                val = alphaBeta(b, alpha, beta, depth - 1, capt, null, newHash, list[i], rep);
+                table[newHash & MOD_ENTRIES] = (Eval) {.key = newHash, .val = val, .depth = depth};
             }
+            --rep->index;
+        }
 
-            if(val < best)
+        if(!b.turn && val > best)
+        {
+            best = val;
+            if(val > alpha)
             {
-                best = val;
-                if(val < beta)
-                {
-                    beta = val;
-                    if (beta <= alpha || val < MINS_MATE - depth + 2)
-                        break; //Prunning or it has found a mate in 1, either case, break
-                }
+                alpha = val;
+                if (beta <= alpha || val > PLUS_MATE + depth - 2)
+                    break; //Pruning or it has found a mate in 1, either case, break
             }
-
-            undoMove(&b, list[i], &h);
         }
-    }
-    
-    return best;
-}
+        else if(b.turn && val < best)
+        {
+            best = val;
+            if(val < beta)
+            {
+                beta = val;
+                if (beta <= alpha || val < MINS_MATE - depth + 2)
+                    break; //Prunning or it has found a mate in 1, either case, break
+            }
+        }
 
-Move bestMoveBrute(Board b, const int depth, int divide)
-{
-    if (rookVSKing(b)) return rookMate(b);
-    Move list[200];
-    History h;
-
-    int numMoves = legalMoves(&b, list) >> 1;
-    int best = b.turn ? MINS_INF : PLUS_INF;
-    int val;
-    Move currBest = list[0];
-
-    for (int i = 0; i < numMoves; ++i)
-    {
-        makeMove(&b, list[i], &h);
-        val = bestMoveBruteValue(b, depth - 1);
         undoMove(&b, list[i], &h);
-
-        if (divide)
-        {
-            drawMove(list[i]);
-            printf(": %d\n", val);
-        }
-
-        if (b.turn && val > best)
-        {
-            currBest = list[i];
-            best = val;
-        }
-        else if (!b.turn && val < best)
-        {
-            currBest = list[i];
-            best = val;
-        }
-    }
-
-    return currBest;
-}
-int bestMoveBruteValue(Board b, int depth)
-{
-    if (depth == 0) return eval(b);
-
-    Move list[200];
-    History h;
-
-    int lgm = legalMoves(&b, list);
-    int numMoves = lgm >> 1;
-    
-    if (! numMoves)
-        return lgm * (b.turn ? MINS_MATE - depth : PLUS_MATE + depth);
-
-
-    int best = b.turn ? MINS_INF : PLUS_INF;
-    int val;
-
-    for (int i = 0; i < numMoves; ++i)
-    {
-        makeMove(&b, list[i], &h);
-        val = bestMoveBruteValue(b, depth - 1);
-        undoMove(&b, list[i], &h);
-
-        if (b.turn && val > best)
-            best = val;
-        else if (!b.turn && val < best)
-            best = val;
     }
 
     return best;

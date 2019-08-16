@@ -329,7 +329,7 @@ void genBPassedPawn(void)
     }
 }
 
-void initialize(void)
+void initMemo(void)
 {
     initializePOW2();
 

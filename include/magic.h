@@ -1,5 +1,5 @@
 void genMagics(void);
-void populateMagics(void);
+void initMagics(void);
 
 //This arent optimal magics space wise, older hardware with smaller caches may suffer
 uint64_t bishMagicMoves[64] [512];

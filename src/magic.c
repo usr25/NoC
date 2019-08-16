@@ -25,7 +25,7 @@ static inline uint64_t random_uint64()
 
 /* Populate the arrays
  */
-void populateMagics(void)
+void initMagics(void)
 {
     populateRookMagics();
     populateBishMagics();
@@ -44,7 +44,7 @@ void genMagics(void)
         bishMagic[i] = findMagic(i, 1);
     }
 
-    populateMagics();
+    initMagics();
 }
 
 /* Generate the respective bb from a mask, this is used to enumerate all
