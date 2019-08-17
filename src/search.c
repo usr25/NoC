@@ -24,6 +24,8 @@
 #define CAPT_DEPTH 1
 //Depth of the null move prunning
 #define R 3
+//Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
+#define MARGIN 5
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
@@ -46,8 +48,8 @@ static inline int onlyPawns(const Board b)
     return POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) == 2;
 }
 
-double startT;
-double timeToMoveT;
+clock_t startT;
+clock_t timeToMoveT;
 int calledTiming = 0;
 uint64_t nodes = 0;
 //TODO: Use Move.score to return if it has mate, so that it can end sooner
@@ -212,7 +214,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep)
 {
-    if (calledTiming && (double)clock() - startT > timeToMoveT)
+    if (calledTiming && clock() - startT > timeToMoveT)
         return 0;
 
     nodes++;
@@ -226,7 +228,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
             b.turn ^= 1;
             score = alphaBeta(b, beta + 1, beta, depth - R, capt, 1, 0, m, &rep_);
             b.turn ^= 1;
-            if (score >= beta)
+            if (score >= beta - MARGIN)
                 return beta;
         }
         else
@@ -234,7 +236,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
             b.turn ^= 1;
             score = alphaBeta(b, alpha, alpha - 1, depth - R, capt, 1, 0, m, &rep_);
             b.turn ^= 1;
-            if (score <= alpha)
+            if (score <= alpha + MARGIN)
                 return alpha;
         }
     }
@@ -244,7 +246,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
     int lgm = legalMoves(&b, list); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate
 
     int numMoves = lgm >> 1;
-    if (! numMoves)
+    if (!numMoves)
         return lgm * (b.turn ? MINS_MATE - depth : PLUS_MATE + depth);
 
     assignScores(list, numMoves, m.to);
@@ -254,7 +256,6 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
     uint64_t newHash;
 
     int best = b.turn? MINS_INF : PLUS_INF;
-    int mate = b.turn? PLUS_MATE : MINS_MATE;
 
     for (int i = 0; i < numMoves && exit; ++i)
     {
@@ -274,7 +275,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
                 if (table[index].key == newHash)
                 {
                     val = table[index].val;
-                    if (val > mate) val -= table[index].depth + 1;
+                    if (val > (b.turn? PLUS_MATE : MINS_MATE)) val -= table[index].depth + 1;
                 }
                 else if (capt && list[i].capture > 0)
                 {
