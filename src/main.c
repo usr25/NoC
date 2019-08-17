@@ -25,7 +25,7 @@ int main(const int argc, char** const argv)
     initMemo();
     initMagics();
 
-    //0, 1->57'8, 2->2:20, 3->9'2, 7'9 TT
+    //0, 1->57'8, 2->9'2, 7'9 TT, 3->2:20, 4->1:55
     //chooseTest(1);
 
     loop();

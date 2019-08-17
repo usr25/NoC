@@ -11,12 +11,13 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 #include "../include/mate.h"
+#include "../include/uci.h"
 #include "../include/io.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <math.h>
+//#include <math.h>
 
 //If there is a capture, this is the search will continue for CAPT_DEPTH
 #define CAPT_DEPTH 1
@@ -37,7 +38,6 @@ static inline int rookVSKing(const Board b)
 {
     return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
 }
-
 static inline int onlyPawns(const Board b)
 {
     return POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) == 2;
@@ -148,7 +148,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
         }
     }
 
-    //printf("nodes: %llu\n", nodes);
+    infoString(currBest, depth, nodes);
     return currBest;
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep)
@@ -207,10 +207,10 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
         else
         {
             rep->hashTable[rep->index++] = newHash;
+            index = newHash & MOD_ENTRIES;
             if (depth == 1)
             {
                 nodes++;
-                index = newHash & MOD_ENTRIES;
                 if (table[index].key == newHash)
                 {
                     val = table[index].val;
@@ -229,7 +229,7 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
             else
             {
                 val = alphaBeta(b, alpha, beta, depth - 1, capt, null, newHash, list[i], rep);
-                table[newHash & MOD_ENTRIES] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
             }
             --rep->index;
         }

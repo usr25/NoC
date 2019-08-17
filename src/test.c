@@ -18,7 +18,7 @@
 #include <string.h>
 //TODO: Add support #include <assert.h>
 
-#define PATH "/home/j/Desktop/Chess/Engine/perfts.fen"
+#define PATH "/home/j/Desktop/Chess/Engine/positions.fen"
 
 //rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
 //8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns
@@ -938,7 +938,7 @@ int upTo(FILE* fp, char* buf, char target)
     return (ch == EOF);
 }
 
-void parseFensFromFile(void)
+void parseFensFromFilePerft(void)
 {
     FILE* fp = fopen(PATH, "r");
     if (fp == NULL)
@@ -976,6 +976,39 @@ void parseFensFromFile(void)
 
     fclose(fp);
     printf("Evaluated %d positions and %llu nodes\n", cnt, tot);
+}
+
+void parseFensFromFileEva(void)
+{
+    FILE* fp = fopen(PATH, "r");
+    if (fp == NULL)
+    {
+        printf("[-] Cant open file %s\n", PATH);
+        return;
+    }
+
+    Board b;
+    char buff[256] = "";
+    int hasEnded = 0, depth = 6, cnt = 0;
+
+    //fen,depth,perft(TODO:,move)
+    //Dont put spaces, except in the fen
+    while (!hasEnded)
+    {
+        hasEnded = upTo(fp, buff, ',');
+        if (hasEnded) break;
+        b = genFromFen(buff, &ignore);
+        hasEnded = upTo(fp, buff, '\n');
+
+        Repetition rep = (Repetition) {.index = 0};
+        drawMove(bestMoveAB(b, depth, 0, rep));
+        printf("\n");
+        if (cnt % 10 == 0)
+            printf("cnt: %d\n", cnt);
+        cnt++;
+    }
+
+    fclose(fp);
 }
 
 void slowEval(void)
@@ -1150,10 +1183,13 @@ void chooseTest(int mode)
             slowTests();
             break;
         case 2:
-            parseFensFromFile();
+            slowEval();
             break;
         case 3:
-            slowEval();
+            parseFensFromFilePerft();
+            break;
+        case 4:
+            parseFensFromFileEva();
             break;
         default:
             printf("Choose mode\n");

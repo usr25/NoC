@@ -216,15 +216,15 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
         if(piece != NO_PIECE)
         {
             m.promotion = piece;
-            prom++;
+            prom = 1;
         }
-        if (abs(from - to) == 16)
+        else if (abs(from - to) == 16)
             b->enPass = to;
-
-        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[1 ^ b->turn][PAWN] & POW2[b->enPass]))
-            m.enPass = b->enPass;
-        else if (b->enPass - from == -1 && (from & 7) != 0 && (b->piece[1 ^b->turn][PAWN] & POW2[b->enPass]))
-            m.enPass = b->enPass;
+        else if (b->enPass)
+        {
+            if ((b->turn && to - b->enPass == 8) || (!b->turn && to - b->enPass == -8))
+                m.enPass = b->enPass;
+        }
     }
 
     History h;
@@ -272,4 +272,10 @@ Board gen_(char* beg, Repetition* rep)
     }
 
     return b;
+}
+
+void infoString(const Move m, const int depth, const uint64_t nodes)
+{
+    fprintf(stdout, "info score cp %d depth %d nodes %llu\n", m.score, depth, nodes);
+    fflush(stdout);
 }
