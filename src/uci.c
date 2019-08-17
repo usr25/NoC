@@ -172,15 +172,17 @@ void best_time(Board b, char* beg, Repetition* rep)
     Move best;
     char mv[6] = "";
 
-    btime -= 50;
-    wtime -= 50;
+    btime -= 20;
+    wtime -= 20;
 
-    if (callDepth == 0){
-        int relevantTime = (b.turn? wtime : btime) / 41; // time / 32
-        double calcTime = relevantTime * (CLOCKS_PER_SEC / 1000.);
+    if (!callDepth)
+    {
+        clock_t relevantTime = (b.turn? wtime : btime) / 41; // time / 32
+        clock_t calcTime = (relevantTime * CLOCKS_PER_SEC) / 1000;
         best = bestTime(b, calcTime, *rep);
     }
-    else{
+    else
+    {
         best = bestMoveAB(b, callDepth, 0, *rep);
     }
     moveToText(best, mv);
@@ -219,7 +221,9 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
             prom = 1;
         }
         else if (abs(from - to) == 16)
+        {
             b->enPass = to;
+        }
         else if (b->enPass)
         {
             if ((b->turn && to - b->enPass == 8) || (!b->turn && to - b->enPass == -8))

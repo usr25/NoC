@@ -10,12 +10,7 @@
 #include "../include/test.h"
 #include "../include/moves.h"
 #include "../include/hash.h"
-#include "../include/perft.h"
-#include "../include/search.h"
 #include "../include/uci.h"
-#include "../include/mate.h"
-#include "../include/evaluation.h"
-#include "../include/io.h"
 #include "../include/magic.h"
 
 //position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4

@@ -2,6 +2,11 @@
  * Performs the actual search to find the best move
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+//#include <math.h>
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -14,10 +19,6 @@
 #include "../include/uci.h"
 #include "../include/io.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-//#include <math.h>
 
 //If there is a capture, this is the search will continue for CAPT_DEPTH
 #define CAPT_DEPTH 1
@@ -29,10 +30,12 @@
 #define PLUS_INF  99999999
 #define MINS_INF -99999999
 
+Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep);
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep);
 int bestMoveBruteValue(Board b, const int depth);
 
-void sort(Move* list, const int numMoves, const int to);
+static inline void assignScores(Move* list, const int numMoves, const int to);
+void sort(Move* list, const int numMoves);
 
 static inline int rookVSKing(const Board b)
 {
@@ -50,31 +53,36 @@ uint64_t nodes = 0;
 //TODO: Use Move.score to return if it has mate, so that it can end sooner
 //TODO: Sort the moves base on the result of the previous iteration
 //Pass timeToMove with a small buffer
-Move bestTime(Board b, const double timeToMove, Repetition rep)
+Move bestTime(Board b, const clock_t timeToMove, Repetition rep)
 {
     calledTiming = 1;
     timeToMoveT = timeToMove;
-    clock_t start = clock();
+    clock_t start = clock(), last;
     startT = start;
-    
-    Move best, temp;
-    for (int i = 3; i <= 20; ++i)
+
+    Move list[200];
+    int numMoves = legalMoves(&b, list) >> 1;
+    Move best = list[0], temp;
+    for (int depth = 2; depth <= 20; ++depth)
     {
-        temp = bestMoveAB(b, i, 0, rep);
-        clock_t last = clock();
-        clock_t elapsed = (double)(last - start);
+        nodes = 0;
+        temp = bestMoveList(b, depth, list, numMoves, rep);
+        last = clock();
+        clock_t elapsed = last - start;
         if (elapsed > timeToMove)
             break;
 
         best = temp;
 
-        /*Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
-         *the program will be able to finish another depth
-         *(3 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
+        /*
+         * Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
+         * the program will be able to finish another depth
+         * (3 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
          * or
          * it has found mate
          */
-        if (3 * (double)(last - start) > timeToMove || abs(best.score) >= PLUS_MATE)
+        infoString(best, depth, nodes);
+        if (3 * (last - start) > timeToMove || abs(best.score) >= PLUS_MATE)
             break;
     }
 
@@ -82,27 +90,78 @@ Move bestTime(Board b, const double timeToMove, Repetition rep)
     return best;
 }
 
-
 int callDepth;
-int notCallDepthParity;
+Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep)
+{
+    nodes = 0;
+    if (rookVSKing(b)) return rookMate(b);
+    if (depth == 0) return (Move) {};
+    callDepth = depth;
+    //initializeTable();
+
+    History h;
+
+    sort(list, numMoves);
+
+    Move currBest = list[0];
+    int val;
+
+    uint64_t hash = hashPosition(&b); //The position should be already added to res
+    int alpha = MINS_INF, beta = PLUS_INF;
+
+    for (int i = 0; i < numMoves; ++i)
+    {
+        makeMove(&b, list[i], &h);
+        uint64_t newHash = makeMoveHash(hash, &b, list[i], h);
+        if (insuffMat(b) || isThreeRep(&rep, newHash))
+            val = 0;
+        else
+        {
+            rep.hashTable[rep.index++] = newHash;
+            val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, 0, newHash, list[i], &rep);
+            --rep.index;
+        }
+        undoMove(&b, list[i], &h);
+
+        if (b.turn && val > alpha)
+        {
+            currBest = list[i];
+            alpha = val;
+            //No need to keep searching once it has found a mate in 1
+            if (val > PLUS_MATE + depth - 2)
+                break;
+        }
+        else if (!b.turn && val < beta)
+        {
+            currBest = list[i];
+            beta = val;
+            if (val < MINS_MATE - depth + 2)
+                break;
+        }
+
+        //For the sorting
+        list[i].score = b.turn? val: -val;
+    }
+
+    //infoString(currBest, depth, nodes);
+    return currBest;
+}
 Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
 {
     nodes = 0;
     if (rookVSKing(b)) return rookMate(b);
     if (depth == 0) return (Move) {};
     callDepth = depth;
-    notCallDepthParity = 1 ^ (depth & 1);
     //initializeTable();
-    
-    const int color = b.turn;
 
     Move list[200];
     History h;
 
     int numMoves = legalMoves(&b, list) >> 1;
 
-    sort(list, numMoves, -1);
-    
+    assignScores(list, numMoves, -1);
+    sort(list, numMoves);
+
     Move currBest = list[0];
     int val;
 
@@ -131,7 +190,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
             printf(": %d\n", val);
         }
 
-        if (color && val > alpha)
+        if (b.turn && val > alpha)
         {
             currBest = list[i];
             alpha = val;
@@ -139,7 +198,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
             if (val > PLUS_MATE + depth - 2)
                 break;
         }
-        else if (!color && val < beta)
+        else if (!b.turn && val < beta)
         {
             currBest = list[i];
             beta = val;
@@ -148,7 +207,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
         }
     }
 
-    infoString(currBest, depth, nodes);
+    //infoString(currBest, depth, nodes);
     return currBest;
 }
 int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep)
@@ -188,7 +247,8 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
     if (! numMoves)
         return lgm * (b.turn ? MINS_MATE - depth : PLUS_MATE + depth);
 
-    sort(list, numMoves, m.to);
+    assignScores(list, numMoves, m.to);
+    sort(list, numMoves);
 
     int val, index, exit = 1;
     uint64_t newHash;
@@ -262,13 +322,8 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
 }
 
 
-/* Sorts all the moves based on their score
- * It is currently based on the MVV - LVA and a bonus if the piece captures the piece that moved the last time,
- * since it is likely it wont be protected
- */
 static const int score[6] = {80, 160, 240, 320, 400, 480};
-
-void sort(Move* list, const int numMoves, const int to)
+inline void assignScores(Move* list, const int numMoves, const int to)
 {
     for (int i = 0; i < numMoves; ++i)
     {
@@ -277,7 +332,14 @@ void sort(Move* list, const int numMoves, const int to)
                 score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4)  //LVA - MVV
                 +((to == list[i].to) << 7); //Bonus if it captures the piece that moved last time
     }
+}
 
+/* Sorts all the moves based on their score
+ * It is currently based on the MVV - LVA and a bonus if the piece captures the piece that moved the last time,
+ * since it is likely it wont be protected
+ */
+void sort(Move* list, const int numMoves)
+{
     //Insertion sort
     int j;
     Move temp;

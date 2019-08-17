@@ -2,6 +2,12 @@
  * File which holds some tests to quickly ensure everything is working
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+//TODO: Add support #include <assert.h>
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -12,11 +18,6 @@
 #include "../include/hash.h"
 #include "../include/search.h"
 #include "../include/perft.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-//TODO: Add support #include <assert.h>
 
 #define PATH "/home/j/Desktop/Chess/Engine/positions.fen"
 

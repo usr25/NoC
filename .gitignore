@@ -1,6 +1,8 @@
 *.o
+*.fen
 /obj
 main
 optimized
 usr
 DEV
+data
