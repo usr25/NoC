@@ -5,7 +5,7 @@ SDIR=src
 IDIR=include
 LICHESS=/home/j/Desktop/lichess/lichess-bot-master/engines/
 
-CFLAGS=-I.$(IDIR) -std=c11 -finline-functions
+CFLAGS=-I.$(IDIR) -std=c11 -finline-functions -lm
 
 DEPS=$(IDIR)/*
 

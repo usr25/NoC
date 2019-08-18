@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <time.h>
 
 #include "../include/global.h"
 #include "../include/memoization.h"

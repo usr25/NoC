@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-//#include <math.h>
+#include <assert.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -20,12 +20,10 @@
 #include "../include/io.h"
 
 
-//If there is a capture, this is the search will continue for CAPT_DEPTH
-#define CAPT_DEPTH 1
 //Depth of the null move prunning
 #define R 3
 //Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
-#define MARGIN 5
+#define MARGIN 2
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
@@ -33,10 +31,11 @@
 #define MINS_INF -99999999
 
 Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep);
-int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep);
+int alphaBeta(Board b, int alpha, int beta, const int depth, int null, const uint64_t prevHash, Move m, Move* prevBest, Repetition* rep);
 int bestMoveBruteValue(Board b, const int depth);
+int qsearch(Board b, int alpha, int beta, const Move m);
 
-static inline void assignScores(Move* list, const int numMoves, const int to);
+static inline void assignScores(Move* list, const int numMoves, const int to, Move* prevBest);
 void sort(Move* list, const int numMoves);
 
 static inline int rookVSKing(const Board b)
@@ -52,9 +51,7 @@ clock_t startT;
 clock_t timeToMoveT;
 int calledTiming = 0;
 uint64_t nodes = 0;
-//TODO: Use Move.score to return if it has mate, so that it can end sooner
-//TODO: Sort the moves base on the result of the previous iteration
-//Pass timeToMove with a small buffer
+
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep)
 {
     calledTiming = 1;
@@ -64,10 +61,12 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep)
 
     Move list[200];
     int numMoves = legalMoves(&b, list) >> 1;
+
     Move best = list[0], temp;
     for (int depth = 2; depth <= 20; ++depth)
     {
         nodes = 0;
+        sort(list, numMoves);
         temp = bestMoveList(b, depth, list, numMoves, rep);
         last = clock();
         clock_t elapsed = last - start;
@@ -79,12 +78,12 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep)
         /*
          * Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
          * the program will be able to finish another depth
-         * (3 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
+         * (2 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
          * or
          * it has found mate
          */
-        infoString(best, depth, nodes);
-        if (3 * (last - start) > timeToMove || abs(best.score) >= PLUS_MATE)
+        infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
+        if (2 * (last - start) > timeToMove || abs(best.score) >= PLUS_MATE)
             break;
     }
 
@@ -103,13 +102,12 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
 
     History h;
 
-    sort(list, numMoves);
-
     Move currBest = list[0];
+    Move prevBest = (Move) {.from = -1, .to = -1};
     int val;
 
     uint64_t hash = hashPosition(&b); //The position should be already added to res
-    int alpha = MINS_INF, beta = PLUS_INF;
+    int alpha = MINS_INF;
 
     for (int i = 0; i < numMoves; ++i)
     {
@@ -120,29 +118,21 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
         else
         {
             rep.hashTable[rep.index++] = newHash;
-            val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, 0, newHash, list[i], &rep);
+            val = -alphaBeta(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &prevBest, &rep);
             --rep.index;
         }
         undoMove(&b, list[i], &h);
 
-        if (b.turn && val > alpha)
+        if (val > alpha)
         {
             currBest = list[i];
             alpha = val;
             //No need to keep searching once it has found a mate in 1
-            if (val > PLUS_MATE + depth - 2)
-                break;
-        }
-        else if (!b.turn && val < beta)
-        {
-            currBest = list[i];
-            beta = val;
-            if (val < MINS_MATE - depth + 2)
-                break;
+            if (val > PLUS_MATE + depth - 2) break;
         }
 
         //For the sorting
-        list[i].score = b.turn? val: -val;
+        list[i].score = val;
     }
 
     //infoString(currBest, depth, nodes);
@@ -160,15 +150,16 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
     History h;
 
     int numMoves = legalMoves(&b, list) >> 1;
+    Move prevBest = (Move) {.from = -1, .to = -1};
 
-    assignScores(list, numMoves, -1);
+    assignScores(list, numMoves, -1, &prevBest);
     sort(list, numMoves);
 
     Move currBest = list[0];
     int val;
 
     uint64_t hash = hashPosition(&b); //The position should be already added to res
-    int alpha = MINS_INF, beta = PLUS_INF;
+    int alpha = MINS_INF;
 
     for (int i = 0; i < numMoves; ++i)
     {
@@ -179,7 +170,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
         else
         {
             rep.hashTable[rep.index++] = newHash;
-            val = alphaBeta(b, alpha, beta, depth - 1, CAPT_DEPTH, 0, newHash, list[i], &rep);
+            val = -alphaBeta(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &prevBest, &rep);
             --rep.index;
         }
         undoMove(&b, list[i], &h);
@@ -192,72 +183,60 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
             printf(": %d\n", val);
         }
 
-        if (b.turn && val > alpha)
+        if (val > alpha)
         {
             currBest = list[i];
             alpha = val;
             //No need to keep searching once it has found a mate in 1
-            if (val > PLUS_MATE + depth - 2)
-                break;
-        }
-        else if (!b.turn && val < beta)
-        {
-            currBest = list[i];
-            beta = val;
-            if (val < MINS_MATE - depth + 2)
-                break;
+            if (val > PLUS_MATE + depth - 2) break;
         }
     }
 
-    //infoString(currBest, depth, nodes);
     return currBest;
 }
-int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null, const uint64_t prevHash, Move m, Repetition* rep)
+
+
+int alphaBeta(Board b, int alpha, int beta, const int depth, int null, const uint64_t prevHash, Move m, Move* prevBest, Repetition* rep)
 {
+    nodes++;
     if (calledTiming && clock() - startT > timeToMoveT)
         return 0;
 
-    nodes++;
-    //Null move pruning
-    if (!null && depth > R && m.capture < 1 && !isInCheck(&b, b.turn) && !onlyPawns(b))
-    {
-        int score;
-        Repetition rep_ = (Repetition){.index = 0};
-        if (b.turn)
-        {
-            b.turn ^= 1;
-            score = alphaBeta(b, beta + 1, beta, depth - R, capt, 1, 0, m, &rep_);
-            b.turn ^= 1;
-            if (score >= beta - MARGIN)
-                return beta;
-        }
+    int isInC = isInCheck(&b, b.turn);
+
+    if (depth == 0)
+        if (isInC)
+            return alphaBeta(b, alpha, beta, 1, 0, prevHash, m, prevBest, rep);
         else
-        {
-            b.turn ^= 1;
-            score = alphaBeta(b, alpha, alpha - 1, depth - R, capt, 1, 0, m, &rep_);
-            b.turn ^= 1;
-            if (score <= alpha + MARGIN)
-                return alpha;
-        }
+            return qsearch(b, alpha, beta, m);
+
+    if (!null && depth > R && m.score < 10 && !isInC && !onlyPawns(b))
+    {
+        Repetition _rep = (Repetition) {.index = 0};
+        b.turn ^= 1;
+        int val = -alphaBeta(b, -beta, -beta + 1, depth - R - 1, 1, 0, m, prevBest, &_rep);
+        b.turn ^= 1;
+
+        if (val >= beta - MARGIN)
+            return beta;
     }
 
     Move list[200];
-    History h;
     int lgm = legalMoves(&b, list); //lgm is an int representing (2 * numMoves + isInCheck), in order to avoid having to check for mate
-
     int numMoves = lgm >> 1;
     if (!numMoves)
-        return lgm * (b.turn ? MINS_MATE - depth : PLUS_MATE + depth);
+        return lgm * (MINS_MATE - depth);
 
-    assignScores(list, numMoves, m.to);
+    History h;
+
+    assignScores(list, numMoves, m.to, prevBest);
     sort(list, numMoves);
 
-    int val, index, exit = 1;
     uint64_t newHash;
+    int best = MINS_INF, val, index;
+    Move currBest = (Move) {.from = -1, .to = -1};
 
-    int best = b.turn? MINS_INF : PLUS_INF;
-
-    for (int i = 0; i < numMoves && exit; ++i)
+    for (int i = 0; i < numMoves; ++i)
     {
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(prevHash, &b, list[i], h);
@@ -269,50 +248,33 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
         {
             rep->hashTable[rep->index++] = newHash;
             index = newHash & MOD_ENTRIES;
-            if (depth == 1)
+            if (table[index].key == newHash && table[index].depth == depth && table[index].val < alpha)
             {
-                nodes++;
-                if (table[index].key == newHash)
-                {
-                    val = table[index].val;
-                    if (val > (b.turn? PLUS_MATE : MINS_MATE)) val -= table[index].depth + 1;
-                }
-                else if (capt && list[i].capture > 0)
-                {
-                    val = alphaBeta(b, alpha, beta, 1, capt - 1, null, newHash, list[i], rep);
-                    table[index] = (Eval) {.key = newHash, .val = val, .depth = 1};
-                }
-                else
-                {
-                    val = eval(b);
-                }
+                val = table[index].val;
+                if (val > PLUS_MATE) val -= 1;
             }
             else
             {
-                val = alphaBeta(b, alpha, beta, depth - 1, capt, null, newHash, list[i], rep);
+                val = -alphaBeta(b, -beta, -alpha, depth - 1, null, newHash, list[i], &currBest, rep);
                 table[index] = (Eval) {.key = newHash, .val = val, .depth = depth};
+                if (m.promotion > 0)
+                    val += depth << 2;
             }
             --rep->index;
         }
 
-        if(!b.turn && val > best)
+        if (val > best)
         {
             best = val;
-            if(val > alpha)
+            if (best > alpha)
             {
-                alpha = val;
-                if (beta <= alpha || val > PLUS_MATE + depth - 2)
-                    break; //Pruning or it has found a mate in 1, either case, break
-            }
-        }
-        else if(b.turn && val < best)
-        {
-            best = val;
-            if(val < beta)
-            {
-                beta = val;
-                if (beta <= alpha || val < MINS_MATE - depth + 2)
-                    break; //Prunning or it has found a mate in 1, either case, break
+                alpha = best;
+
+                if (alpha >= beta)
+                {
+                    *prevBest = list[i];
+                    break;
+                }
             }
         }
 
@@ -322,9 +284,52 @@ int alphaBeta(Board b, int alpha, int beta, const int depth, int capt, int null,
     return best;
 }
 
+int qsearch(Board b, int alpha, int beta, const Move m)
+{
+    const int score = b.turn? eval(b) : -eval(b);
+
+    if (score >= beta)
+        return beta + MARGIN;
+
+    if (score > alpha)
+        alpha = score;
+
+    Move list[200];
+    History h;
+    int numMoves = legalMoves(&b, list) >> 1;
+
+    Move temp = (Move) {.from = -1, .to = -1};
+    assignScores(list, numMoves, m.to, &temp);
+    sort(list, numMoves);
+
+    int val;
+
+    for (int i = 0; i < numMoves; ++i)
+    {
+        if (list[i].capture < 1)
+            continue;
+
+        makeMove(&b, list[i], &h);
+
+        if (insuffMat(b))
+            val = 0;
+        else
+            val = -qsearch(b, -beta, -alpha, list[i]);
+
+        if (val >= beta)
+            return beta + MARGIN;
+
+        if (val > alpha)
+            alpha = val;
+
+        undoMove(&b, list[i], &h);
+    }
+
+    return alpha - MARGIN;
+}
 
 static const int score[6] = {80, 160, 240, 320, 400, 480};
-inline void assignScores(Move* list, const int numMoves, const int to)
+inline void assignScores(Move* list, const int numMoves, const int to, Move* prevBest)
 {
     for (int i = 0; i < numMoves; ++i)
     {
@@ -332,6 +337,8 @@ inline void assignScores(Move* list, const int numMoves, const int to)
             list[i].score = 
                 score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4)  //LVA - MVV
                 +((to == list[i].to) << 7); //Bonus if it captures the piece that moved last time
+        if (prevBest->from == list[i].from && prevBest->to == list[i].to)
+            list[i].score += 500;
     }
 }
 

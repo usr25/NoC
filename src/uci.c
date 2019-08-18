@@ -278,8 +278,8 @@ Board gen_(char* beg, Repetition* rep)
     return b;
 }
 
-void infoString(const Move m, const int depth, const uint64_t nodes)
+void infoString(const Move m, const int depth, const uint64_t nodes, const clock_t duration)
 {
-    fprintf(stdout, "info score cp %d depth %d nodes %llu\n", m.score, depth, nodes);
+    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu\n", m.score, depth, duration, nodes);
     fflush(stdout);
 }
