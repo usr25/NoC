@@ -7,6 +7,8 @@
 #define EPAS_OFFSET 768 //Index in the array of enPass for a given col arr[E_O + (eP & 7)]
 #define CAST_OFFSET 776 //Index in the array of the first castle. arr[C_O + color * 2 | castle >> 1]
 
+enum{LO, HI, EXACT};
+
 /* Struct to hold the information about a position for the transposition table
  * key -> Hash of the position
  * val -> Evaluation assigned to the position
@@ -18,6 +20,7 @@ typedef struct
     uint64_t key;
     int val;
     int depth;
+    int flag;
     Move m;
 } Eval;
 

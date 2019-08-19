@@ -829,7 +829,7 @@ int testHashingInPos(char* fen)
 {
     int a;
     Board b = genFromFen(fen, &a);
-    Move list[256];
+    Move list[NMOVES];
     History h;
 
     int numMoves = legalMoves(&b, list) >> 1;

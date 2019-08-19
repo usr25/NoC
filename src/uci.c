@@ -224,9 +224,9 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
         {
             b->enPass = to;
         }
-        else if (b->enPass)
+        else if (b->enPass && abs(from - to) != 8)
         {
-            if ((b->turn && to - b->enPass == 8) || (!b->turn && to - b->enPass == -8))
+            if ((b->turn && (to - b->enPass == 8)) || (!b->turn && (to - b->enPass == -8)))
                 m.enPass = b->enPass;
         }
     }

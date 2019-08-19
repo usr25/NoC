@@ -16,7 +16,7 @@ uint64_t results[10] = {1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 119
 
 uint64_t perftRecursive(Board b, const int depth)
 {
-    Move moves[200];
+    Move moves[NMOVES];
     History h;
     uint64_t tot = 0;
 
@@ -41,7 +41,7 @@ uint64_t perft(Board b, const int depth, int divide)
 {
     if (depth == 0) return 1;
 
-    Move moves[200];
+    Move moves[NMOVES];
     History h;
     uint64_t tot = 0;
 
