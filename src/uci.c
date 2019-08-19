@@ -179,11 +179,11 @@ void best_time(Board b, char* beg, Repetition* rep)
     {
         clock_t relevantTime = (b.turn? wtime : btime) / 41; // time / 32
         clock_t calcTime = (relevantTime * CLOCKS_PER_SEC) / 1000;
-        best = bestTime(b, calcTime, *rep);
+        best = bestTime(b, calcTime, *rep, 0);
     }
     else
     {
-        best = bestMoveAB(b, callDepth, 0, *rep);
+        best = bestTime(b, 0, *rep, callDepth);
     }
     moveToText(best, mv);
     fprintf(stdout, "bestmove %s\n", mv);
