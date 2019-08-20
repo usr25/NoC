@@ -134,7 +134,7 @@ void perft_(Board b, int depth)
 }
 void eval_(Board b)
 {
-    printf("%d\n", eval(b));
+    printf("%d\n", eval(&b));
 }
 void best_time(Board b, char* beg, Repetition* rep)
 {
@@ -280,6 +280,8 @@ Board gen_(char* beg, Repetition* rep)
 
 void infoString(const Move m, const int depth, const uint64_t nodes, const clock_t duration)
 {
-    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu\n", m.score, depth, duration, nodes);
+    char mv[6] = "";
+    moveToText(m, mv);
+    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu pv %s\n", m.score, depth, duration, nodes, mv);
     fflush(stdout);
 }

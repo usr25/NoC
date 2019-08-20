@@ -19,7 +19,7 @@ $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -O3
+	$(CC) -c -o $@ $< $(CFLAGS) -Ofast
 
 main: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
@@ -27,7 +27,7 @@ main: $(OBJ)
 .PHONY: clean optimized lichess all
 
 optimized: $(OBJO)
-	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) -Ofast $(LIBS)
 
 lichess:
 	make optimized

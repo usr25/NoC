@@ -5,7 +5,7 @@
  */
 
 #define VQUEEN 950
-#define VROOK 520
+#define VROOK 525
 #define VBISH 335
 #define VKNIGHT 310
 #define VPAWN 100
@@ -42,12 +42,12 @@
 #include <stdio.h>
 
 int material(void);
-int pieceActivity(const Board b);
-int endgameAnalysis(const Board b);
-int pieceDevelopment(const Board b);
-int pawns(const Board b);
+int pieceActivity(const Board* b);
+int endgameAnalysis(const Board* b);
+int pieceDevelopment(const Board* b);
+int pawns(const Board* b);
 
-int hasMatingMat(const Board b, int color);
+int hasMatingMat(const Board* b, int color);
 
 int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp);
 int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all);
@@ -55,7 +55,7 @@ int twoBishops(void);
 int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all);
 int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp);
 
-int testMatrices(const Board *board, const int phase, const int color);
+int testMatrices(const Board* board, const int phase, const int color);
 //TO implement:
 int knightCoordination(); //Two knights side by side are better
 
@@ -65,32 +65,32 @@ int wRook, bRook;
 int wBish, bBish;
 int wKnight, bKnight;
 
-int insuffMat(const Board b)
+int insuffMat(const Board* b)
 {
-    switch(POPCOUNT(b.color[WHITE]))
+    switch(POPCOUNT(b->color[WHITE]))
     {
         case 1: 
             
-            switch(POPCOUNT(b.color[BLACK]))
+            switch(POPCOUNT(b->color[BLACK]))
             {
                 case 1:
                     return 1;
                 case 2:
-                    return b.piece[BLACK][BISH] || b.piece[BLACK][KNIGHT];
+                    return b->piece[BLACK][BISH] || b->piece[BLACK][KNIGHT];
             }
 
             return 0;
 
         case 2:
 
-            switch(POPCOUNT(b.color[BLACK]))
+            switch(POPCOUNT(b->color[BLACK]))
             {
                 case 1:
-                    return b.piece[WHITE][BISH] || b.piece[WHITE][KNIGHT];
+                    return b->piece[WHITE][BISH] || b->piece[WHITE][KNIGHT];
                 case 2:
                     return 
-                              ((ODD_TILES & b.piece[WHITE][BISH]) && (ODD_TILES & b.piece[BLACK][BISH]))
-                            ||((EVEN_TILES & b.piece[WHITE][BISH]) && (EVEN_TILES & b.piece[BLACK][BISH]));
+                              ((ODD_TILES & b->piece[WHITE][BISH]) && (ODD_TILES & b->piece[BLACK][BISH]))
+                            ||((EVEN_TILES & b->piece[WHITE][BISH]) && (EVEN_TILES & b->piece[BLACK][BISH]));
             }
             return 0;
     }
@@ -98,13 +98,13 @@ int insuffMat(const Board b)
     return 0;
 }
 
-inline void assignPC(const Board b)
+inline void assignPC(const Board* b)
 {
-    wPawn = POPCOUNT(b.piece[WHITE][PAWN]), bPawn = POPCOUNT(b.piece[BLACK][PAWN]);
-    wQueen = POPCOUNT(b.piece[WHITE][QUEEN]), bQueen = POPCOUNT(b.piece[BLACK][QUEEN]);
-    wRook = POPCOUNT(b.piece[WHITE][ROOK]), bRook = POPCOUNT(b.piece[BLACK][ROOK]);
-    wBish = POPCOUNT(b.piece[WHITE][BISH]), bBish = POPCOUNT(b.piece[BLACK][BISH]);
-    wKnight = POPCOUNT(b.piece[WHITE][KNIGHT]), bKnight = POPCOUNT(b.piece[BLACK][KNIGHT]);
+    wPawn = POPCOUNT(b->piece[WHITE][PAWN]), bPawn = POPCOUNT(b->piece[BLACK][PAWN]);
+    wQueen = POPCOUNT(b->piece[WHITE][QUEEN]), bQueen = POPCOUNT(b->piece[BLACK][QUEEN]);
+    wRook = POPCOUNT(b->piece[WHITE][ROOK]), bRook = POPCOUNT(b->piece[BLACK][ROOK]);
+    wBish = POPCOUNT(b->piece[WHITE][BISH]), bBish = POPCOUNT(b->piece[BLACK][BISH]);
+    wKnight = POPCOUNT(b->piece[WHITE][KNIGHT]), bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
 }
 
 int phase()
@@ -132,14 +132,14 @@ inline int taperedEval(const int ph, const int beg, const int end)
 }
 
 //It is considered an endgame if there are 7 pieces or less in each side, (< 10 taking into account the kings)
-int eval(const Board b)
+int eval(const Board* b)
 {
     assignPC(b);
     int ph = phase();
-    //if (POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) < 10)
+    //if (POPCOUNT(b->allPieces ^ b->piece[WHITE][PAWN] ^ b->piece[BLACK][PAWN]) < 10)
     return   material()
             //+pieceDevelopment(b)
-            +testMatrices(&b, ph, WHITE) - testMatrices(&b, ph, BLACK)
+            +testMatrices(b, ph, WHITE) - testMatrices(b, ph, BLACK)
             +pieceActivity(b);
             //+pawns(b);
 }
@@ -154,17 +154,17 @@ inline int material(void)
 }
 //TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
 //TODO: Disable piece_slow_dev if all the pieces have already moved or if it is the middlegame
-inline int pieceDevelopment(const Board b)
+inline int pieceDevelopment(const Board* b)
 {
     return 
-         N_PIECE_SLOW_DEV * (POPCOUNT(0x66ULL & b.color[WHITE]) - POPCOUNT(0x6600000000000000ULL & b.color[BLACK]))
-        +STABLE_KING * (((0x6b & b.piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b.piece[BLACK][KING]) != 0));
+         N_PIECE_SLOW_DEV * (POPCOUNT(0x66ULL & b->color[WHITE]) - POPCOUNT(0x6600000000000000ULL & b->color[BLACK]))
+        +STABLE_KING * (((0x6b & b->piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b->piece[BLACK][KING]) != 0));
 }
 
-inline int pawns(const Board b)
+inline int pawns(const Board* b)
 {
-    uint64_t wPawnBB = b.piece[WHITE][PAWN];
-    uint64_t bPawnBB = b.piece[BLACK][PAWN];
+    uint64_t wPawnBB = b->piece[WHITE][PAWN];
+    uint64_t bPawnBB = b->piece[BLACK][PAWN];
     uint64_t attW = ((wPawnBB << 9) & 0xfefefefefefefefe) | ((wPawnBB << 7) & 0x7f7f7f7f7f7f7f7f);
     uint64_t attB = ((bPawnBB >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bPawnBB >> 7) & 0xfefefefefefefefe);
 
@@ -177,7 +177,7 @@ inline int pawns(const Board b)
         isolW += (getPawnLanes(lsb) & wPawnBB) != 0;
         passW += (getWPassedPawn(lsb) & bPawnBB) == 0;
         targW += POPCOUNT(getBPassedPawn(lsb + 8) & wPawnBB) == 1;
-        cleanW += (lsb > 31) * ((POW2[lsb + 8] & b.allPieces) == 0);
+        cleanW += (lsb > 31) * ((POW2[lsb + 8] & b->allPieces) == 0);
         REMOVE_LSB(tempW);
     }
     while(tempB)
@@ -186,41 +186,41 @@ inline int pawns(const Board b)
         isolB += (getPawnLanes(lsb) & bPawnBB) != 0;
         passB += (getBPassedPawn(lsb) & wPawnBB) == 0;
         targB += POPCOUNT(getWPassedPawn(lsb - 8) & bPawnBB) == 1;
-        cleanB += (lsb < 32) * ((POW2[lsb - 8] & b.allPieces) == 0);
+        cleanB += (lsb < 32) * ((POW2[lsb - 8] & b->allPieces) == 0);
         REMOVE_LSB(tempB);
     }
 
     return   PAWN_CHAIN * (POPCOUNT(wPawnBB & attW) - POPCOUNT(bPawnBB & attB))
-            +PAWN_PROTECTION * (POPCOUNT(attW & (b.piece[WHITE][BISH] | b.piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b.piece[BLACK][BISH] | b.piece[BLACK][KNIGHT])))
+            +PAWN_PROTECTION * (POPCOUNT(attW & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])))
             +N_DOUBLED_PAWNS * (POPCOUNT(wPawnBB & (wPawnBB * 0x10100)) - POPCOUNT(bPawn & (bPawnBB >> 8 | bPawnBB >> 16)))
-            +ATTACKED_BY_PAWN * (POPCOUNT(attW & b.color[BLACK]) - POPCOUNT(attB & b.color[WHITE]))
-            +ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b.color[BLACK]) - POPCOUNT((attB >> 8) & b.color[WHITE]))
+            +ATTACKED_BY_PAWN * (POPCOUNT(attW & b->color[BLACK]) - POPCOUNT(attB & b->color[WHITE]))
+            +ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b->color[BLACK]) - POPCOUNT((attB >> 8) & b->color[WHITE]))
             +N_ISOLATED_PAWN * (isolW - isolB) 
             +PASSED_PAWN * (passW - passB)
             +N_TARGET_PAWN * (targW - targB);
 }
 
-inline int endgameAnalysis(const Board b)
+inline int endgameAnalysis(const Board* b)
 {
-    int wAvg = b.piece[WHITE][PAWN] ? 
-    (LSB_INDEX(b.piece[WHITE][PAWN]) + MSB_INDEX(b.piece[WHITE][PAWN])) >> 1 
+    int wAvg = b->piece[WHITE][PAWN] ? 
+    (LSB_INDEX(b->piece[WHITE][PAWN]) + MSB_INDEX(b->piece[WHITE][PAWN])) >> 1 
     : 0;
-    int bAvg = b.piece[BLACK][PAWN] ? 
-    (LSB_INDEX(b.piece[BLACK][PAWN]) + MSB_INDEX(b.piece[BLACK][PAWN])) >> 1 
+    int bAvg = b->piece[BLACK][PAWN] ? 
+    (LSB_INDEX(b->piece[BLACK][PAWN]) + MSB_INDEX(b->piece[BLACK][PAWN])) >> 1 
     : 63;
 
     return 
-        E_ADVANCED_KING * ((LSB_INDEX(b.piece[WHITE][KING]) >> 3) - ((63 - LSB_INDEX(b.piece[BLACK][KING])) >> 3))
+        E_ADVANCED_KING * ((LSB_INDEX(b->piece[WHITE][KING]) >> 3) - ((63 - LSB_INDEX(b->piece[BLACK][KING])) >> 3))
         +E_ADVANCED_PAWN * ((wAvg >> 3) - ((63 - bAvg) >> 3));
 }
 
-inline int pieceActivity(const Board b)
+inline int pieceActivity(const Board* b)
 {
-    return   connectedRooks(b.piece[WHITE][ROOK], b.piece[BLACK][ROOK], b.allPieces ^ b.piece[WHITE][QUEEN] ^ b.piece[BLACK][QUEEN])
-            +rookOnOpenFile(b.piece[WHITE][ROOK], b.piece[WHITE][PAWN], b.piece[BLACK][ROOK], b.piece[BLACK][PAWN])
+    return   connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN])
+            +rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[WHITE][PAWN], b->piece[BLACK][ROOK], b->piece[BLACK][PAWN])
             +twoBishops()
-            +safeKing(b.piece[WHITE][KING], b.piece[BLACK][KING], b.piece[WHITE][PAWN], b.piece[BLACK][PAWN])
-            +bishopMobility(b.piece[WHITE][BISH], b.piece[BLACK][BISH], b.allPieces);
+            +safeKing(b->piece[WHITE][KING], b->piece[BLACK][KING], b->piece[WHITE][PAWN], b->piece[BLACK][PAWN])
+            +bishopMobility(b->piece[WHITE][BISH], b->piece[BLACK][BISH], b->allPieces);
 }
 
 inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all)
@@ -283,7 +283,7 @@ inline int twoBishops(void)
     return TWO_BISH * ((wBish == 2) - (bBish == 2));
 }
 
-int testMatrices(const Board *board, const int phase, const int color)
+int testMatrices(const Board* board, const int phase, const int color)
 {
     static const int pst[2][6][64] = {
     {
@@ -324,5 +324,5 @@ int testEval(char* beg)
 {
     int a;
     Board b = genFromFen(beg, &a);
-    return eval(b);
+    return eval(&b);
 }
