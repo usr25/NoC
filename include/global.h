@@ -41,4 +41,6 @@
 
 #define uint64_t unsigned long long
 
+//#define DEBUG
+
 uint64_t POW2[64];

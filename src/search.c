@@ -57,7 +57,11 @@ clock_t startT;
 clock_t timeToMoveT;
 int calledTiming = 0;
 uint64_t nodes = 0;
+uint64_t qsearchNodes = 0;
 const Move NoMove = (Move) {.from = -1, .to = -1};
+
+unsigned int betaCutOff;
+unsigned int betaCutOffHit;
 
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
 {
@@ -71,6 +75,9 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     Move list[NMOVES];
     int numMoves = legalMoves(&b, list) >> 1;
 
+    betaCutOff = 0;
+    betaCutOffHit = 0;
+    qsearchNodes = 0;
     Move best = list[0], temp;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
@@ -96,6 +103,11 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             break;
     }
 
+    #ifdef DEBUG
+    printf("Beta Hits: %f\n", (float)betaCutOffHit / betaCutOff);
+    printf("Qsearch Nodes: %llu\n", qsearchNodes);
+    #endif
+
     calledTiming = 0;
     return best;
 }
@@ -112,13 +124,13 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
 
     Move currBest = list[0];
     Move prevRefutation = NoMove;
-    int val;
+    int val, exit = 0;
 
     uint64_t hash = hashPosition(&b); //The position should be already added to res
     int alpha = MINS_INF;
     int pvS = 1;
 
-    for (int i = 0; i < numMoves; ++i)
+    for (int i = 0; i < numMoves && !exit; ++i)
     {
         makeMove(&b, list[i], &h);
         uint64_t newHash = makeMoveHash(hash, &b, list[i], h);
@@ -147,14 +159,14 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
             alpha = val;
             pvS = 0;
             //No need to keep searching once it has found a mate in 1
-            if (val > PLUS_MATE + depth - 2) break;
+            if (val >= PLUS_MATE + depth - 1)
+                exit = 1;
         }
 
         //For the sorting
         list[i].score = val;
     }
 
-    //infoString(currBest, depth, nodes);
     return currBest;
 }
 Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
@@ -205,7 +217,6 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
         {
             currBest = list[i];
             alpha = val;
-            //No need to keep searching once it has found a mate in 1
             if (val > PLUS_MATE + depth - 2) break;
         }
     }
@@ -302,7 +313,8 @@ int pvSearch(Board b, int alpha, int beta, const int depth, int null, const uint
             }
             else
             {
-                val = -pvSearch(b, -alpha-1, -alpha, depth - 1, null, newHash, list[i], &refutation, rep);
+                int reduction = 1;
+                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, list[i], &refutation, rep);
                 if (val > alpha && val < beta)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, list[i], &refutation, rep);
             }
@@ -322,10 +334,22 @@ int pvSearch(Board b, int alpha, int beta, const int depth, int null, const uint
 
                 if (alpha >= beta)
                 {
+                    #ifdef DEBUG
+                    ++betaCutOff;
+                    if (i == 0)
+                        ++betaCutOffHit;
+                    #endif
+
+                    if (list[i].capture < 1)
+                        *prevBest = list[i];
+                    break;
+                }
+                else if (best >= PLUS_MATE + depth - 1)
+                {
                     *prevBest = list[i];
                     break;
                 }
-                else if (compMoves(prevBest, &NoMove))
+                else if (prevBest->from == -1)
                     *prevBest = list[i];
             }
         }
@@ -347,6 +371,10 @@ int pvSearch(Board b, int alpha, int beta, const int depth, int null, const uint
 
 int qsearch(Board b, int alpha, int beta, const Move m)
 {
+    #ifdef DEBUG
+    ++qsearchNodes;
+    #endif
+
     const int score = b.turn? eval(b) : -eval(b);
 
     if (score >= beta)
@@ -405,7 +433,7 @@ inline void assignScoresQuiesce(Move* list, const int numMoves, const int to)
         if(list[i].capture > 0) //There has been a capture
             list[i].score =
                 score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4)
-                +((to == list[i].to) << 8); //Bonus if it captures the piece that moved last time
+                +((to == list[i].to) << 9); //Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
     }
 }
 
