@@ -25,7 +25,7 @@
 //Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
 #define MARGIN 3
 
-#define NUM_KM 2
+#define NUM_KM 3
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
@@ -40,7 +40,7 @@ int qsearch(Board b, int alpha, int beta, const Move m);
 
 static inline void addKM(const Move m, const int depth);
 static inline void assignScores(Move* list, const int numMoves, const int to, const Move bestFromPos, const int depth);
-static inline void assignScoresQuiesce(Move* list, const int numMoves, const int to, const int from);
+static inline void assignScoresQuiesce(Move* list, const int numMoves, const int to);
 void sort(Move* list, const int numMoves);
 
 static inline int rookVSKing(const Board b)
@@ -109,7 +109,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
          * it has found mate
          */
         infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
-        if ((calledTiming && (2 * (last - start) > timeToMove)) || abs(best.score) >= PLUS_MATE)
+        if ((calledTiming && (2 * (last - start) > timeToMove))/* || abs(best.score) >= PLUS_MATE*/)
             break;
     }
 
@@ -252,6 +252,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     if (table[index].key == prevHash)
     {
         bestM = table[index].m;
+        /*
         if (table[index].depth == depth)
         {
             switch (table[index].flag)
@@ -271,6 +272,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
             if (alpha >= beta)
                 return table[index].val;
         }
+        */
     }
 
     /*
@@ -330,8 +332,9 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
                 if (val > alpha && val < beta)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, list[i], rep);
             }
-            if (m.promotion > 0)
-                val += depth << 2;
+
+            //if (m.promotion > 0)
+            //    val += depth << 2;
             --rep->index;
         }
 
@@ -360,8 +363,6 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
                     addKM(bestM, depth);
                     break;
                 }
-                else if (killerMoves[depth][0].to == -1)
-                    addKM(bestM, depth);
             }
         }
 
@@ -392,22 +393,22 @@ int qsearch(Board b, int alpha, const int beta, const Move m)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + 1000 + ((m.promotion > 0)? 900 : 0) <= alpha)
+    else if (score + 900 + ((m.promotion > 0)? 900 : 0) <= alpha)
         return alpha;
 
     Move list[NMOVES];
     History h;
     const int numMoves = legalMoves(&b, list) >> 1;
 
-    assignScoresQuiesce(list, numMoves, m.to, m.from);
+    assignScoresQuiesce(list, numMoves, m.to);
     sort(list, numMoves);
 
     int val;
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if (list[i].capture < 1)
-            continue;
+        if (list[i].score < 10)
+            break;
 
         makeMove(&b, list[i], &h);
 
@@ -427,42 +428,43 @@ int qsearch(Board b, int alpha, const int beta, const Move m)
     return alpha;
 }
 
-static const int score[6] = {80, 160, 240, 320, 400, 480};
+static const int score[6] = {480, 400, 320, 240, 160, 80};
 inline void assignScores(Move* list, const int numMoves, const int to, const Move bestFromPos, const int depth)
 {
     for (int i = 0; i < numMoves; ++i)
     {
         if(list[i].capture > 0) //There has been a capture
-            list[i].score =
-                score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4);  //LVA - MVV
+            list[i].score = score[list[i].capture] - (score[list[i].pieceThatMoves] >> 4);  //MVV - LVA
         if (compMoves(&bestFromPos, &list[i])) //It was the best refutation in the same position
             list[i].score += 500;
-        for (int j = 0; j < NUM_KM; ++j)
+        else
         {
-            if (compMoves(&killerMoves[depth][j], &list[i]))
+            for (int j = 0; j < NUM_KM; ++j)
             {
-                list[i].score += 200 - j;
-                break;
+                if (compMoves(&killerMoves[depth][j], &list[i]))
+                {
+                    list[i].score += 200 + j;
+                    break;
+                }
             }
         }
     }
 }
-inline void assignScoresQuiesce(Move* list, const int numMoves, const int to, const int from)
+inline void assignScoresQuiesce(Move* list, const int numMoves, const int to)
 {
     for (int i = 0; i < numMoves; ++i)
     {
         if(list[i].capture > 0) //There has been a capture
             list[i].score =
-                score[list[i].pieceThatMoves] - (score[list[i].capture] >> 4)
-                +((to == list[i].to) << 9); //Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
+                score[list[i].capture] - (score[list[i].pieceThatMoves] >> 4);
+                //+((to == list[i].to) << 9); //Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
     }
 }
 static inline void addKM(const Move m, const int depth)
 {
     for (int i = 1; i < NUM_KM; ++i)
-    {
         killerMoves[depth][i-1] = killerMoves[depth][i];
-    }
+
     killerMoves[depth][NUM_KM-1] = m;
 }
 /* Sorts all the moves based on their score, the algorithm is insertion sort

@@ -139,8 +139,8 @@ int eval(const Board* b)
     //if (POPCOUNT(b->allPieces ^ b->piece[WHITE][PAWN] ^ b->piece[BLACK][PAWN]) < 10)
     return   material()
             //+pieceDevelopment(b)
-            +testMatrices(b, ph, WHITE) - testMatrices(b, ph, BLACK)
-            +pieceActivity(b);
+            +testMatrices(b, ph, WHITE) - testMatrices(b, ph, BLACK);
+            //+pieceActivity(b);
             //+pawns(b);
 }
 
