@@ -51,16 +51,19 @@ void loop(void)
         if (res == NULL) return;
         beg = input;
 
-        if (strncmp(beg, "ucinewgame", 10) == 0){
+        if (strncmp(beg, "ucinewgame", 10) == 0)
+        {
             b = defaultBoard();
             rep.hashTable[rep.index++] = hashPosition(&b);
             break;
         }
-        else if (strncmp(beg, "uci", 3) == 0){
+        else if (strncmp(beg, "uci", 3) == 0)
+        {
             uci();
             break;
         }
-        else if (strncmp(beg, "isready", 7) == 0){
+        else if (strncmp(beg, "isready", 7) == 0)
+        {
             isready();
             break;
         }
@@ -68,26 +71,24 @@ void loop(void)
             return;
     }
 
-    while(! quit)
+    while(!quit)
     {
         res = fgets(input, LEN, stdin);
-
         if (res == NULL) return;
-
         beg = input;
 
         if (strncmp(beg, "isready", 7) == 0)
             isready();
 
-        else if (strncmp(beg, "ucinewgame", 10) == 0) 
+        else if (strncmp(beg, "ucinewgame", 10) == 0)
             b = defaultBoard();
-        
-        else if (strncmp(beg, "print", 5) == 0) 
+
+        else if (strncmp(beg, "print", 5) == 0)
             drawPosition(b, 1);
-        
+
         else if (strncmp(beg, "perft", 5) == 0)
             perft_(b, atoi(beg + 6));
-        
+
         else if (strncmp(beg, "position startpos", 17) == 0)
             b = gen_def(beg + 18, &rep);
 
@@ -99,7 +100,7 @@ void loop(void)
 
         else if (strncmp(beg, "eval", 4) == 0)
             eval_(b);
-        
+
         else if (strncmp(beg, "go", 2) == 0)
             best_time(b, beg + 3, &rep);
 
@@ -107,10 +108,9 @@ void loop(void)
             quit = 1;
 
         else
-        {
             fprintf(stdout, "# invalid command\n");
-            fflush(stdout);
-        }
+
+        fflush(stdout);
     }
 }
 
@@ -139,10 +139,10 @@ void eval_(Board b)
 void best_time(Board b, char* beg, Repetition* rep)
 {
     int callDepth = 0;
+    int wtime = 0, btime = 0, winc = 0, binc = 0, movestogo = 0;
 
-    int wtime, btime, winc, binc, movestogo;
-
-    while (beg[1] != '\0' && beg[1] != '\n') {
+    while (beg[1] != '\0' && beg[1] != '\n')
+    {
         if (strncmp(beg, "wtime", 5) == 0) {
             beg += 6;
             wtime = atoi(beg);
@@ -172,13 +172,12 @@ void best_time(Board b, char* beg, Repetition* rep)
     Move best;
     char mv[6] = "";
 
-    btime -= 20;
-    wtime -= 20;
-
     if (!callDepth)
     {
-        clock_t relevantTime = (b.turn? wtime : btime) >> 5; // time / 32
-        clock_t calcTime = (relevantTime * CLOCKS_PER_SEC) / 1000;
+        clock_t remTime = (b.turn? wtime : btime);
+        clock_t increment = (b.turn? winc : binc);
+        clock_t timeToMove = min(remTime >> 2, (remTime >> 5) + (clock_t)(increment * .9)) - 20; // remTime / 32
+        clock_t calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
         best = bestTime(b, calcTime, *rep, 0);
     }
     else
@@ -189,7 +188,6 @@ void best_time(Board b, char* beg, Repetition* rep)
     fprintf(stdout, "bestmove %s\n", mv);
     fflush(stdout);
 }
-//TODO: make use of prevhash, for convinience it is recalculated
 int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
 {
     int prom = 0, from, to;
@@ -200,7 +198,7 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
         .pieceThatMoves = pieceAt(b, POW2[from], b->turn),
         .capture = pieceAt(b, POW2[to], 1 ^ b->turn)};
 
-    
+
     if(m.pieceThatMoves == KING)
     {
         if (abs(from - to) == 2) //Castle
@@ -263,9 +261,9 @@ Board gen_(char* beg, Repetition* rep)
     int counter;
     Board b = genFromFen(beg, &counter);
     uint64_t startHash = hashPosition(&b);
-    
+
     rep->hashTable[rep->index++] = startHash;
-    
+
     beg += counter + 1;
 
     if (strncmp(beg, "moves", 5) == 0)

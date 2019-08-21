@@ -43,4 +43,7 @@
 
 //#define DEBUG
 
+inline int min(const int a, const int b) {return (a < b)? a : b;}
+inline int max(const int a, const int b) {return (a > b)? a : b;}
+
 uint64_t POW2[64];

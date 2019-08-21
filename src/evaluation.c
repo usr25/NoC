@@ -11,10 +11,10 @@
 #define VPAWN 100
 
 //All the constants that begin with N_ are negative, so instead of C * (w - b) the operation is C * (b - w)
-#define CONNECTED_ROOKS 35 //Bonus for having connected rooks
-#define TWO_BISH 20 //Bonus for having the bishop pair
-#define ROOK_OPEN_FILE 25 //Bonus for a rook on an open file (No same color pawns)
-#define BISHOP_MOBILITY 2 //Bonus for sqares available to the bish
+#define CONNECTED_ROOKS 25 //Bonus for having connected rooks
+#define TWO_BISH 10 //Bonus for having the bishop pair
+#define ROOK_OPEN_FILE 10 //Bonus for a rook on an open file (No same color pawns)
+#define BISHOP_MOBILITY 1 //Bonus for sqares available to the bish
 #define N_DOUBLED_PAWNS -36 //Penalization for doubled pawns (proportional to the pawns in line - 1)
 #define PAWN_CHAIN 20 //Bonus for making a pawn chain
 #define PAWN_PROTECTION 15 //Bonus for Bish / Knight protected by pawn
@@ -30,6 +30,8 @@
 #define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
 #define SAFE_KING 2 //Bonus for pawns surrounding the king
 
+#define SP_MARGIN 50
+
 //TODO: Bonus for passed pawns depending on where they are on the board passPArr[6] = {1, 5, 15, 75, 125, 225}
 
 #include "../include/global.h"
@@ -38,6 +40,7 @@
 #include "../include/memoization.h"
 #include "../include/magic.h"
 #include "../include/io.h"
+#include "../include/evaluation.h"
 
 #include <stdio.h>
 
@@ -107,6 +110,15 @@ inline void assignPC(const Board* b)
     wKnight = POPCOUNT(b->piece[WHITE][KNIGHT]), bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
 }
 
+inline int standPatEval(const Board* b, const int color)
+{
+    int hPiece = VBISH + SP_MARGIN;
+    if (b->piece[color][QUEEN]) hPiece = VQUEEN;
+    else if (b->piece[color][ROOK]) hPiece = VROOK;
+
+    return hPiece + (b->turn? eval(b) : -eval(b));
+}
+
 int phase()
 {
     const int knPh = 1;
@@ -140,8 +152,8 @@ int eval(const Board* b)
     return   material()
             //+pieceDevelopment(b)
             +testMatrices(b, ph, WHITE) - testMatrices(b, ph, BLACK);
-            //+pieceActivity(b);
-            //+pawns(b);
+            //+pieceActivity(b); //Disable
+            //+pawns(b); //Disable
 }
 
 inline int material(void)
