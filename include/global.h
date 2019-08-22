@@ -39,6 +39,12 @@
 #define EDGE        0xff818181818181ffULL
 #define EDGE_RANKS  0xff000000000000ffULL
 
+#define VQUEEN 950
+#define VROOK 525
+#define VBISH 335
+#define VKNIGHT 310
+#define VPAWN 100
+
 #define uint64_t unsigned long long
 
 //#define DEBUG

@@ -4,12 +4,6 @@
  * eval > 0 -> It is good for white
  */
 
-#define VQUEEN 950
-#define VROOK 525
-#define VBISH 335
-#define VKNIGHT 310
-#define VPAWN 100
-
 //All the constants that begin with N_ are negative, so instead of C * (w - b) the operation is C * (b - w)
 #define CONNECTED_ROOKS 25 //Bonus for having connected rooks
 #define TWO_BISH 10 //Bonus for having the bishop pair
@@ -151,8 +145,8 @@ int eval(const Board* b)
     //if (POPCOUNT(b->allPieces ^ b->piece[WHITE][PAWN] ^ b->piece[BLACK][PAWN]) < 10)
     return   material()
             //+pieceDevelopment(b)
-            +testMatrices(b, ph, WHITE) - testMatrices(b, ph, BLACK);
-            //+pieceActivity(b); //Disable
+            +testMatrices(b, ph, WHITE) - testMatrices(b, ph, BLACK)
+            +pieceActivity(b); //Disable
             //+pawns(b); //Disable
 }
 

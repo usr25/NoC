@@ -23,9 +23,11 @@
 //Depth of the null move prunning
 #define R 3
 //Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
-#define MARGIN 14
-
+#define MARGIN 13
+//The number of killer moves
 #define NUM_KM 2
+//The centipawn loss it is willing to accept in order to avoid a 3fold repetition
+#define RISK 17
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
@@ -39,6 +41,7 @@ __attribute__((hot)) int qsearch(Board b, int alpha, int beta, const Move m);
 static inline void addKM(const Move m, const int depth);
 static inline void assignScores(Move* list, const int numMoves, const Move bestFromPos, const int depth);
 static inline void assignScoresQuiesce(Move* list, const int numMoves);
+static inline const int marginDepth(const int depth);
 void sort(Move* list, const int numMoves);
 
 static inline int rookVSKing(const Board b)
@@ -63,7 +66,7 @@ uint64_t qsearchNodes = 0;
 uint64_t nullCutOffs = 0;
 uint64_t betaCutOff;
 uint64_t betaCutOffHit;
-const Move NoMove = (Move) {.from = -1, .to = -1};
+const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 
 Move killerMoves[99][NUM_KM];
 
@@ -79,15 +82,18 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     Move list[NMOVES];
     int numMoves = legalMoves(&b, list) >> 1;
 
+    if (numMoves == 1)
+        return list[0];
+
     betaCutOff = 0;
     betaCutOffHit = 0;
     qsearchNodes = 0;
     nullCutOffs = 0;
-    Move best = list[0], temp;
+    Move best = list[0], temp, secondBest;
     for (int i = 0; i < 99; ++i)
     {
         for (int j = 0; j < NUM_KM; ++j)
-            killerMoves[i][j] = NoMove;
+            killerMoves[i][j] = NO_MOVE;
     }
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
@@ -100,16 +106,16 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             break;
 
         best = temp;
+        secondBest = list[1];
 
         /*
-         * Due to the exponential nature, if the time remeaning is smaller than 3 * timeTaken, break, it is unlikely that
+         * Due to the exponential nature, if the time remeaning is smaller than timeTaken / 3, break, it is unlikely that
          * the program will be able to finish another depth
-         * (2 is a randomly chosen constant based on experience, it should be improved using the ratio between consecutive searches)
          * or
          * it has found mate
          */
         infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
-        if ((calledTiming && (last - start > timeToMove)) || best.score >= PLUS_MATE)
+        if ((calledTiming && (((last - start) >> 1) > timeToMove)) || best.score >= PLUS_MATE)
             break;
     }
 
@@ -118,6 +124,9 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     printf("Qsearch Nodes: %llu\n", qsearchNodes);
     printf("Null Cutoffs: %llu\n", nullCutOffs);
     #endif
+
+    if (best.score == 0 && numMoves > 1 && -secondBest.score < RISK)
+        best = secondBest;
 
     calledTiming = 0;
     return best;
@@ -189,7 +198,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
 
     int numMoves = legalMoves(&b, list) >> 1;
 
-    assignScores(list, numMoves, NoMove, depth);
+    assignScores(list, numMoves, NO_MOVE, depth);
     sort(list, numMoves);
 
     Move currBest = list[0];
@@ -249,7 +258,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     const int index = prevHash & MOD_ENTRIES;
     int val;
-    Move bestM = NoMove;
+    Move bestM = NO_MOVE;
     if (table[index].key == prevHash)
     {
         bestM = table[index].m;
@@ -277,8 +286,9 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     }
 
     const int onlyP = onlyPawns(b);
+    const int isSafe = !isInC && !onlyP;
     //int r = R + (depth >> 3); //Make a variable r
-    if (!null && depth > R && !isInC && /*m.score < 320 &&*/ !onlyP)
+    if (!null && depth > R && isSafe /*m.score < 320 &&*/)
     {
         int betaMargin = beta - MARGIN;
         Repetition _rep = (Repetition) {.index = 0};
@@ -311,10 +321,13 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     const int origAlpha = alpha;
 
-    const int spEval = standPatEval(&b, b.turn);
+    int spEval = 0;
+    if (depth <= 3)
+        spEval = (b.turn? eval(&b) : -eval(&b)) + marginDepth(depth);
+
     for (int i = 0; i < numMoves; ++i)
     {
-        if (depth <= 3 && spEval < alpha && !isInC && !onlyP && i > 4 && list[i].score < 100)
+        if (depth <= 3 && spEval < alpha && isSafe && i > 4 && list[i].score < 100)
             continue;
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(prevHash, &b, list[i], h);
@@ -398,7 +411,7 @@ int qsearch(Board b, int alpha, const int beta, const Move m)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + 800 + ((m.promotion > 0)? 800 : 0) <= alpha)
+    else if (score + VQUEEN + ((m.promotion > 0)? VQUEEN : 0) <= alpha)
         return alpha;
 
     Move list[NMOVES];
@@ -412,6 +425,7 @@ int qsearch(Board b, int alpha, const int beta, const Move m)
 
     for (int i = 0; i < numMoves; ++i)
     {
+        //if ((list[i].score + score <= alpha) || list[i].score < 10)
         if (list[i].score < 10)
             break;
 
@@ -433,8 +447,8 @@ int qsearch(Board b, int alpha, const int beta, const Move m)
     return alpha;
 }
 
-static const int score[6] = {480, 400, 320, 240, 160, 80};
-static inline void captureScore(Move* m)
+static const int score[6] = {1000, 975, 525, 325, 300, 100};
+static inline const void captureScore(Move* m)
 {
     m->score = score[m->capture] - (score[m->pieceThatMoves] >> 4);
 }
@@ -473,6 +487,19 @@ static inline void addKM(const Move m, const int depth)
         killerMoves[depth][i-1] = killerMoves[depth][i];
 
     killerMoves[depth][NUM_KM-1] = m;
+}
+static inline const int marginDepth(const int depth)
+{
+    switch (depth)
+    {
+        case 1:
+            return VBISH;
+        case 2:
+            return VROOK;
+        case 3:
+            return VQUEEN;
+    }
+    return 0;
 }
 /* Sorts all the moves based on their score, the algorithm is insertion sort
  */
