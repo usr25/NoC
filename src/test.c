@@ -211,7 +211,7 @@ void parseFensFromFileEva(void)
 
     Board b;
     char buff[256] = "";
-    int hasEnded = 0, depth = 6, cnt = 0;
+    int hasEnded = 0, depth = 7, cnt = 0;
 
     //fen,depth,perft(TODO:,move)
     //Dont put spaces, except in the fen
@@ -237,7 +237,7 @@ void slowEval(void)
 {
     printf("\n---= This will take a long time =---\n");
     
-    int depth = 6;
+    int depth = 7;
     int white = 1, black = 1;
     Board b;
     
@@ -249,7 +249,7 @@ void slowEval(void)
     drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
     printf("\n");
 
-    depth = 6;
+    depth = 8;
 
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
     

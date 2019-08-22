@@ -39,5 +39,8 @@ int isThreeRep(Repetition* r, uint64_t hash);
 uint64_t hashPosition(Board* b);
 uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h);
 
+inline int isPrevPosition(Repetition* rep, uint64_t hash) {return rep->hashTable[rep->index - 4] == hash;}
+inline void addHash(Repetition* rep, uint64_t hash) {rep->hashTable[rep->index++] = hash;}
+inline void remHash(Repetition* rep) {rep->index = 0;}
 
 Eval table[NUM_ENTRIES];

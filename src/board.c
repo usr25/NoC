@@ -70,7 +70,7 @@ int color(char piece)
 //TODO: 50 moves in the fen are ignored, the moves are set to 0
 Board genFromFen(char* const fen, int* counter)
 {
-    Board b = (Board) {};
+    Board b = (Board) {.enPass = 0, .castleInfo = 0};
     int i, num, shift, col, piece;
     uint64_t pos = POW2[63];
 
@@ -110,7 +110,7 @@ Board genFromFen(char* const fen, int* counter)
     i++;
 
     int castleInfo = 0;
-    while(fen[++i] != ' ')
+    while(fen[++i] != ' ' && fen[i] != '\0')
     {
         switch (fen[i])
         {
@@ -131,8 +131,8 @@ Board genFromFen(char* const fen, int* counter)
     b.castleInfo = castleInfo;
 
     i++;
-
-    if (fen[i] != '-'){
+    if (fen[i] != '-')
+    {
         b.enPass = getIndex(fen[i], fen[i+1]) - (2 * b.turn - 1) * 8;
         i+=2;
     }
@@ -141,6 +141,11 @@ Board genFromFen(char* const fen, int* counter)
 
     assert(POPCOUNT(b.piece[WHITE][KING]) == 1);
     assert(POPCOUNT(b.piece[BLACK][KING]) == 1);
+
+    if (b.enPass < 8 || b.enPass >= 56)
+        b.enPass = 0;
+    if (b.castleInfo > 0xf)
+        b.castleInfo &= 0xf;
 
     *counter = i;
     return b;
@@ -169,7 +174,7 @@ Board defaultBoard()
     b.color[AV_BLACK] = ~ INITIAL_BPIECES;
     b.color[AV_WHITE] = ~ INITIAL_WPIECES;
 
-    b.castleInfo =  0b1111;
+    b.castleInfo =  0xf;
     b.allPieces = INITIAL_WPIECES | INITIAL_BPIECES;
     b.turn = WHITE;
 

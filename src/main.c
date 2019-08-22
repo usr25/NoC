@@ -10,8 +10,10 @@
 #include "../include/board.h"
 #include "../include/test.h"
 #include "../include/moves.h"
+#include "../include/boardmoves.h"
 #include "../include/hash.h"
 #include "../include/uci.h"
+#include "../include/io.h"
 #include "../include/magic.h"
 
 //position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
@@ -21,7 +23,7 @@ int main(const int argc, char** const argv)
     initMemo();
     initMagics();
 
-    //0, 1->57'8, 2->9'2, 7'9 TT, 3->2:20, 4->1:55
+    //0, 1->57'5, 2->18'1s, 3->2:20, 4->50s
     //chooseTest(1);
 
     loop();

@@ -23,9 +23,9 @@
 //Depth of the null move prunning
 #define R 3
 //Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
-#define MARGIN 12
+#define MARGIN 14
 
-#define NUM_KM 3
+#define NUM_KM 2
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
@@ -35,7 +35,7 @@
 Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep);
 int alphaBeta(Board b, int alpha, int beta, const int depth, int null, const uint64_t prevHash, Move m, Move* prevBest, Repetition* rep);
 int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Move m, Repetition* rep);
-int bestMoveBruteValue(Board b, const int depth);
+int zwSearch(Board b, int beta, int depth);
 int qsearch(Board b, int alpha, int beta, const Move m);
 
 static inline void addKM(const Move m, const int depth);
@@ -59,13 +59,14 @@ static inline int compMoves(const Move* m1, const Move* m2)
 clock_t startT;
 clock_t timeToMoveT;
 int calledTiming = 0;
+
 uint64_t nodes = 0;
 uint64_t qsearchNodes = 0;
 uint64_t nullCutOffs = 0;
+uint64_t betaCutOff;
+uint64_t betaCutOffHit;
 const Move NoMove = (Move) {.from = -1, .to = -1};
 
-unsigned int betaCutOff;
-unsigned int betaCutOffHit;
 
 Move killerMoves[99][NUM_KM];
 
@@ -125,7 +126,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     return best;
 }
 
-
 int callDepth;
 Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep)
 {
@@ -150,7 +150,7 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
             val = 0;
         else
         {
-            rep.hashTable[rep.index++] = newHash;
+            addHash(&rep, newHash);
             if (i == 0)
             {
                 val = -pvSearch(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &rep);
@@ -161,7 +161,7 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
                 if (val > alpha)
                     val = -pvSearch(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &rep);
             }
-            --rep.index;
+            remHash(&rep);
         }
         undoMove(&b, list[i], &h);
 
@@ -209,11 +209,11 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
             val = 0;
         else
         {
-            rep.hashTable[rep.index++] = newHash;
+            addHash(&rep, newHash);
             val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, list[i], &rep);
             if (val > alpha)
                 val = -pvSearch(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &rep);
-            --rep.index;
+            remHash(&rep);
         }
         undoMove(&b, list[i], &h);
 
@@ -321,13 +321,13 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
             continue;
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(prevHash, &b, list[i], h);
-        if ((m.capture > 0 && insuffMat(&b)) || isThreeRep(rep, newHash))
+        if ((m.capture > 0 && insuffMat(&b)) || isPrevPosition(rep, newHash) || isThreeRep(rep, newHash))
         {
             val = 0;
         }
         else
         {
-            rep->hashTable[rep->index++] = newHash;
+            addHash(rep, newHash);
             if (i == 0)
             {
                 val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, list[i], rep);
@@ -344,7 +344,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
             //if (m.promotion > 0)
             //    val += depth << 2;
-            --rep->index;
+            remHash(rep);
         }
 
         if (val > best)
@@ -389,7 +389,6 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     return best;
 }
-
 int qsearch(Board b, int alpha, const int beta, const Move m)
 {
     #ifdef DEBUG
