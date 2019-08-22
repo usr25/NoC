@@ -1,17 +1,17 @@
 /* Struct that holds all the information necessary to undo moves
- * pieceThatMoves -> Int representing the piece that moves
+ * piece -> Int representing the piece that moves
  * from -> Index from where the piece moves
  * to -> Index where the piece moves
  * capture -> Int representing the piece captured (0/-1 is no piece)
  * castle -> Int representing if it is a castle, only when KING moves (1 -> Kingside, 2 -> Queenside)
  * promotion -> Int representing the piece to which a PAWN promotes
  * enPass -> Index of where the opp pawn is located when capturing En Passand
- * score -> Score used for the LVA - MVA ordering
+ * score -> Score used for the MVV - LVA ordering and other orderings
  */
 
 typedef struct 
 {
-    int pieceThatMoves;
+    int piece;
     int from;
     int to;
     int capture;

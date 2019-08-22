@@ -195,11 +195,11 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
     to = getIndex(beg[2], beg[3]);
 
     Move m = (Move) {.from = from, .to = to, 
-        .pieceThatMoves = pieceAt(b, POW2[from], b->turn),
+        .piece = pieceAt(b, POW2[from], b->turn),
         .capture = pieceAt(b, POW2[to], 1 ^ b->turn)};
 
 
-    if(m.pieceThatMoves == KING)
+    if(m.piece == KING)
     {
         if (abs(from - to) == 2) //Castle
         {
@@ -210,7 +210,7 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
         }
     }
 
-    if(m.pieceThatMoves == PAWN)
+    if(m.piece == PAWN)
     {
         int piece = textToPiece(beg[4]);
         if(piece != NO_PIECE)
@@ -232,7 +232,7 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
     History h;
     makeMove(b, m, &h);
 
-    if (m.pieceThatMoves == PAWN || m.capture > 0)
+    if (m.piece == PAWN || m.capture > 0)
         rep->index = 0;
     else
         rep->hashTable[rep->index++] = hashPosition(b);

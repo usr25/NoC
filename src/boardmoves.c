@@ -81,8 +81,8 @@ void makeMove(Board* b, const Move move, History* h)
 
     b->enPass = 0;
 
-    flipBits(b, fromBit, move.pieceThatMoves, b->turn);
-    switch(move.pieceThatMoves)
+    flipBits(b, fromBit, move.piece, b->turn);
+    switch(move.piece)
     {
         case PAWN:
             if (move.to - move.from == (2 * b->turn - 1) << 4)
@@ -121,7 +121,7 @@ void makeMove(Board* b, const Move move, History* h)
 
         default:
             b->fifty++;
-            flipBits(b, toBit, move.pieceThatMoves, b->turn);
+            flipBits(b, toBit, move.piece, b->turn);
         break;
     }
 
@@ -151,8 +151,8 @@ void undoMove(Board* b, const Move move, History* h)
 
     b->turn ^= 1;
 
-    flipBits(b, fromBit, move.pieceThatMoves, b->turn);
-    switch(move.pieceThatMoves)
+    flipBits(b, fromBit, move.piece, b->turn);
+    switch(move.piece)
     {
         case PAWN:
             if (move.enPass)
@@ -177,7 +177,7 @@ void undoMove(Board* b, const Move move, History* h)
         break;
 
         default:
-            flipBits(b, toBit, move.pieceThatMoves, b->turn);
+            flipBits(b, toBit, move.piece, b->turn);
         break;
     }
 }

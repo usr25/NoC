@@ -57,13 +57,13 @@ void drawPosition(const Board b, const int drawCoords){
     if (drawCoords)
         printf(" a  b  c  d  e  f  g  h\n");
 }
-void drawBitboard(uint64_t b)
+void drawBitboard(const uint64_t b)
 {
     uint64_t pos = POW2[63];
     for (int i = 64; i > 0; --i)
     {
         if (i % 8 == 0) printf("\n");
-        printf("%d", pos & b?1:0);
+        printf("%d", pos & b? 1 : 0);
         pos >>= 1;
 
     }

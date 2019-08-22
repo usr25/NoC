@@ -92,7 +92,7 @@ int testHashing()
 
     int a;
     Board b = genFromFen("2k5/6p1/q7/7P/7p/8/Q5P1/3K4 w - -", &a);
-    Move m = (Move) {.pieceThatMoves = PAWN, .from = 9, .to = 25};
+    Move m = (Move) {.piece = PAWN, .from = 9, .to = 25};
     History h;
 
     uint64_t start = hashPosition(&b);

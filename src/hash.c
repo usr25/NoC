@@ -216,9 +216,9 @@ void initializeTable(void)
 }
 
 /* Detects if the last move makes a 3fold repetion
- * hash isnt in the array
+ * PRE: Hash isnt in the array
  */
-int isThreeRep(Repetition* r, uint64_t hash)
+int isThreeRep(const Repetition* r, const uint64_t hash)
 {
     int count = 0;
     for (int i = r->index - 2; i >= 0; i -= 2)
@@ -231,7 +231,7 @@ int isThreeRep(Repetition* r, uint64_t hash)
 
 /* Hashes a position
  */
-uint64_t hashPosition(Board* b)
+uint64_t hashPosition(const Board* b)
 {
     //Turn
     uint64_t resultHash = b->turn * random[TURN_OFFSET];
@@ -262,45 +262,48 @@ uint64_t hashPosition(Board* b)
 }
 
 /* Updates the hash of the position, prev is the hash of the position before the move
- *
+ * PRE: The function is called after the move is made
  */
-uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
+uint64_t makeMoveHash(uint64_t prev, const Board* b, const Move m, const History h)
 {
     prev ^= random[TURN_OFFSET];
     //Piece from
-    prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.pieceThatMoves * PIECE_OFFSET + m.from];
-    int xorPosInfos = b->castleInfo ^ h.castleInfo;
+    prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.piece * PIECE_OFFSET + m.from];
+    //Castle info
+    const int xorPosInfos = b->castleInfo ^ h.castleInfo;
+    const int colOff = b->turn * COLOR_OFFSET;
+    const int oppColOff = (1 ^ b->turn) * COLOR_OFFSET;
 
     if (m.capture > 0)
-        prev ^= random[b->turn * COLOR_OFFSET + m.capture * PIECE_OFFSET + m.to];
+        prev ^= random[colOff + m.capture * PIECE_OFFSET + m.to];
 
-    switch (m.pieceThatMoves)
+    switch (m.piece)
     {
         case PAWN:
             if (m.promotion)
-                prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.promotion * PIECE_OFFSET + m.to];
+                prev ^= random[oppColOff + m.promotion * PIECE_OFFSET + m.to];
             else
-                prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.pieceThatMoves * PIECE_OFFSET + m.to];
+                prev ^= random[oppColOff * COLOR_OFFSET + PAWN * PIECE_OFFSET + m.to];
 
             if (b->enPass)
                 prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
             if (m.enPass)
             {
                 prev ^= random[EPAS_OFFSET + (m.enPass & 7)];
-                prev ^= random[b->turn * COLOR_OFFSET + PAWN * PIECE_OFFSET + m.enPass];
+                prev ^= random[colOff + PAWN * PIECE_OFFSET + m.enPass];
             }
         break;
 
         case KING:
             if (m.castle & 1) //Kingside
             {
-                prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to - 1];
-                prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to + 1];
+                prev ^= random[oppColOff + ROOK * PIECE_OFFSET + m.to - 1];
+                prev ^= random[oppColOff * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to + 1];
             }
             else if (m.castle & 2) //Queenside
             {
-                prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to + 2];
-                prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to - 1];
+                prev ^= random[oppColOff * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to + 2];
+                prev ^= random[oppColOff * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to - 1];
             }
         case ROOK:
             if (xorPosInfos)
@@ -313,7 +316,7 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
                 }
             }
         default:
-            prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.pieceThatMoves * PIECE_OFFSET + m.to];
+            prev ^= random[oppColOff + m.piece * PIECE_OFFSET + m.to];
     }
 
     return prev;

@@ -3,6 +3,11 @@ void initMemo(void);
 uint64_t kingMoves[64];
 uint64_t knightMoves[64];
 
+uint64_t whitePawnMoves[64];
+uint64_t whitePawnCaptures[64];
+uint64_t blackPawnMoves[64];
+uint64_t blackPawnCaptures[64];
+
 /* ...Int are the intersection tiles, since it isnt really necessary to calculate the intersection
  * against a piece that is on the edge because the possible sqrs will stay the same
  */
@@ -17,11 +22,6 @@ uint64_t downleftMoves[64];     uint64_t downleftMovesInt[64];
 
 uint64_t straMoves[64];         uint64_t straMovesInt[64];
 uint64_t diagMoves[64];         uint64_t diagMovesInt[64];
-
-uint64_t whitePawnMoves[64];
-uint64_t whitePawnCaptures[64];
-uint64_t blackPawnMoves[64];
-uint64_t blackPawnCaptures[64];
 
 uint64_t vert[8];
 uint64_t horiz[8];

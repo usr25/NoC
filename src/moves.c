@@ -144,11 +144,11 @@ int canCastle(Board* b, const int color, const uint64_t forbidden)
 }
 inline Move castleKSide(const int color)
 {
-    return (Move) {.pieceThatMoves = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1};
+    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1};
 }
 inline Move castleQSide(const int color)
 { 
-    return (Move) {.pieceThatMoves = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2};
+    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2};
 }
 
 //Tiles controlled by the opp king / pawns / knights
