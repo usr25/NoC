@@ -33,10 +33,8 @@
 #define MINS_INF  -9999999
 
 Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep);
-int alphaBeta(Board b, int alpha, int beta, const int depth, int null, const uint64_t prevHash, Move m, Move* prevBest, Repetition* rep);
-int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Move m, Repetition* rep);
-int zwSearch(Board b, int beta, int depth);
-int qsearch(Board b, int alpha, int beta, const Move m);
+__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Move m, Repetition* rep);
+__attribute__((hot)) int qsearch(Board b, int alpha, int beta, const Move m);
 
 static inline void addKM(const Move m, const int depth);
 static inline void assignScores(Move* list, const int numMoves, const Move bestFromPos, const int depth);
@@ -66,7 +64,6 @@ uint64_t nullCutOffs = 0;
 uint64_t betaCutOff;
 uint64_t betaCutOffHit;
 const Move NoMove = (Move) {.from = -1, .to = -1};
-
 
 Move killerMoves[99][NUM_KM];
 

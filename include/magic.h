@@ -8,14 +8,14 @@ uint64_t rookMagicMoves[64][4096];
 uint64_t bishMagic[64];
 uint64_t rookMagic[64];
 
-static inline uint64_t getRookMagicMoves(const int index, const uint64_t allPieces)
+__attribute__((hot)) static inline uint64_t getRookMagicMoves(const int index, const uint64_t allPieces)
 {
     //allPieces &= getStraInt(index);
     //allPieces *= rookMagic[index];
     //64 - 12 == 52, worst case scenario. To make it variable use POPCOUNT(mask)
     return rookMagicMoves[index][((allPieces & getStraInt(index)) * rookMagic[index]) >> 52];
 }
-static inline uint64_t getBishMagicMoves(const int index, const uint64_t allPieces)
+__attribute__((hot)) static inline uint64_t getBishMagicMoves(const int index, const uint64_t allPieces)
 {
     //allPieces &= getDiagInt(index);
     //allPieces *= bishMagic[index];

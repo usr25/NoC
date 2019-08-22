@@ -17,9 +17,9 @@
 #define NOT_SEVENTH_RANK 0xff00ffffffffffff
 #define NOT_SECOND_RANK 0xffffffffffff00ff
 
-int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
-int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
-int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
+__attribute__((hot)) int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
+__attribute__((hot)) int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
+__attribute__((hot)) int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 
 /* Generates all the legal moves for a given position and color
  */
@@ -243,7 +243,6 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
             if (moveIsValidSliding(b, m, h)) list[numMoves++] = m;
         }
     }
-
 
     temp = b->piece[color][QUEEN];
     while(temp)
