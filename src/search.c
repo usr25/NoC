@@ -34,7 +34,7 @@
 #define PLUS_INF   9999999
 #define MINS_INF  -9999999
 
-Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep);
+Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
 __attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Move m, Repetition* rep);
 __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 
@@ -58,19 +58,36 @@ static inline int compMoves(const Move* m1, const Move* m2)
     return m1->from == m2->from && m1->to == m2->to;
 }
 
+const Move NO_MOVE = (Move) {.from = -1, .to = -1};
+
 clock_t startT;
 clock_t timeToMoveT;
 int calledTiming = 0;
 
-uint64_t repet = 0;
 uint64_t nodes = 0;
+uint64_t repet = 0;
+uint64_t researches = 0;
 uint64_t qsearchNodes = 0;
 uint64_t nullCutOffs = 0;
-uint64_t betaCutOff;
-uint64_t betaCutOffHit;
-const Move NO_MOVE = (Move) {.from = -1, .to = -1};
+uint64_t betaCutOff = 0;
+uint64_t betaCutOffHit = 0;
 
 Move killerMoves[99][NUM_KM];
+
+void initCall(void)
+{
+    betaCutOff = 0;
+    betaCutOffHit = 0;
+    qsearchNodes = 0;
+    nullCutOffs = 0;
+    repet = 0;
+    researches = 0;
+    for (int i = 0; i < 99; ++i)
+    {
+        for (int j = 0; j < NUM_KM; ++j)
+            killerMoves[i][j] = NO_MOVE;
+    }
+}
 
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
 {
@@ -87,36 +104,57 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     if (numMoves == 1)
         return list[0];
 
-    betaCutOff = 0;
-    betaCutOffHit = 0;
-    qsearchNodes = 0;
-    nullCutOffs = 0;
-    repet = 0;
+    initCall();
+
     Move best = list[0], temp, secondBest;
-    for (int i = 0; i < 99; ++i)
-    {
-        for (int j = 0; j < NUM_KM; ++j)
-            killerMoves[i][j] = NO_MOVE;
-    }
+    int bestScore = 0;
+    int delta = 5;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
+        delta = max(5, delta / 5);
+        int alpha = MINS_INF, beta = PLUS_INF;
+        if (depth > 5)
+        {
+            alpha = bestScore - delta;
+            beta = bestScore + delta;
+        }
         nodes = 0;
-        temp = bestMoveList(b, depth, list, numMoves, rep);
-        sort(list, numMoves);
-        last = clock();
-        elapsed = last - start;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
+            sort(list, numMoves);
+
+            last = clock();
+            elapsed = last - start;
+            if ((calledTiming && elapsed > timeToMove) || temp.score >= PLUS_MATE)
+                break;
+
+            delta *= 10;
+            if (temp.score >= beta)
+            {
+                beta += delta;
+                #ifdef DEBUG
+                researches++;
+                #endif
+            }
+            else if (temp.score <= alpha)
+            {
+                beta = (beta + alpha) / 2;
+                alpha -= delta;
+                #ifdef DEBUG
+                researches++;
+                #endif
+            }
+            else
+                break;
+        }
         if (calledTiming && elapsed > timeToMove)
             break;
-
         best = temp;
+        bestScore = best.score;
         secondBest = list[1];
 
-        /*
-         * Due to the exponential nature, if the time remeaning is smaller than timeTaken / 3, break, it is unlikely that
-         * the program will be able to finish another depth
-         * or
-         * it has found mate
-         */
         infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
         if ((calledTiming && (1.15f * (last - start) > timeToMove)) || best.score >= PLUS_MATE)
             break;
@@ -127,9 +165,10 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     printf("Qsearch Nodes: %llu\n", qsearchNodes);
     printf("Null Cutoffs: %llu\n", nullCutOffs);
     printf("Repetition Cutoffs: %llu\n", repet);
+    printf("Researches: %llu\n", researches);
     #endif
 
-    if (best.score == 0 && numMoves > 1 && -secondBest.score < RISK)
+    if (bestScore == 0 && numMoves > 1 && -secondBest.score < RISK)
         best = secondBest;
 
     calledTiming = 0;
@@ -137,7 +176,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 }
 
 int callDepth;
-Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repetition rep)
+Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
     nodes = 0;
@@ -157,7 +196,7 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
 
     History h;
     Move currBest = list[0];
-    int val, exit = 0, alpha = MINS_INF;
+    int val, exit = 0;
     uint64_t hash = hashPosition(&b), newHash;
 
     for (int i = 0; i < numMoves && !exit; ++i)
@@ -173,17 +212,20 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
             addHash(&rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &rep);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, list[i], &rep);
             }
             else
             {
                 val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, list[i], &rep);
                 if (val > alpha)
-                    val = -pvSearch(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &rep);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, list[i], &rep);
             }
             remHash(&rep);
         }
         undoMove(&b, list[i], &h);
+
+        //For the sorting in later depths
+        list[i].score = val;
 
         if (val > alpha)
         {
@@ -193,11 +235,9 @@ Move bestMoveList(Board b, const int depth, Move* list, const int numMoves, Repe
             if (val >= PLUS_MATE + depth - 1)
                 exit = 1;
         }
-
-        //For the sorting in later depths
-        list[i].score = val;
     }
 
+    //assert(currBest.score == alpha);
     return currBest;
 }
 Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
@@ -401,7 +441,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     else if (best >= beta)
         flag = LO;
 
-    table[index] = (Eval) {.key = prevHash, .m = bestM, /*.val = val, .depth = depth, .flag = flag*/};
+    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = val, .depth = depth, .flag = flag};
 
     return best;
 }

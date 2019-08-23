@@ -223,7 +223,7 @@ void parseFensFromFileEva(void)
         hasEnded = upTo(fp, buff, '\n');
 
         Repetition rep = (Repetition) {.index = 0};
-        drawMove(bestMoveAB(b, depth, 0, rep));
+        drawMove(bestTime(b, 0, rep, depth));
         printf("\n");
         if (cnt % 10 == 0)
             printf("cnt: %d\n", cnt);

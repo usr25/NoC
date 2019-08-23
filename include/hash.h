@@ -41,6 +41,6 @@ uint64_t makeMoveHash(uint64_t prev, const Board* b, const Move m, const History
 
 inline int isRepetition(const Repetition* rep, const uint64_t hash) {return rep->index > 3 && rep->hashTable[rep->index - 4] == hash;}
 inline void addHash(Repetition* rep, uint64_t hash) {rep->hashTable[rep->index++] = hash;}
-inline void remHash(Repetition* rep) {rep->index = 0;}
+inline void remHash(Repetition* rep) {rep->index--;}
 
 Eval table[NUM_ENTRIES];
