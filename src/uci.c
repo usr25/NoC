@@ -229,8 +229,7 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
         }
     }
 
-    History h;
-    makeMove(b, m, &h);
+    makePermaMove(b, m);
 
     if (m.piece == PAWN || m.capture > 0)
         rep->index = 0;

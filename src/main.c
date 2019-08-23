@@ -15,6 +15,7 @@
 #include "../include/uci.h"
 #include "../include/io.h"
 #include "../include/magic.h"
+#include "../include/sort.h"
 
 //position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4
 //TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove

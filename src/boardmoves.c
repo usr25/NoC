@@ -136,6 +136,67 @@ void makeMove(Board* b, const Move move, History* h)
     b->allPieces = b->color[WHITE] | b->color[BLACK];
 }
 
+void makePermaMove(Board* b, const Move move)
+{
+    const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
+
+    b->enPass = 0;
+
+    flipBits(b, fromBit, move.piece, b->turn);
+    switch(move.piece)
+    {
+        case PAWN:
+            if (move.to - move.from == (2 * b->turn - 1) << 4)
+                b->enPass = move.to;
+            if (move.enPass)
+            {
+                flipBits(b, toBit, PAWN, b->turn);
+                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
+            }
+            else
+            {
+                if (move.promotion)
+                    flipBits(b, toBit, move.promotion, b->turn);
+                else
+                    flipBits(b, toBit, PAWN, b->turn);
+            }
+            b->fifty = 0;
+        break;
+
+        case ROOK:
+            if ((fromBit | toBit) & 0x8100000000000081ULL) //to reduce the number of calls
+                b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
+            flipBits(b, toBit, ROOK, b->turn);
+            b->fifty++;
+        break;
+
+        case KING:
+            if (move.castle)
+                flipCastle(b, move, b->turn);
+            else
+                flipBits(b, toBit, KING, b->turn);
+
+            b->castleInfo &= kingMoved(b->turn);
+            b->fifty++;
+        break;
+
+        default:
+            b->fifty++;
+            flipBits(b, toBit, move.piece, b->turn);
+        break;
+    }
+
+    b->turn ^= 1;
+
+    if (move.capture > 0)
+    {
+        flipBits(b, toBit, move.capture, b->turn);
+        b->fifty = 0;
+    }
+
+    b->allPieces = b->color[WHITE] | b->color[BLACK];
+}
+
 //Alters the board to undo a move, (undo . make) should be the identity function 
 void undoMove(Board* b, const Move move, History* h)
 {

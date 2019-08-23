@@ -13,6 +13,7 @@
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
 #include "../include/hash.h"
+#include "../include/sort.h"
 #include "../include/search.h"
 #include "../include/evaluation.h"
 #include "../include/mate.h"
@@ -24,10 +25,8 @@
 #define R 3
 //Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
 #define MARGIN 13
-//The number of killer moves
-#define NUM_KM 2
 //The centipawn loss it is willing to accept in order to avoid a 3fold repetition
-#define RISK 17
+#define RISK 11
 
 #define PLUS_MATE    99999
 #define MINS_MATE   -99999
@@ -38,12 +37,8 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 __attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Move m, Repetition* rep);
 __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 
-static inline void addKM(const Move m, const int depth);
-static inline void assignScores(Move* list, const int numMoves, const Move bestFromPos, const int depth);
-static inline void assignScoresQuiesce(Move* list, const int numMoves);
 static inline const int marginDepth(const int depth);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
-void sort(Move* list, const int numMoves);
 
 static inline int rookVSKing(const Board b)
 {
@@ -52,10 +47,6 @@ static inline int rookVSKing(const Board b)
 static inline int onlyPawns(const Board b)
 {
     return POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) == 2;
-}
-static inline int compMoves(const Move* m1, const Move* m2)
-{
-    return m1->from == m2->from && m1->to == m2->to;
 }
 
 const Move NO_MOVE = (Move) {.from = -1, .to = -1};
@@ -72,8 +63,6 @@ uint64_t nullCutOffs = 0;
 uint64_t betaCutOff = 0;
 uint64_t betaCutOffHit = 0;
 
-Move killerMoves[99][NUM_KM];
-
 void initCall(void)
 {
     betaCutOff = 0;
@@ -82,11 +71,7 @@ void initCall(void)
     nullCutOffs = 0;
     repet = 0;
     researches = 0;
-    for (int i = 0; i < 99; ++i)
-    {
-        for (int j = 0; j < NUM_KM; ++j)
-            killerMoves[i][j] = NO_MOVE;
-    }
+    initKM();
 }
 
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
@@ -252,7 +237,7 @@ Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
 
     int numMoves = legalMoves(&b, list) >> 1;
 
-    assignScores(list, numMoves, NO_MOVE, depth);
+    assignScores(&b, list, numMoves, NO_MOVE, depth);
     sort(list, numMoves);
 
     Move currBest = list[0];
@@ -365,7 +350,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
         return isInC * (MINS_MATE - depth);
 
     History h;
-    assignScores(list, numMoves, bestM, depth);
+    assignScores(&b, list, numMoves, bestM, depth);
     sort(list, numMoves);
 
     uint64_t newHash;
@@ -464,7 +449,7 @@ int qsearch(Board b, int alpha, const int beta)
     History h;
     const int numMoves = legalMoves(&b, list) >> 1;
 
-    assignScoresQuiesce(list, numMoves);
+    assignScoresQuiesce(&b, list, numMoves);
     sort(list, numMoves);
 
     int val;
@@ -492,61 +477,6 @@ int qsearch(Board b, int alpha, const int beta)
 
     return alpha;
 }
-
-static const int score[6] = {1000, 975, 525, 325, 300, 100};
-static inline const void captureScore(Move* m)
-{
-    m->score = score[m->capture] - (score[m->piece] >> 4);
-}
-inline void assignScores(Move* list, const int numMoves, const Move bestFromPos, const int depth)
-{
-    for (int i = 0; i < numMoves; ++i)
-    {
-        if(list[i].capture > 0) //There has been a capture
-            captureScore(&list[i]);  //MVV - LVA
-        if (compMoves(&bestFromPos, &list[i])) //It was the best refutation in the same position
-            list[i].score += 500;
-        else
-        {
-            for (int j = 0; j < NUM_KM; ++j)
-            {
-                if (compMoves(&killerMoves[depth][j], &list[i]))
-                {
-                    list[i].score += 200 + j;
-                    break;
-                }
-            }
-        }
-    }
-}
-inline void assignScoresQuiesce(Move* list, const int numMoves)
-{
-    for (int i = 0; i < numMoves; ++i)
-    {
-        if(list[i].capture > 0)
-            captureScore(&list[i]);//Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
-    }
-}
-static inline void addKM(const Move m, const int depth)
-{
-    for (int i = 1; i < NUM_KM; ++i)
-        killerMoves[depth][i-1] = killerMoves[depth][i];
-
-    killerMoves[depth][NUM_KM-1] = m;
-}
-static inline const int marginDepth(const int depth)
-{
-    switch (depth)
-    {
-        case 1:
-            return VBISH;
-        case 2:
-            return VROOK;
-        case 3:
-            return VQUEEN;
-    }
-    return 0;
-}
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture)
 {
     if (lastMCapture)
@@ -561,23 +491,16 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
 
     return 0;
 }
-/* Sorts all the moves based on their score, the algorithm is insertion sort
- */
-void sort(Move* list, const int numMoves)
+static inline const int marginDepth(const int depth)
 {
-    int j;
-    Move temp;
-    for (int i = 1; i < numMoves; ++i)
+    switch (depth)
     {
-        temp = list[i];
-        j = i - 1;
-
-        while(j > -1 && list[j].score < temp.score)
-        {
-            list[j + 1] = list[j];
-            --j;
-        }
-
-        list[j + 1] = temp;
+        case 1:
+            return VBISH;
+        case 2:
+            return VROOK;
+        case 3:
+            return VQUEEN;
     }
+    return 0;
 }
