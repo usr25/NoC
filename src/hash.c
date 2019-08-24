@@ -205,7 +205,6 @@ uint64_t random[781] =
 0x95e465db60d6e7e2, 0xa751158208d87aec, 0xb83c21445097d153, 0xf74566556bcf68d,
 0x89e921a9a45eeb6, 0x613102a85c0bab6c, 0x79e85d0669719a02, 0x431823972da34798,
 0xeba616ad483651dc};
-
 /* Ensures that all the keys are 0
  */
 void initializeTable(void)
@@ -229,6 +228,10 @@ int isThreeRep(const Repetition* r, const uint64_t hash)
     return count > 1;
 }
 
+uint64_t calcPos(const int color, const int piece, const int sqr)
+{
+    return random[(color * COLOR_OFFSET) + (piece * PIECE_OFFSET) + sqr];
+}
 /* Hashes a position
  */
 uint64_t hashPosition(const Board* b)
@@ -238,10 +241,10 @@ uint64_t hashPosition(const Board* b)
     //EnPass
     if (b->enPass) resultHash ^= random[EPAS_OFFSET + (b->enPass & 7)];
     //Castling
-    for (int i = 1; i < 5; ++i)
+    for (int i = 0; i < 4; ++i)
     {
-        if (b->castleInfo & POW2[i])
-            resultHash ^= random[CAST_OFFSET + i - 1];
+        if (b->castleInfo & (1 << i))
+            resultHash ^= random[CAST_OFFSET + i];
     }
 
     uint64_t temp;
@@ -252,7 +255,7 @@ uint64_t hashPosition(const Board* b)
             temp = b->piece[i][j];
             while(temp)
             {
-                resultHash ^= random[i * COLOR_OFFSET + j * PIECE_OFFSET + LSB_INDEX(temp)];
+                resultHash ^= calcPos(i, j, LSB_INDEX(temp));
                 REMOVE_LSB(temp);
             }
         }
@@ -261,62 +264,66 @@ uint64_t hashPosition(const Board* b)
     return resultHash;
 }
 
+
 /* Updates the hash of the position, prev is the hash of the position before the move
  * PRE: The function is called after the move is made
  */
-uint64_t makeMoveHash(uint64_t prev, const Board* b, const Move m, const History h)
+uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
 {
     prev ^= random[TURN_OFFSET];
+    const int col = b->turn;
+    const int opp = 1 ^ col;
     //Piece from
-    prev ^= random[(1 ^ b->turn) * COLOR_OFFSET + m.piece * PIECE_OFFSET + m.from];
+    prev ^= calcPos(opp, m.piece, m.from);
     //Castle info
     const int xorPosInfos = b->castleInfo ^ h.castleInfo;
-    const int colOff = b->turn * COLOR_OFFSET;
-    const int oppColOff = (1 ^ b->turn) * COLOR_OFFSET;
 
+    //There has been a capture
     if (m.capture > 0)
-        prev ^= random[colOff + m.capture * PIECE_OFFSET + m.to];
+        prev ^= calcPos(col, m.capture, m.to);
+
+    if (h.enPass)
+        prev ^= random[EPAS_OFFSET + (h.enPass & 7)];
 
     switch (m.piece)
     {
         case PAWN:
-            if (m.promotion)
-                prev ^= random[oppColOff + m.promotion * PIECE_OFFSET + m.to];
+            if (m.promotion > 0)
+                prev ^= calcPos(opp, m.promotion, m.to);
             else
-                prev ^= random[oppColOff * COLOR_OFFSET + PAWN * PIECE_OFFSET + m.to];
+                prev ^= calcPos(opp, PAWN, m.to);
 
             if (b->enPass)
                 prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
+
             if (m.enPass)
-            {
-                prev ^= random[EPAS_OFFSET + (m.enPass & 7)];
-                prev ^= random[colOff + PAWN * PIECE_OFFSET + m.enPass];
-            }
+                prev ^= calcPos(col, PAWN, m.enPass);
         break;
 
         case KING:
             if (m.castle & 1) //Kingside
             {
-                prev ^= random[oppColOff + ROOK * PIECE_OFFSET + m.to - 1];
-                prev ^= random[oppColOff * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to + 1];
+                prev ^= calcPos(opp, ROOK, m.to - 1);
+                prev ^= calcPos(opp, ROOK, m.to + 1);
             }
             else if (m.castle & 2) //Queenside
             {
-                prev ^= random[oppColOff * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to + 2];
-                prev ^= random[oppColOff * COLOR_OFFSET + ROOK * PIECE_OFFSET + m.to - 1];
+                prev ^= calcPos(opp, ROOK, m.to - 1);
+                prev ^= calcPos(opp, ROOK, m.to + 2);
             }
+        /* no break */
         case ROOK:
             if (xorPosInfos)
             {
-                //TODO: Improve this
-                for (int i = 1; i < 5; ++i)
+                for (int i = 0; i < 4; ++i)
                 {
-                    if (xorPosInfos & POW2[i])
-                        prev ^= random[CAST_OFFSET + i - 1];
+                    if (xorPosInfos & (1 << i))
+                        prev ^= random[CAST_OFFSET + i];
                 }
             }
+        /* no break */
         default:
-            prev ^= random[oppColOff + m.piece * PIECE_OFFSET + m.to];
+            prev ^= calcPos(opp, m.piece, m.to);
     }
 
     return prev;

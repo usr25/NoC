@@ -20,7 +20,7 @@ inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) int see(Board* b, const int to, const int pieceAtSqr);
 
 const Move NOMOVE = (Move) {.from = -1, .to = -1};
-const int pVal[6] = {1000, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
+const int pVal[6] = {1500, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
 Move killerMoves[99][NUM_KM];
 
 void initKM(void)
@@ -64,7 +64,7 @@ int smallestAttackerSqr(const Board* b, const int sqr, const int col)
     const int opp = 1 ^ col;
     const uint64_t obst = b->allPieces;
 
-    uint64_t temp = 0;
+    uint64_t temp = 0, bishMag = 0, rookMag = 0;
     if (col)
     {
         temp = getWhitePawnCaptures(sqr) & b->piece[BLACK][PAWN];
@@ -82,17 +82,25 @@ int smallestAttackerSqr(const Board* b, const int sqr, const int col)
     if (temp)
         return LSB_INDEX(temp);
 
-    uint64_t bishMag = getBishMagicMoves(sqr, obst);
+    if ((b->piece[opp][BISH] | b->piece[opp][QUEEN]) & getDiagMoves(sqr))
+        bishMag = getBishMagicMoves(sqr, obst);
+
     temp = bishMag & b->piece[opp][BISH];
     if (temp)
         return LSB_INDEX(temp);
 
-    uint64_t rookMag = getRookMagicMoves(sqr, obst);
+    if ((b->piece[opp][ROOK] | b->piece[opp][QUEEN]) & getStraMoves(sqr))
+        rookMag = getRookMagicMoves(sqr, obst);
+
     temp = rookMag & b->piece[opp][ROOK];
     if (temp)
         return LSB_INDEX(temp);
 
     temp = (bishMag | rookMag) & b->piece[opp][QUEEN];
+    if (temp)
+        return LSB_INDEX(temp);
+
+    temp = getKingMoves(sqr) & b->piece[opp][KING];
     if (temp)
         return LSB_INDEX(temp);
 
