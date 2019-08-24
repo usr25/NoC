@@ -58,19 +58,19 @@ uint64_t pinnedPieces(Board* b, const int color)
 {
     uint64_t res = 0;
 
-    const int lsb = LSB_INDEX(b->piece[color][KING]);
+    const int k = LSB_INDEX(b->piece[color][KING]);
     const int opp = 1 ^ color;
 
-    const uint64_t stra = (b->piece[opp][QUEEN] | b->piece[opp][ROOK]) & getStraMoves(lsb);
-    const uint64_t diag = (b->piece[opp][QUEEN] | b->piece[opp][BISH]) & getDiagMoves(lsb);
+    const uint64_t stra = (b->piece[opp][QUEEN] | b->piece[opp][ROOK]) & getStraMoves(k);
+    const uint64_t diag = (b->piece[opp][QUEEN] | b->piece[opp][BISH]) & getDiagMoves(k);
     uint64_t obst, retrace;
 
-    if (stra && (obst = b->color[color] & getRookMagicMoves(lsb, b->allPieces)))
+    if (stra && (obst = b->color[color] & getRookMagicMoves(k, b->allPieces)))
     {
-        const uint64_t inteUp = getUpMovesInt(lsb) & obst;
-        const uint64_t inteDown = getDownMovesInt(lsb) & obst;
-        const uint64_t inteRight = getRightMovesInt(lsb) & obst;
-        const uint64_t inteLeft = getLeftMovesInt(lsb) & obst;
+        const uint64_t inteUp = getUpMovesInt(k) & obst;
+        const uint64_t inteDown = getDownMovesInt(k) & obst;
+        const uint64_t inteRight = getRightMovesInt(k) & obst;
+        const uint64_t inteLeft = getLeftMovesInt(k) & obst;
 
         if (inteUp)
         {
@@ -97,12 +97,12 @@ uint64_t pinnedPieces(Board* b, const int color)
                 res |= inteLeft;
         }
     }
-    if (diag && (obst = b->color[color] & getBishMagicMoves(lsb, b->allPieces)))
+    if (diag && (obst = b->color[color] & getBishMagicMoves(k, b->allPieces)))
     {
-        const uint64_t inteUpRight = getUpRightMovesInt(lsb) & obst;
-        const uint64_t inteUpLeft = getUpLeftMovesInt(lsb) & obst;
-        const uint64_t inteDownRight = getDownRightMovesInt(lsb) & obst;
-        const uint64_t inteDownLeft = getDownLeftMovesInt(lsb) & obst;
+        const uint64_t inteUpRight = getUpRightMovesInt(k) & obst;
+        const uint64_t inteUpLeft = getUpLeftMovesInt(k) & obst;
+        const uint64_t inteDownRight = getDownRightMovesInt(k) & obst;
+        const uint64_t inteDownLeft = getDownLeftMovesInt(k) & obst;
 
         if (inteUpRight)
         {

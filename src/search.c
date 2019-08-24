@@ -34,7 +34,7 @@
 #define MINS_INF  -9999999
 
 Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
-__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Move m, Repetition* rep);
+__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
 __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 
 static inline const int marginDepth(const int depth);
@@ -44,7 +44,7 @@ static inline int rookVSKing(const Board b)
 {
     return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
 }
-static inline int onlyPawns(const Board b)
+static inline int noZugz(const Board b)
 {
     return POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) == 2;
 }
@@ -109,17 +109,22 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         for (int i = 0; i < 4; ++i)
         {
             temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
-            sort(list, numMoves);
 
-            delta *= 10;
             last = clock();
             elapsed = last - start;
-            if (temp.score >= beta)
+            int mx = list[0].score;
+            for (int j = 1; j < numMoves; ++j)
+            {
+                if (list[i].score > mx)
+                    mx = list[i].score;
+            }
+            delta *= 10;
+            if (mx >= beta)
             {
                 beta += delta;
                 researches++;
             }
-            else if (temp.score <= alpha)
+            else if (mx <= alpha)
             {
                 beta = (beta + alpha) / 2;
                 alpha -= delta;
@@ -132,6 +137,8 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         }
         if (calledTiming && elapsed > timeToMove)
             break;
+
+        sort(list, numMoves);
         best = temp;
         previousBestScore = bestScore;
         bestScore = best.score;
@@ -141,18 +148,18 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         if ((calledTiming && (1.15f * (last - start) > timeToMove)) || best.score >= PLUS_MATE)
             break;
     }
-/*
+
     #ifdef DEBUG
     printf("Beta Hits: %f\n", (float)betaCutOffHit / betaCutOff);
     printf("Qsearch Nodes: %llu\n", qsearchNodes);
     printf("Null Cutoffs: %llu\n", nullCutOffs);
     printf("Researches: %llu\n", researches);
+    printf("Repetitions: %llu\n", repe);
     #endif
-*/
-    //printf("repe: %llu\n", repe);
+
     //Choose a worse move in order to avoid 3fold repetition, if the risk is low enough
-    if (bestScore == 0 && previousBestScore == 0 && numMoves > 1 && -secondBest.score < RISK)
-        best = secondBest;
+    //if (bestScore == 0 && previousBestScore == 0 && numMoves > 1 && -secondBest.score < RISK)
+    //    best = secondBest;
 
     calledTiming = 0;
     return best;
@@ -197,19 +204,19 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
             addHash(&rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, list[i], &rep);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
             }
             else
             {
-                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, list[i], &rep);
+                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, &rep);
                 if (val > alpha)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, list[i], &rep);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
             }
             remHash(&rep);
         }
         undoMove(&b, list[i], &h);
 
-        //For the sorting in later depths
+        //For the sorting at later depths
         list[i].score = val;
 
         if (val > alpha)
@@ -224,63 +231,8 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 
     return currBest;
 }
-Move bestMoveAB(Board b, const int depth, int divide, Repetition rep)
-{
-    nodes = 0;
-    if (rookVSKing(b)) return rookMate(b);
-    if (depth == 0) return (Move) {};
-    callDepth = depth;
 
-    Move list[NMOVES];
-    History h;
-
-    int numMoves = legalMoves(&b, list) >> 1;
-
-    assignScores(&b, list, numMoves, NO_MOVE, depth);
-    sort(list, numMoves);
-
-    Move currBest = list[0];
-    int val;
-
-    uint64_t hash = hashPosition(&b); //The position should be already added to res
-    int alpha = MINS_INF;
-
-    for (int i = 0; i < numMoves; ++i)
-    {
-        makeMove(&b, list[i], &h);
-        uint64_t newHash = makeMoveHash(hash, &b, list[i], h);
-        if (insuffMat(&b) || isThreeRep(&rep, newHash))
-            val = 0;
-        else
-        {
-            addHash(&rep, newHash);
-            val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, list[i], &rep);
-            if (val > alpha)
-                val = -pvSearch(b, MINS_INF, -alpha, depth - 1, 0, newHash, list[i], &rep);
-            remHash(&rep);
-        }
-        undoMove(&b, list[i], &h);
-
-        list[i].score = val;
-
-        if (divide)
-        {
-            drawMove(list[i]);
-            printf(": %d\n", val);
-        }
-
-        if (val > alpha)
-        {
-            currBest = list[i];
-            alpha = val;
-            if (val > PLUS_MATE + depth - 2) break;
-        }
-    }
-
-    return currBest;
-}
-
-int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Move m, Repetition* rep)
+int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep)
 {
     //assert(beta >= alpha);
     nodes++;
@@ -294,12 +246,11 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     else if (depth == 0)
         return qsearch(b, alpha, beta);
 
-    const int index = prevHash & MOD_ENTRIES;
     int val;
+    const int index = prevHash & MOD_ENTRIES;
     Move bestM = NO_MOVE;
     if (table[index].key == prevHash)
     {
-        bestM = table[index].m;
         /*
         if (table[index].depth == depth)
         {
@@ -320,29 +271,34 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
                 return table[index].val;
         }
         */
+        bestM = table[index].m;
     }
 
     const int ev = eval(&b);
-    const int onlyP = onlyPawns(b);
-    const int isSafe = !isInC && !onlyP;
-    //int r = R + (depth >> 3); //Make a variable r
-    if (depth < 5 && ev - 125 * depth > beta && isSafe)
-        return ev;
+    const int nZg = noZugz(b);
+    const int isSafe = !isInC && !nZg;
 
-    if (!null && depth > R && isSafe /*m.score < 320 &&*/)
+    //Pruning
+    if (isSafe)
     {
-        int betaMargin = beta - MARGIN;
-        Repetition _rep = (Repetition) {.index = 0};
-        b.turn ^= 1;
-        val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, 0, m, &_rep);
-        b.turn ^= 1;
-
-        if (val >= betaMargin)
+        if (depth <= 4 && ev - (125 * depth) > beta)
+            return ev;
+        //int r = R + (depth >> 3); //Make a variable r
+        if (!null && depth > R /*&& m.score < 320*/)
         {
-            #ifdef DEBUG
-            ++nullCutOffs;
-            #endif
-            return beta;
+            int betaMargin = beta - MARGIN;
+            Repetition _rep = (Repetition) {.index = 0};
+            b.turn ^= 1;
+            val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
+            b.turn ^= 1;
+
+            if (val >= betaMargin)
+            {
+                #ifdef DEBUG
+                ++nullCutOffs;
+                #endif
+                return beta;
+            }
         }
     }
 
@@ -364,10 +320,12 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     if (depth <= 3)
         spEval = ev + marginDepth(depth);
 
+    const int canBreak = depth <= 3 && spEval < alpha && isSafe;
+
     for (int i = 0; i < numMoves; ++i)
     {
-        if (depth <= 3 && spEval < alpha && isSafe && i > 4 && list[i].score < 100)
-            continue;
+        if (canBreak && i > 4 && list[i].score < 100)
+            break;
 
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(prevHash, &b, list[i], h);
@@ -381,16 +339,18 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
             addHash(rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, list[i], rep);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
             }
             else
             {
                 int reduction = 1;
                 if (depth >= 3 && i > 4 && list[i].capture < 1 && !isInC)
-                    ++reduction;
-                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, list[i], rep);
+                {
+                    reduction = min(depth, reduction + 1 + i / 20);
+                }
+                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep);
                 if (val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, list[i], rep);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
             }
             remHash(rep);
         }
@@ -458,7 +418,7 @@ int qsearch(Board b, int alpha, const int beta)
 
     for (int i = 0; i < numMoves; ++i)
     {
-        //if ((list[i].score + score + 100 <= alpha) || list[i].score < 10)
+        //if ((list[i].score + score + 200 <= alpha) || list[i].score < 10)
         if (list[i].score < 10)
             break;
 
@@ -484,7 +444,9 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
     if (lastMCapture)
         return insuffMat(b);
     else{
-        //if (isRepetition(rep, newHash)) repe++;
+        #ifdef DEBUG
+        if (isRepetition(rep, newHash)) repe++;
+        #endif
         return isRepetition(rep, newHash) || isThreeRep(rep, newHash);
     }
 

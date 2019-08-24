@@ -136,6 +136,11 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
                 }
             }
         }
+        /*
+        int gvC = givesCheck(b, list[i]);
+        if (gvC)
+            list[i].score += 20 * gvC * gvC * gvC;
+        */
     }
 }
 inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)

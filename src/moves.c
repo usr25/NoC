@@ -276,31 +276,66 @@ AttacksOnK getCheckTiles(Board* b, const int color)
 
 inline int slidingCheck(Board* b, const int kingsColor)
 {
-    const int lsb = LSB_INDEX(b->piece[kingsColor][KING]);
+    const int k = LSB_INDEX(b->piece[kingsColor][KING]);
 
     uint64_t stra = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][ROOK];
-    if (stra && (stra & getRookMagicMoves(lsb, b->allPieces))) return 1;
+    if (stra && (stra & getRookMagicMoves(k, b->allPieces))) return 1;
 
     uint64_t diag = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][BISH];
-    if (diag && (diag & getBishMagicMoves(lsb, b->allPieces))) return 1;
+    if (diag && (diag & getBishMagicMoves(k, b->allPieces))) return 1;
 
     return 0;
 }
 
 inline int isInCheck(Board* b, const int kingsColor)
 {
-    const int lsb = LSB_INDEX(b->piece[kingsColor][KING]);
+    const int k = LSB_INDEX(b->piece[kingsColor][KING]);
     const int opp = 1 ^ kingsColor;
 
-    if (b->piece[opp][KING] & getKingMoves(lsb)) return 1;
-    if (b->piece[opp][PAWN] & pawnCaptures(lsb, kingsColor)) return 1;
-    if (b->piece[opp][KNIGHT] & getKnightMoves(lsb)) return 1;
+    if (b->piece[opp][KING] & getKingMoves(k)) return 1;
+    if (b->piece[opp][PAWN] & pawnCaptures(k, kingsColor)) return 1;
+    if (b->piece[opp][KNIGHT] & getKnightMoves(k)) return 1;
     
     uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
-    if (stra && (stra & getRookMagicMoves(lsb, b->allPieces))) return 1;
+    if (stra && (stra & getRookMagicMoves(k, b->allPieces))) return 1;
 
     uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
-    if (diag && (diag & getBishMagicMoves(lsb, b->allPieces))) return 1;
+    if (diag && (diag & getBishMagicMoves(k, b->allPieces))) return 1;
 
     return 0;
+}
+/* Returns the number of checks a move produces
+ * PRE: The move hasnt been applied to the board and it is a legal move
+ * Castling / promotion is not included so far
+ */
+int givesCheck(const Board* b, const Move m)
+{
+    const int k = LSB_INDEX(b->piece[b->turn][KING]);
+    const int opp = 1 ^ b->turn;
+    int numChecks = 0;
+    uint64_t newPieces;
+    int ro, bi;
+    switch(m.piece)
+    {
+        case KNIGHT:
+        numChecks += (getKnightMoves(k) & b->piece[opp][KNIGHT]) != 0;
+        /* no break */
+        case PAWN:
+        if (b->turn)
+            numChecks += (getWhitePawnCaptures(k) & b->piece[BLACK][PAWN]) != 0;
+        else
+            numChecks += (getBlackPawnCaptures(k) & b->piece[WHITE][PAWN]) != 0;
+        /* no break */
+        default:
+            newPieces = b->allPieces ^ (1ULL << m.to) ^ (1ULL << m.from);
+            ro = b->piece[opp][ROOK] | b->piece[opp][QUEEN];
+            bi = b->piece[opp][BISH] | b->piece[opp][QUEEN];
+
+            if (ro)
+                numChecks += (getRookMagicMoves(k, newPieces) & ro) != 0;
+            if (bi)
+                numChecks += (getBishMagicMoves(k, newPieces) & bi) != 0;
+    }
+
+    return numChecks;
 }

@@ -264,7 +264,10 @@ uint64_t hashPosition(const Board* b)
     return resultHash;
 }
 
-
+inline int changeTurn(const uint64_t prev)
+{
+    return prev ^ random[TURN_OFFSET];
+}
 /* Updates the hash of the position, prev is the hash of the position before the move
  * PRE: The function is called after the move is made
  */

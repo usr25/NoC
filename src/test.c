@@ -36,10 +36,10 @@ int ignore;
 
 int compMove(char* fen, char* target, int depth, int len)
 {
-    int a;
     char mv[6] = "";
-    Board b = genFromFen(fen, &a);
-    Move best = bestMoveAB(b, depth, 0, (Repetition){});
+    Board b = genFromFen(fen, &ignore);
+    //drawPosition(b, 0);
+    Move best = bestTime(b, 0, (Repetition){.index = 0}, depth);
 
     moveToText(best, mv);
     //printf("%s\n", mv);
@@ -138,9 +138,8 @@ int testRookMate()
 
 void clear(char* str)
 {
-    for (int i = 0; i < 256; ++i){
+    for (int i = 0; i < 256; ++i)
         str[i] = '\0';
-    }
 }
 int upTo(FILE* fp, char* buf, char target)
 {
@@ -199,7 +198,6 @@ void parseFensFromFilePerft(void)
     fclose(fp);
     printf("Evaluated %d positions and %llu nodes\n", cnt, tot);
 }
-
 void parseFensFromFileEva(void)
 {
     FILE* fp = fopen(PATH, "r");
@@ -243,13 +241,13 @@ void slowEval(void)
     
     printf("[+] Eval equal position: ");
     b = defaultBoard();
-    drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
+    drawMove(bestTime(b, 0, (Repetition){}, depth));
     printf(" ");
     b.turn ^= 1;
-    drawMove(bestMoveAB(b, depth, 0, (Repetition){}));
+    drawMove(bestTime(b, 0, (Repetition){}, depth));
     printf("\n");
 
-    depth = 8;
+    depth = 10;
 
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
     
@@ -268,8 +266,8 @@ void slowEval(void)
     white &= compMove("5k2/2P2q2/8/8/4R3/5K2/8/8 w - -", "e4f4", depth, 4);      //Pins
     black &= compMove("5k2/4r3/8/8/5Q2/5K2/2p5/8 b - -", "e7f7", depth, 4);
 
-    white &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", depth, 5);          //Rook promotion
-    black &= compMove("8/8/8/8/8/2k5/K1p5/8 b - -", "c2c1r", depth, 5);
+    white &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", depth, 4);          //Rook promotion
+    black &= compMove("8/8/8/8/8/2k5/K1p5/8 b - -", "c2c1r", depth, 4);
 
     white &= compMove("1q4k1/2pN3R/8/6B1/5K2/8/2p5/4q3 w - -", "d7f6", depth, 4);//Mate
     black &= compMove("1Q4Q1/2P5/8/8/1b3k2/8/r3n3/1K6 b - -", "e2c3", depth, 4);

@@ -67,3 +67,4 @@ AttacksOnK getCheckTiles(Board* b, const int color);
 
 int isInCheck(Board* b, const int kingsColor);
 int slidingCheck(Board* b, const int kingsColor);
+int givesCheck(const Board* b, const Move m);

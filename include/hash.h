@@ -13,7 +13,7 @@ enum{LO, HI, EXACT};
  * key -> Hash of the position
  * val -> Evaluation assigned to the position
  * depth -> depth at which the entry was created
- * Move -> Best move for that position (Hasnt been implemented)
+ * Move -> Best move for that position
  */
 typedef struct
 {
@@ -38,6 +38,7 @@ void initializeTable(void);
 int isThreeRep(const Repetition* r, const uint64_t hash);
 uint64_t hashPosition(const Board* b);
 uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h);
+int changeTurn(const uint64_t prev);
 
 inline int isRepetition(const Repetition* rep, const uint64_t hash) {return rep->index > 3 && rep->hashTable[rep->index - 4] == hash;}
 inline void addHash(Repetition* rep, uint64_t hash) {rep->hashTable[rep->index++] = hash;}
