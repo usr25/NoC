@@ -60,7 +60,6 @@ int see(Board* b, const int sqr, const int pieceAtSqr)
 
 int smallestAttackerSqr(const Board* b, const int sqr, const int col)
 {
-    //TODO: Add king?
     const int opp = 1 ^ col;
     const uint64_t obst = b->allPieces;
 
@@ -116,7 +115,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
 {
     for (int i = 0; i < numMoves; ++i)
     {
-        if (list[i].promotion > 1) //Promotions have the score assigned
+        if (list[i].promotion > 1) //Promotions have their score assigned
             continue;
         if(list[i].capture > 0) //There has been a capture
             list[i].score = 60 + seeCapture(*b, list[i]);
@@ -127,7 +126,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         }
         else
         {
-            for (int j = 0; j < 2; ++j)
+            for (int j = 0; j < NUM_KM; ++j)
             {
                 if (compMoves(&killerMoves[depth][j], &list[i]))
                 {
@@ -136,11 +135,9 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
                 }
             }
         }
-        /*
-        int gvC = givesCheck(b, list[i]);
+        int gvC = list[i].score < 300 && givesCheck(b, list[i]);
         if (gvC)
-            list[i].score += 20 * gvC * gvC * gvC;
-        */
+            list[i].score += 100 * gvC * gvC;
     }
 }
 inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
@@ -152,7 +149,7 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
         if(list[i].capture > 0)
         {
             if (list[i].piece == PAWN)
-                list[i].score = pVal[list[i].capture] - 50;
+                list[i].score = pVal[list[i].capture] - 10;
             else
                 list[i].score = 60 + seeCapture(*b, list[i]);//captureScore(&list[i]);//Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
         }

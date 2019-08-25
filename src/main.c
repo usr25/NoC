@@ -24,7 +24,7 @@ int main(const int argc, char** const argv)
     initMemo();
     initMagics();
 
-    //0, 1->51'5, 2->16'1s, 3->2:4, 4->6'7s
+    //0, 1->51'5, 2->4'1s, 3->2:4, 4->1:20
     //chooseTest(1);
 
     loop();

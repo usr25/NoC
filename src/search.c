@@ -94,38 +94,35 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     Move best = list[0], temp, secondBest;
     int bestScore = 0;
     int previousBestScore = -1;
-    int delta = 5;
+    int delta = 30;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = max(5, delta / 5);
+        delta = max(30, delta * .8f);
         int alpha = MINS_INF, beta = PLUS_INF;
-        if (depth > 5)
+        if (depth >= 5)
         {
             alpha = bestScore - delta;
             beta = bestScore + delta;
         }
         nodes = 0;
 
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < 5; ++i)
         {
             temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
 
             last = clock();
             elapsed = last - start;
+            sort(list, numMoves);
             int mx = list[0].score;
-            for (int j = 1; j < numMoves; ++j)
-            {
-                if (list[i].score > mx)
-                    mx = list[i].score;
-            }
-            delta *= 10;
             if (mx >= beta)
             {
+                delta *= 2.5;
                 beta += delta;
                 researches++;
             }
             else if (mx <= alpha)
             {
+                delta *= 2.5;
                 beta = (beta + alpha) / 2;
                 alpha -= delta;
                 researches++;
@@ -138,7 +135,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         if (calledTiming && elapsed > timeToMove)
             break;
 
-        sort(list, numMoves);
         best = temp;
         previousBestScore = bestScore;
         bestScore = best.score;
@@ -209,7 +205,7 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
             else
             {
                 val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, &rep);
-                if (val > alpha)
+                if (val > alpha && val < beta)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
             }
             remHash(&rep);
@@ -231,7 +227,6 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 
     return currBest;
 }
-
 int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep)
 {
     //assert(beta >= alpha);
@@ -281,10 +276,10 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     //Pruning
     if (isSafe)
     {
-        if (depth <= 4 && ev - (125 * depth) > beta)
+        if (depth <= 4 && ev - (101 * depth) > beta)
             return ev;
         //int r = R + (depth >> 3); //Make a variable r
-        if (!null && depth > R /*&& m.score < 320*/)
+        if (!null && depth > R)
         {
             int betaMargin = beta - MARGIN;
             Repetition _rep = (Repetition) {.index = 0};
@@ -322,6 +317,8 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     const int canBreak = depth <= 3 && spEval < alpha && isSafe;
 
+    /*TODO: Implement razoring*/
+
     for (int i = 0; i < numMoves; ++i)
     {
         if (canBreak && i > 4 && list[i].score < 100)
@@ -344,10 +341,9 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
             else
             {
                 int reduction = 1;
-                if (depth >= 3 && i > 4 && list[i].capture < 1 && !isInC)
-                {
-                    reduction = min(depth, reduction + 1 + i / 20);
-                }
+                if (depth >= 3 && i > 4 && list[i].score < 100 && !isInC)
+                    reduction++;
+
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep);
                 if (val > alpha && val < beta)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
@@ -404,7 +400,7 @@ int qsearch(Board b, int alpha, const int beta)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + VQUEEN /*+ ((m.promotion > 0)? VQUEEN : 0)*/ <= alpha)
+    else if (score + VQUEEN /*+ ((m.promotion > 0)? VQUEEN : 0)*/ < alpha) /*TODO: Check for zugz*/
         return alpha;
 
     Move list[NMOVES];
@@ -419,7 +415,7 @@ int qsearch(Board b, int alpha, const int beta)
     for (int i = 0; i < numMoves; ++i)
     {
         //if ((list[i].score + score + 200 <= alpha) || list[i].score < 10)
-        if (list[i].score < 10)
+        if (list[i].score < 10) /*TODO: Up this value to 60*/
             break;
 
         makeMove(&b, list[i], &h);
