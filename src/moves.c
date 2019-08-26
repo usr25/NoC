@@ -313,29 +313,27 @@ int givesCheck(const Board* b, const Move m)
     const int k = LSB_INDEX(b->piece[b->turn][KING]);
     const int opp = 1 ^ b->turn;
     int numChecks = 0;
-    uint64_t newPieces;
-    int ro, bi;
     switch(m.piece)
     {
         case KNIGHT:
         numChecks += (getKnightMoves(k) & b->piece[opp][KNIGHT]) != 0;
-        /* no break */
+        break;
+
         case PAWN:
         if (b->turn)
             numChecks += (getWhitePawnCaptures(k) & b->piece[BLACK][PAWN]) != 0;
         else
             numChecks += (getBlackPawnCaptures(k) & b->piece[WHITE][PAWN]) != 0;
-        /* no break */
-        default:
-            newPieces = b->allPieces ^ (1ULL << m.to) ^ (1ULL << m.from);
-            ro = b->piece[opp][ROOK] | b->piece[opp][QUEEN];
-            bi = b->piece[opp][BISH] | b->piece[opp][QUEEN];
-
-            if (ro)
-                numChecks += (getRookMagicMoves(k, newPieces) & ro) != 0;
-            if (bi)
-                numChecks += (getBishMagicMoves(k, newPieces) & bi) != 0;
+        break;
     }
+    uint64_t newPieces = b->allPieces ^ (1ULL << m.to) ^ (1ULL << m.from);
+    uint64_t ro = b->piece[opp][ROOK] | b->piece[opp][QUEEN];
+    uint64_t bi = b->piece[opp][BISH] | b->piece[opp][QUEEN];
+
+    if (ro)
+        numChecks += (getRookMagicMoves(k, newPieces) & ro) != 0;
+    if (bi)
+        numChecks += (getBishMagicMoves(k, newPieces) & bi) != 0;
 
     return numChecks;
 }

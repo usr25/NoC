@@ -51,17 +51,23 @@ static inline int noZugz(const Board b)
 
 const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 
+/* Time management */
 clock_t startT;
 clock_t timeToMoveT;
 int calledTiming = 0;
 
+/* Info string */
 uint64_t nodes = 0;
+
+/* Debug info */
+uint64_t noMoveGen = 0;
 uint64_t repe = 0;
 uint64_t researches = 0;
 uint64_t qsearchNodes = 0;
 uint64_t nullCutOffs = 0;
 uint64_t betaCutOff = 0;
 uint64_t betaCutOffHit = 0;
+
 
 void initCall(void)
 {
@@ -71,6 +77,7 @@ void initCall(void)
     nullCutOffs = 0;
     researches = 0;
     repe = 0;
+    noMoveGen = 0;
     initKM();
 }
 
@@ -94,10 +101,10 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     Move best = list[0], temp, secondBest;
     int bestScore = 0;
     int previousBestScore = -1;
-    int delta = 30;
+    int delta = 25;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = max(30, delta * .8f);
+        delta = max(25, delta * .8f);
         int alpha = MINS_INF, beta = PLUS_INF;
         if (depth >= 5)
         {
@@ -113,14 +120,13 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             last = clock();
             elapsed = last - start;
             sort(list, numMoves);
-            int mx = list[0].score;
-            if (mx >= beta)
+            if (temp.score >= beta)
             {
                 delta *= 2.5;
                 beta += delta;
                 researches++;
             }
-            else if (mx <= alpha)
+            else if (temp.score <= alpha)
             {
                 delta *= 2.5;
                 beta = (beta + alpha) / 2;
@@ -184,10 +190,10 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 
     History h;
     Move currBest = list[0];
-    int val, exit = 0;
+    int val;
     uint64_t hash = hashPosition(&b), newHash;
 
-    for (int i = 0; i < numMoves && !exit; ++i)
+    for (int i = 0; i < numMoves; ++i)
     {
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(hash, &b, list[i], h);
@@ -220,8 +226,8 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
             currBest = list[i];
             alpha = val;
             //No need to keep searching once it has found a mate in 1
-            if (val >= PLUS_MATE + depth - 1)
-                exit = 1;
+            if (val >= PLUS_MATE + depth - 1 || val >= beta)
+                break;
         }
     }
 
@@ -315,7 +321,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     if (depth <= 3)
         spEval = ev + marginDepth(depth);
 
-    const int canBreak = depth <= 3 && spEval < alpha && isSafe;
+    const int canBreak = depth <= 3 && spEval <= alpha && isSafe;
 
     /*TODO: Implement razoring*/
 
@@ -414,8 +420,8 @@ int qsearch(Board b, int alpha, const int beta)
 
     for (int i = 0; i < numMoves; ++i)
     {
-        //if ((list[i].score + score + 200 <= alpha) || list[i].score < 10)
-        if (list[i].score < 10) /*TODO: Up this value to 60*/
+        //if ((list[i].score + score + 200 <= alpha) || list[i].score < 10) /*TODO: This seems to lose elo, maybe up 200? */
+        if (list[i].score < 60)
             break;
 
         makeMove(&b, list[i], &h);

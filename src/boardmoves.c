@@ -4,8 +4,10 @@
  */
 
 #include "../include/global.h"
+#include "../include/memoization.h"
 #include "../include/board.h"
 #include "../include/moves.h"
+#include "../include/magic.h"
 #include "../include/boardmoves.h"
 
 /*
@@ -241,4 +243,54 @@ void undoMove(Board* b, const Move move, History* h)
             flipBits(b, toBit, move.piece, b->turn);
         break;
     }
+}
+
+/* Returns if a move is legal in the given position
+ * PRE: The move hasnt been applied to the board and is a valid move
+ * it currently doesnt work with enPass or castle, they are returned as false 0
+ */
+int isValid(Board b, const Move m)
+{
+    uint64_t toBB = POW2[m.to], fromBB = POW2[m.from];
+    if ((fromBB & b.color[b.turn]) == 0)
+        return 0;
+    if (pieceAt(&b, fromBB, b.turn) == NO_PIECE)
+        return 0;
+    if (m.capture > 0 && pieceAt(&b, toBB, 1 ^ b.turn) != m.capture)
+        return 0;
+    //Look at the move
+    switch (m.piece)
+    {
+        case PAWN:
+            if ((toBB & posPawnMoves(&b, b.turn, m.from)) == 0)
+                return 0;
+            break;
+        case KNIGHT:
+            if ((toBB & getKnightMoves(m.from)) == 0)
+                return 0;
+            break;
+        case BISH:
+            if ((toBB & getBishMagicMoves(m.from, b.allPieces)) == 0)
+                return 0;
+            break;
+        case ROOK:
+            if ((toBB & getRookMagicMoves(m.from, b.allPieces)) == 0)
+                return 0;
+            break;
+        case QUEEN:
+            if ((toBB & (getRookMagicMoves(m.from, b.allPieces) | getBishMagicMoves(m.from, b.allPieces))) == 0)
+                return 0;
+            break;
+        case KING:
+            if ((toBB & getKingMoves(m.from)) == 0)
+                return 0;
+            break;
+
+        default:
+            return 0;
+    }
+
+    //To avoid other errors, see if the king is in check
+    makePermaMove(&b, m);
+    return !isInCheck(&b, 1 ^ b.turn);
 }

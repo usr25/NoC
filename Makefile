@@ -23,12 +23,12 @@ $(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) -O3
 
 $(ODIR)/%R.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -Ofast -flto
+	$(CC) -c -o $@ $< $(CFLAGS) -fno-associative-math -O3 -flto
 
 .PHONY: clean optimized lichess all release
 
 release: $(OBJR)
-	$(CC) -o $@ $^ $(CFLAGS) -Ofast -flto $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) -fno-associative-math -O3 -flto $(LIBS)
 
 optimized: $(OBJO)
 	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS)

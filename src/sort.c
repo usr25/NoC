@@ -15,6 +15,8 @@
 #include "../include/magic.h"
 #include "../include/io.h"
 
+#define NUM_KM 2
+
 int smallestAttackerSqr(const Board* b, const int sqr, const int col);
 inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) int see(Board* b, const int to, const int pieceAtSqr);
@@ -22,6 +24,13 @@ __attribute__((hot)) int see(Board* b, const int to, const int pieceAtSqr);
 const Move NOMOVE = (Move) {.from = -1, .to = -1};
 const int pVal[6] = {1500, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
 Move killerMoves[99][NUM_KM];
+
+uint64_t relevantPieces[2][6];
+
+inline int compMoves(const Move* m1, const Move* m2)
+{
+    return m1->from == m2->from && m1->to == m2->to;
+}
 
 void initKM(void)
 {
@@ -106,10 +115,6 @@ int smallestAttackerSqr(const Board* b, const int sqr, const int col)
     return -1;
 }
 
-inline int compMoves(const Move* m1, const Move* m2)
-{
-    return m1->from == m2->from && m1->to == m2->to;
-}
 
 inline void assignScores(Board* b, Move* list, const int numMoves, const Move bestFromPos, const int depth)
 {
@@ -118,7 +123,12 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         if (list[i].promotion > 1) //Promotions have their score assigned
             continue;
         if(list[i].capture > 0) //There has been a capture
-            list[i].score = 60 + seeCapture(*b, list[i]);
+        {
+            if (list[i].piece == PAWN)
+                list[i].score = pVal[list[i].capture] - 20;
+            else
+                list[i].score = 60 + seeCapture(*b, list[i]);
+        }
 
         if (compMoves(&bestFromPos, &list[i])) //It was the best refutation in the same position
         {
@@ -135,9 +145,12 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
                 }
             }
         }
+        /* TODO: gvC doesnt seem to give elo, do some testing */
+        /*
         int gvC = list[i].score < 300 && givesCheck(b, list[i]);
         if (gvC)
-            list[i].score += 100 * gvC * gvC;
+            list[i].score += 100 * gvC * gvC; //Double check is more than 2 times better than a normal check, at least thats the idea
+        */
     }
 }
 inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
@@ -149,7 +162,7 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
         if(list[i].capture > 0)
         {
             if (list[i].piece == PAWN)
-                list[i].score = pVal[list[i].capture] - 10;
+                list[i].score = pVal[list[i].capture] - 20;
             else
                 list[i].score = 60 + seeCapture(*b, list[i]);//captureScore(&list[i]);//Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
         }
