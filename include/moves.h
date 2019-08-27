@@ -8,7 +8,6 @@
  * enPass -> Index of where the opp pawn is located when capturing En Passand
  * score -> Score used for the MVV - LVA ordering and other orderings
  */
-
 typedef struct 
 {
     int piece;
@@ -28,7 +27,6 @@ typedef struct
  * castleInfo -> Castle info
  * enPass -> A pawn moved 2 squares and thus allowed En Passand
  */
-
 typedef struct
 {
     uint64_t allPieces;

@@ -205,6 +205,7 @@ uint64_t random[781] =
 0x95e465db60d6e7e2, 0xa751158208d87aec, 0xb83c21445097d153, 0xf74566556bcf68d,
 0x89e921a9a45eeb6, 0x613102a85c0bab6c, 0x79e85d0669719a02, 0x431823972da34798,
 0xeba616ad483651dc};
+
 /* Ensures that all the keys are 0
  */
 void initializeTable(void)
@@ -228,10 +229,11 @@ int isThreeRep(const Repetition* r, const uint64_t hash)
     return count > 1;
 }
 
-uint64_t calcPos(const int color, const int piece, const int sqr)
+inline uint64_t calcPos(const int color, const int piece, const int sqr)
 {
     return random[(color * COLOR_OFFSET) + (piece * PIECE_OFFSET) + sqr];
 }
+
 /* Hashes a position
  */
 uint64_t hashPosition(const Board* b)

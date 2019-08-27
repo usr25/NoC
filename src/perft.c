@@ -11,8 +11,6 @@
 
 #include <stdio.h>
 
-//The perft results from the starting position (until perft 9)
-uint64_t results[10] = {1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 119060324ULL, 3195901860ULL, 84998978956ULL, 2439530234167ULL};
 
 uint64_t perftRecursive(Board b, const int depth)
 {
@@ -20,14 +18,14 @@ uint64_t perftRecursive(Board b, const int depth)
     History h;
     uint64_t tot = 0;
 
-    int numMoves = legalMoves(&b, moves) >> 1;
+    const int numMoves = legalMoves(&b, moves) >> 1;
 
     if (depth == 1)
         tot = numMoves;
     else
     {
         for (int i = 0; i < numMoves; ++i)
-        {        
+        {
             makeMove(&b, moves[i], &h);
             tot += perftRecursive(b, depth - 1);
             undoMove(&b, moves[i], &h);
@@ -37,7 +35,7 @@ uint64_t perftRecursive(Board b, const int depth)
     return tot;
 }
 
-uint64_t perft(Board b, const int depth, int divide)
+uint64_t perft(Board b, const int depth, const int divide)
 {
     if (depth == 0) return 1;
 
@@ -45,13 +43,13 @@ uint64_t perft(Board b, const int depth, int divide)
     History h;
     uint64_t tot = 0;
 
-    int numMoves = legalMoves(&b, moves) >> 1;
-    
+    const int numMoves = legalMoves(&b, moves) >> 1;
+
     if (depth == 1)
         return numMoves;
-    
+
     for (int i = 0; i < numMoves; ++i)
-    {        
+    {
         makeMove(&b, moves[i], &h);
 
         int temp = perftRecursive(b, depth - 1);

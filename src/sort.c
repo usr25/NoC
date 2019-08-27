@@ -8,12 +8,8 @@
 #include "../include/memoization.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
-#include "../include/evaluation.h"
-#include "../include/hash.h"
 #include "../include/sort.h"
-#include "../include/search.h"
 #include "../include/magic.h"
-#include "../include/io.h"
 
 #define NUM_KM 2
 
@@ -36,7 +32,7 @@ void initKM(void)
 {
     for (int i = 0; i < 99; ++i)
     {
-        for (int j = 0; j < 2; ++j)
+        for (int j = 0; j < NUM_KM; ++j)
             killerMoves[i][j] = NOMOVE;
     }
 }

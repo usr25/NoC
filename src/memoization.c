@@ -20,7 +20,7 @@ const void initializePOW2(void)
 }
 
 const void genWhitePawnMoves(void)
-{   
+{
     int i = 8;
 
     for (; i < 16; ++i)
@@ -30,7 +30,7 @@ const void genWhitePawnMoves(void)
         whitePawnMoves[i] = POW2[i + 8];
 }
 const void genBlackPawnMoves(void)
-{   
+{
     int i = 55;
 
     for (; i > 47; --i)
@@ -200,7 +200,7 @@ const void genStraDiagMoves(void)
     {
         straMoves[i] = upMoves[i] | downMoves[i] | rightMoves[i] | leftMoves[i];
         diagMoves[i] = uprightMoves[i] | upleftMoves[i] | downrightMoves[i] | downleftMoves[i];
-        
+
         straMovesInt[i] = upMovesInt[i] | downMovesInt[i] | rightMovesInt[i] | leftMovesInt[i];
         diagMovesInt[i] = uprightMovesInt[i] | upleftMovesInt[i] | downrightMovesInt[i] | downleftMovesInt[i];
     }
@@ -337,7 +337,7 @@ const void initMemo(void)
     genLeftMoves();
     genUpMoves();
     genDownMoves();
-    
+
     genUpRightMoves();
     genUpLeftMoves();
     genDownRightMoves();

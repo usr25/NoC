@@ -35,37 +35,8 @@
 
 //Starting: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-int textToPiece(char piece)
-{
-    switch(piece)
-    {
-        case 'P':
-        case 'p':
-            return PAWN;
-        case 'K':
-        case 'k':
-            return KING;
-        case 'Q':
-        case 'q':
-            return QUEEN;
-        case 'R':
-        case 'r':
-            return ROOK;
-        case 'B':
-        case 'b':
-            return BISH;
-        case 'N':
-        case 'n':
-            return KNIGHT;
-
-        default:
-            return NO_PIECE;
-    }
-}
-int color(char piece)
-{
-    return 'A' <= piece && piece <= 'Z';
-}
+int textToPiece(char piece);
+int color(char piece);
 
 //TODO: 50 moves in the fen are ignored, the moves are set to 0
 Board genFromFen(char* const fen, int* counter)
@@ -151,7 +122,7 @@ Board genFromFen(char* const fen, int* counter)
     return b;
 }
 
-Board defaultBoard()
+const Board defaultBoard()
 {
     Board b = (Board) {};
     
@@ -181,7 +152,7 @@ Board defaultBoard()
     return b;
 }
 
-int equal(Board* a, Board* b)
+int equal(const Board* a, const Board* b)
 {
     int data = 
         (a->castleInfo == b->castleInfo) && (a->allPieces == b->allPieces);
@@ -203,24 +174,41 @@ int equal(Board* a, Board* b)
 
 Board duplicate(const Board b)
 {
-    Board a = (Board) {};
-
-    for (int i = 0; i < 6; ++i)
-    {
-        a.piece[0][i] = b.piece[0][i];
-        a.piece[1][i] = b.piece[1][i];
-    }
-    for (int i = 0; i < 4; ++i)
-        a.color[i] = b.color[i];
-
-    a.castleInfo = b.castleInfo;
-    a.allPieces = b.allPieces;
-    a.enPass = b.enPass;
-    a.turn = b.turn;
-
+    Board a = b;
     return a;
 }
 
+int textToPiece(char piece)
+{
+    switch(piece)
+    {
+        case 'P':
+        case 'p':
+            return PAWN;
+        case 'K':
+        case 'k':
+            return KING;
+        case 'Q':
+        case 'q':
+            return QUEEN;
+        case 'R':
+        case 'r':
+            return ROOK;
+        case 'B':
+        case 'b':
+            return BISH;
+        case 'N':
+        case 'n':
+            return KNIGHT;
+
+        default:
+            return NO_PIECE;
+    }
+}
+int color(char piece)
+{
+    return 'A' <= piece && piece <= 'Z';
+}
 int getIndex(const char row, const char col)
 {
     return ((col - '1') << 3) + (7 + 'a' - row);

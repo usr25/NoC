@@ -26,6 +26,7 @@
 
 #define SP_MARGIN 50
 
+//TODO: Turn the defines into varibles for easier autotuning
 //TODO: Bonus for passed pawns depending on where they are on the board passPArr[6] = {1, 5, 15, 75, 125, 225}
 
 #include "../include/global.h"

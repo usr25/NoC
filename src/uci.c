@@ -18,8 +18,6 @@
 #include "../include/evaluation.h"
 #include "../include/uci.h"
 
-#define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "DEV"
 #define LEN 4096
 
 void uci(void);

@@ -10,14 +10,6 @@
 #include "../include/io.h"
 #include "../include/magic.h"
 
-/* How it works:
- * 1- Get all the relevant bits for the attack using a mask getMoveTypeInt(index) & allPieces, it is not neccessary to include the bits of the blocking pieces in the mask
- * 2- Multiply * magicType[index]
- * 3- Bitshift the result 64 - 12 for rook and 64 - 9 for bish
- * 4- Refer to the respective array and return getTypeMoves[index][multShifted]
- * The return WILL include the blocking sqrs, so that the mask b.color[opp] can be applied
- * to include the opp pieces for captures
- */
 
 inline uint64_t posKingMoves(Board* b, const int color)
 {
@@ -39,8 +31,7 @@ inline uint64_t posQueenMoves(Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & (getRookMagicMoves(lsb, b->allPieces) | getBishMagicMoves(lsb, b->allPieces));
 }
-/*
- * All the possible pawn moves without including enPass
+/* All the possible pawn moves without including enPass
  */
 uint64_t posPawnMoves(Board* b, const int color, const int lsb)
 {

@@ -5,6 +5,7 @@
  * turn -> Int holding the turn of the player that is to move
  * castleInfo -> Int that holds the availability of the 4 diff castles
  * enPass -> Index of the pawn that moved 2 sqrs in the last turn, otherwise 0
+ * fifty -> 50 move rule counter
  */
 
 typedef struct
@@ -23,9 +24,9 @@ typedef struct
 int textToPiece(char piece);
 
 Board genFromFen(char* const fen, int* counter);
-Board defaultBoard(void);
+const Board defaultBoard(void);
 
-int equal(Board* a, Board* b);
+int equal(const Board* a, const Board* b);
 Board duplicate(const Board b);
 
 int getIndex(const char row, const char col);

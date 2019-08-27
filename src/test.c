@@ -53,22 +53,22 @@ int testHashingInPos(char* fen)
     Move list[NMOVES];
     History h;
 
-    int numMoves = legalMoves(&b, list) >> 1;
+    const int numMoves = legalMoves(&b, list) >> 1;
 
     uint64_t initialHash = hashPosition(&b);
 
-    int makeWorks = 1;
+    int works = 1;
     for (int i = 0; i < numMoves; ++i)
     {
         makeMove(&b, list[i], &h);
-        uint64_t make = makeMoveHash(initialHash, &b, list[i], h);
-        uint64_t makeCorrect = hashPosition(&b);
+        const uint64_t updateHash = makeMoveHash(initialHash, &b, list[i], h);
+        const uint64_t correcHash = hashPosition(&b);
         undoMove(&b, list[i], &h);
 
-        makeWorks &= make == makeCorrect;
+        works &= updateHash == correcHash;
     }
 
-    return makeWorks;
+    return works;
 }
 
 int testHashing()
@@ -99,7 +99,7 @@ int testHashing()
     makeMove(&b, m, &h);
     uint64_t after = makeMoveHash(start, &b, m, h);
 
-    
+
     b = genFromFen("2k5/6p1/q7/7P/6Pp/8/Q7/3K4 b - -", &a);
     int enPass = hashPosition(&b) != after && after != start;
 
@@ -234,11 +234,11 @@ void parseFensFromFileEva(void)
 void slowEval(void)
 {
     printf("\n---= This will take a long time =---\n");
-    
-    int depth = 7;
+
+    int depth = 8;
     int white = 1, black = 1;
     Board b;
-    
+
     printf("[+] Eval equal position: ");
     b = defaultBoard();
     drawMove(bestTime(b, 0, (Repetition){}, depth));
@@ -250,7 +250,7 @@ void slowEval(void)
     depth = 10;
 
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
-    
+
     white &= compMove("k7/pp6/8/4Q3/8/2r5/K7/2q5 w - -", "e5b8", depth, 4);      //Queen sac to draw
     black &= compMove("2Q5/k7/2R5/8/4q3/8/PP6/K7 b - -", "e4b1", depth, 4);
 
@@ -313,22 +313,22 @@ void slowTests(void)
 
     b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -", &ignore);
     printf("No pawns depth 5: %d\n", perftRecursive(b, 5) == 191462298ULL);
-    
+
     b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -", &ignore);
     printf("En passand + promotion: %d\n", perftRecursive(b, 8) == 3558853ULL);
-    
+
     b = genFromFen("8/5k2/P4P1K/8/8/8/4p3/8 w - -", &ignore);
     printf("Promotion: %d\n", perftRecursive(b, 8) == 38555705ULL);
 
     b = genFromFen("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -", &ignore);
     printf("Castle: %d\n", perftRecursive(b, 5) == 7288108ULL);
-    
+
     b = genFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3 w - -", &ignore);
     printf("Bish & Knight: %d\n", perftRecursive(b, 5) == 48483119ULL);
-    
+
     b = genFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3 w - -", &ignore);
     printf("Queen: %d\n", perftRecursive(b, 6) == 71878391ULL);
-    
+
     b = genFromFen("8/8/8/3k1K3/8/8/8/8 w - -", &ignore);
     printf("King: %d\n", perftRecursive(b, 9) == 31356171ULL);
 
@@ -338,10 +338,10 @@ void slowTests(void)
 
     b = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", &ignore);
     printf("Perfect 1: %d\n", perftRecursive(b, 6) == 119060324ULL);
-    
+
     b = genFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", &ignore);
     printf("Perfect 2: %d\n", perftRecursive(b, 5) == 193690690ULL);
-    
+
     b = genFromFen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", &ignore);
     printf("Perfect 3: %d\n", perftRecursive(b, 7) == 178633661ULL);
 

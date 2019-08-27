@@ -40,6 +40,8 @@ __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 static inline const int marginDepth(const int depth);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
 
+/* Dertermine the type of position
+ */
 static inline int rookVSKing(const Board b)
 {
     return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
@@ -52,8 +54,8 @@ static inline int noZugz(const Board b)
 const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 
 /* Time management */
-clock_t startT;
-clock_t timeToMoveT;
+clock_t startT = 0;
+clock_t timeToMoveT = 0;
 int calledTiming = 0;
 
 /* Info string */
@@ -83,16 +85,19 @@ void initCall(void)
 
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
 {
+    /* All the time management */
     calledTiming = (targetDepth == 0)? 1 : 0;
-    targetDepth =  (targetDepth == 0)? 99 : targetDepth;
+    targetDepth  = (targetDepth == 0)? 99 : targetDepth;
     clock_t start = clock(), last, elapsed;
 
     timeToMoveT = timeToMove;
     startT = start;
 
-    Move list[NMOVES];
-    int numMoves = legalMoves(&b, list) >> 1;
 
+    Move list[NMOVES];
+    const int numMoves = legalMoves(&b, list) >> 1;
+
+    //It there is only one possible move, return it
     if (numMoves == 1)
         return list[0];
 
@@ -101,10 +106,10 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     Move best = list[0], temp, secondBest;
     int bestScore = 0;
     int previousBestScore = -1;
-    int delta = 25;
+    int delta = 35;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = max(25, delta * .8f);
+        delta = max(35, delta * .8f);
         int alpha = MINS_INF, beta = PLUS_INF;
         if (depth >= 5)
         {
@@ -160,6 +165,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     #endif
 
     //Choose a worse move in order to avoid 3fold repetition, if the risk is low enough
+    //Another (better) alternative is to include random noise when the score is assigned if it is a 3fold rep, to avoid messing up other evaluations
     //if (bestScore == 0 && previousBestScore == 0 && numMoves > 1 && -secondBest.score < RISK)
     //    best = secondBest;
 
@@ -225,7 +231,7 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
         {
             currBest = list[i];
             alpha = val;
-            //No need to keep searching once it has found a mate in 1
+
             if (val >= PLUS_MATE + depth - 1 || val >= beta)
                 break;
         }
@@ -287,7 +293,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
         //int r = R + (depth >> 3); //Make a variable r
         if (!null && depth > R)
         {
-            int betaMargin = beta - MARGIN;
+            const int betaMargin = beta - MARGIN;
             Repetition _rep = (Repetition) {.index = 0};
             b.turn ^= 1;
             val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
@@ -445,7 +451,8 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
 {
     if (lastMCapture)
         return insuffMat(b);
-    else{
+    else
+    {
         #ifdef DEBUG
         if (isRepetition(rep, newHash)) repe++;
         #endif
@@ -465,5 +472,6 @@ static inline const int marginDepth(const int depth)
         case 3:
             return VQUEEN;
     }
+
     return 0;
 }

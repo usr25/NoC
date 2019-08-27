@@ -65,8 +65,8 @@ void drawBitboard(const uint64_t b)
         if (i % 8 == 0) printf("\n");
         printf("%d", pos & b? 1 : 0);
         pos >>= 1;
-
     }
+
     printf("\n");
 }
 

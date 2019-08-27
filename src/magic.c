@@ -36,7 +36,7 @@ void initMagics(void)
  */
 void genMagics(void)
 {
-    srand(11);
+    srand(11); //'Random' number I picked by hand, used to ensure determinism
 
     for (int i = 0; i < 64; ++i)
     {
@@ -50,7 +50,7 @@ void genMagics(void)
 /* Generate the respective bb from a mask, this is used to enumerate all
  * possible states
  */
-uint64_t indexToBitboard(int index, int bits, uint64_t m) 
+uint64_t indexToBitboard(const int index, const int bits, uint64_t m) 
 {
     int j;
     uint64_t result = 0ULL;
@@ -64,28 +64,29 @@ uint64_t indexToBitboard(int index, int bits, uint64_t m)
 }
 
 /* Generate the magic for a given sqr and piece type
- * This algorithm is NOT guaranteed to finish
+ * This algorithm is NOT guaranteed to finish since it works by trial and error
  */
 uint64_t findMagic(int sqr, int isBishop)
 {
     uint64_t attacks[4096], colArray[4096], magic;
     int i, k, collision, arrInd;
 
-    const uint64_t mask = isBishop ? getDiagInt(sqr) : getStraInt(sqr);
+    const uint64_t mask = isBishop? getDiagInt(sqr) : getStraInt(sqr);
     const int n = POPCOUNT(mask);
 
     int sh = isBishop? 55 : 52;
 
     for (i = 0; i < (1 << n); i++)
         attacks[i] = indexToBitboard(i, n, mask);
-    
+
     for (k = 0; k < 0xfffff; k++)
     {
-        magic = random_uint64() & random_uint64() & random_uint64();
-        
-        if (POPCOUNT((mask * magic) & 0xFF00000000000000ULL) < 6) continue;
-        for (i = 0; i < 4096; i++) colArray[i] = 0ULL;
-        
+        magic = random_uint64() & random_uint64() & random_uint64(); //Magics with low popcounts are better
+
+        if (POPCOUNT((mask * magic) & 0xFF00000000000000ULL) < 6) continue; //If the magic doesn't map at lease 6 bits to the upper row of the bitboard, it wont work
+        for (i = 0; i < 4096; i++) colArray[i] = 0ULL; //Initialize the collision array
+
+        //Go through all the possible states and see if it produces a collision, if it doesn't, it is a valid magic for the given square
         for (i = 0, collision = 0; !collision && i < (1 << n); i++)
         {
             arrInd = (attacks[i] * magic) >> sh; // >> (64 - n) for better magics space wise
@@ -93,13 +94,15 @@ uint64_t findMagic(int sqr, int isBishop)
             else collision = 1;
         }
 
-        if (!collision) //There hasnt been any colision, so the magic works
+        if (!collision) //There hasn't been any colisions, so the magic works
             return magic;
     }
-    printf("[-] ERROR, increase k or change the seed\n");
+    printf("[-] ERROR, increase the limit in the loop or change the seed\n");
     return 0ULL;
 }
 
+/* Map the respective bitboards to the magics for the rook movements
+ */
 void populateRookMagics(void)
 {
     for (int i = 0; i < 64; ++i)
@@ -116,6 +119,8 @@ void populateRookMagics(void)
         }
     }
 }
+/* Map the respective bitboards to the magics for the bishop movements
+ */
 void populateBishMagics(void)
 {
     for (int i = 0; i < 64; ++i)

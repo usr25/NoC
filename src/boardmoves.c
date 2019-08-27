@@ -10,11 +10,9 @@
 #include "../include/magic.h"
 #include "../include/boardmoves.h"
 
-/*
- * Returns the piece in the determined sqr, pos has to be a bitboard (POW2)
+/* Returns the piece in the determined sqr, pos has to be a bitboard (POW2)
  * Returns NO_PIECE (-1) if there is no piece
  */
-
 inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 {
     if (pos & b->piece[color][PAWN])     return PAWN;
@@ -23,7 +21,7 @@ inline int pieceAt(Board* const b, const uint64_t pos, const int color)
     else if (pos & b->piece[color][KNIGHT]) return KNIGHT;
     else if (pos & b->piece[color][QUEEN]) return QUEEN;
     else if (pos & b->piece[color][KING]) return KING;
-     
+
     return NO_PIECE;
 }
 
@@ -49,7 +47,9 @@ static inline void flipBits(Board* b, const uint64_t from, const int piece, cons
     b->color[color | 2] ^= from;
 }
 
-//It is assumed that the castling direction has already been decided, and is placed in move.castle (1 -> kingside, 2-> queenside)
+/* Flips the necessary bits for castling
+ * PRE: The castling direction has been decided and saved to move.castle
+ */
 static inline void flipCastle(Board* b, const Move move, const int color)
 {
     uint64_t fromRook, toRook;
@@ -70,7 +70,8 @@ static inline void flipCastle(Board* b, const Move move, const int color)
     flipBits(b, toRook, ROOK, color);
 }
 
-//Alters the board to make a move
+/* Makes the actual move and saves the data into h to undo it later
+ */
 void makeMove(Board* b, const Move move, History* h)
 {
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
@@ -103,7 +104,7 @@ void makeMove(Board* b, const Move move, History* h)
             }
             b->fifty = 0;
         break;
-        
+
         case ROOK:
             if ((fromBit | toBit) & 0x8100000000000081ULL) //to reduce the number of calls
                 b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
@@ -119,7 +120,7 @@ void makeMove(Board* b, const Move move, History* h)
 
             b->castleInfo &= kingMoved(b->turn);
             b->fifty++;
-        break;        
+        break;
 
         default:
             b->fifty++;
@@ -134,10 +135,12 @@ void makeMove(Board* b, const Move move, History* h)
         flipBits(b, toBit, move.capture, b->turn);
         b->fifty = 0;
     }
-    
+
     b->allPieces = b->color[WHITE] | b->color[BLACK];
 }
 
+/* Equivalent to makeMove but doesnt need History, since it wont be undone
+ */
 void makePermaMove(Board* b, const Move move)
 {
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
@@ -199,7 +202,8 @@ void makePermaMove(Board* b, const Move move)
     b->allPieces = b->color[WHITE] | b->color[BLACK];
 }
 
-//Alters the board to undo a move, (undo . make) should be the identity function 
+/* Alters the board to undo a move, (undo . make) should be the identity function 
+ */
 void undoMove(Board* b, const Move move, History* h)
 {
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
@@ -208,7 +212,7 @@ void undoMove(Board* b, const Move move, History* h)
     b->allPieces = h->allPieces;
     b->enPass = h->enPass;
     b->fifty = h->fifty;
-    
+
     if (move.capture > 0)
         flipBits(b, toBit, move.capture, b->turn);
 
@@ -247,7 +251,7 @@ void undoMove(Board* b, const Move move, History* h)
 
 /* Returns if a move is legal in the given position
  * PRE: The move hasnt been applied to the board and is a valid move
- * it currently doesnt work with enPass or castle, they are returned as false 0
+ * it currently doesnt work with enPass or castle, they are returned as false (0)
  */
 int isValid(Board b, const Move m)
 {

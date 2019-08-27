@@ -1,5 +1,10 @@
 #define ALL 0xffffffffffffffffULL //(~0ULL)
 
+#define ENGINE_AUTHOR "usr"
+#define ENGINE_NAME "DEV"
+
+//#define DEBUG
+
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)
 #define LSB_INDEX(ll) __builtin_ctzll(ll)
@@ -46,8 +51,6 @@
 #define VPAWN 100
 
 #define uint64_t unsigned long long
-
-//#define DEBUG
 
 inline int min(const int a, const int b) {return (a < b)? a : b;}
 inline int max(const int a, const int b) {return (a > b)? a : b;}
