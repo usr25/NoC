@@ -172,14 +172,16 @@ void best_time(Board b, char* beg, Repetition* rep)
 
     if (!callDepth)
     {
-        clock_t remTime = (b.turn? wtime : btime);
-        clock_t increment = (b.turn? winc : binc);
-        clock_t timeToMove = min(remTime >> 2, (remTime >> 5) + (clock_t)(increment * .9)) - 20; // remTime / 32
+        //Play with time
+        clock_t remTime = b.turn? wtime : btime;
+        clock_t increment = b.turn? winc : binc;
+        clock_t timeToMove = min(remTime >> 3, (remTime >> 5) + (clock_t)(increment * .9)) - 20; // remTime / 32
         clock_t calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
         best = bestTime(b, calcTime, *rep, 0);
     }
     else
     {
+        //Go for depth
         best = bestTime(b, 0, *rep, callDepth);
     }
     moveToText(best, mv);
@@ -207,8 +209,7 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
                 m.castle = 1; //Castle kingside
         }
     }
-
-    if(m.piece == PAWN)
+    else if(m.piece == PAWN)
     {
         int piece = textToPiece(beg[4]);
         if(piece != NO_PIECE)
@@ -231,8 +232,7 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
 
     if (m.piece == PAWN || m.capture > 0)
         rep->index = 0;
-    else
-        rep->hashTable[rep->index++] = hashPosition(b);
+    rep->hashTable[rep->index++] = hashPosition(b);
 
     return 4 + prom;
 }

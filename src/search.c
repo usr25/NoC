@@ -37,6 +37,7 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 __attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
 __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 
+int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
 static inline const int marginDepth(const int depth);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
 
@@ -285,21 +286,19 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     const int nZg = noZugz(b);
     const int isSafe = !isInC && !nZg;
 
-    //Pruning
     if (isSafe)
     {
+        /* Razoring */
+        if (depth == 1 && ev + VROOK <= alpha && isSafe)
+            return qsearch(b, alpha, beta);
+        /* Static pruning */
         if (depth <= 4 && ev - (101 * depth) > beta)
             return ev;
+        /* Null move pruning */
         //int r = R + (depth >> 3); //Make a variable r
         if (!null && depth > R)
         {
-            const int betaMargin = beta - MARGIN;
-            Repetition _rep = (Repetition) {.index = 0};
-            b.turn ^= 1;
-            val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
-            b.turn ^= 1;
-
-            if (val >= betaMargin)
+            if (nullMove(b, depth, beta, prevHash))
             {
                 #ifdef DEBUG
                 ++nullCutOffs;
@@ -314,7 +313,6 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     if (!numMoves)
         return isInC * (MINS_MATE - depth);
 
-    History h;
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, numMoves);
 
@@ -329,8 +327,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     const int canBreak = depth <= 3 && spEval <= alpha && isSafe;
 
-    /*TODO: Implement razoring*/
-
+    History h;
     for (int i = 0; i < numMoves; ++i)
     {
         if (canBreak && i > 4 && list[i].score < 100)
@@ -446,6 +443,17 @@ int qsearch(Board b, int alpha, const int beta)
     }
 
     return alpha;
+}
+int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash)
+{
+    const int betaMargin = beta - MARGIN;
+    Repetition _rep = (Repetition) {.index = 0};
+    b.turn ^= 1;
+    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
+    b.turn ^= 1;
+    if (val >= betaMargin)
+        return 1;
+    return 0;
 }
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture)
 {
