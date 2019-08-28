@@ -64,7 +64,7 @@ uint64_t indexToBitboard(const int index, const int bits, uint64_t m)
 }
 
 /* Generate the magic for a given sqr and piece type
- * This algorithm is NOT guaranteed to finish since it works by trial and error
+ * This algorithm is NOT guaranteed to find a solution since it works by trial and error
  */
 uint64_t findMagic(int sqr, int isBishop)
 {
@@ -86,7 +86,7 @@ uint64_t findMagic(int sqr, int isBishop)
         if (POPCOUNT((mask * magic) & 0xFF00000000000000ULL) < 6) continue; //If the magic doesn't map at lease 6 bits to the upper row of the bitboard, it wont work
         for (i = 0; i < 4096; i++) colArray[i] = 0ULL; //Initialize the collision array
 
-        //Go through all the possible states and see if it produces a collision, if it doesn't, it is a valid magic for the given square
+        //Go through all the possible states and see if it produces a collision, if it doesn't it is a valid magic for the given square
         for (i = 0, collision = 0; !collision && i < (1 << n); i++)
         {
             arrInd = (attacks[i] * magic) >> sh; // >> (64 - n) for better magics space wise
@@ -94,10 +94,10 @@ uint64_t findMagic(int sqr, int isBishop)
             else collision = 1;
         }
 
-        if (!collision) //There hasn't been any colisions, so the magic works
+        if (!collision) //There haven't been any colisions, so the magic works
             return magic;
     }
-    printf("[-] ERROR, increase the limit in the loop or change the seed\n");
+    printf("[-] ERROR, increase the limit of the loop or change the seed\n");
     return 0ULL;
 }
 

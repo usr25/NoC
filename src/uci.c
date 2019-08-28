@@ -26,6 +26,7 @@ void perft_(Board b, int depth);
 void eval_(Board b);
 void best_(Board b, char* beg, Repetition* rep);
 void best_time(Board, char* beg, Repetition* rep);
+void help_(void);
 int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash);
 Board gen_(char* beg, Repetition* rep);
 Board gen_def(char* beg, Repetition* rep);
@@ -43,31 +44,26 @@ void loop(void)
     char* res, *beg;
     int quit = 0;
 
-    while(1)
-    {
-        res = fgets(input, LEN, stdin);
-        if (res == NULL) return;
-        beg = input;
+    res = fgets(input, LEN, stdin);
+    if (res == NULL) return;
+    beg = input;
 
-        if (strncmp(beg, "ucinewgame", 10) == 0)
-        {
-            b = defaultBoard();
-            rep.hashTable[rep.index++] = hashPosition(&b);
-            break;
-        }
-        else if (strncmp(beg, "uci", 3) == 0)
-        {
-            uci();
-            break;
-        }
-        else if (strncmp(beg, "isready", 7) == 0)
-        {
-            isready();
-            break;
-        }
-        else
-            return;
+    if (strncmp(beg, "ucinewgame", 10) == 0)
+    {
+        b = defaultBoard();
+        rep.hashTable[rep.index++] = hashPosition(&b);
     }
+    else if (strncmp(beg, "uci", 3) == 0)
+        uci();
+
+    else if (strncmp(beg, "isready", 7) == 0)
+        isready();
+
+    else if (strncmp(beg, "quit", 4) == 0)
+        return;
+
+    else
+        help_();
 
     while(!quit)
     {
@@ -104,6 +100,9 @@ void loop(void)
 
         else if (strncmp(beg, "quit", 4) == 0)
             quit = 1;
+
+        else if (strncmp(beg, "help", 4) == 0)
+            help_();
 
         else
             fprintf(stdout, "# invalid command\n");
@@ -278,5 +277,32 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
     char mv[6] = "";
     moveToText(m, mv);
     fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu pv %s\n", m.score, depth, duration, nodes, mv);
+    fflush(stdout);
+}
+void help_(void)
+{
+    fprintf(stdout, "-====----------------====-\n");
+    fprintf(stdout, "Chess Engine made by J; the commands are:\n");
+    fprintf(stdout, "uci.............Print uci info\n");
+    fprintf(stdout, "ucinewgame......Load starting position\n");
+    fprintf(stdout, "isready.........To ensure the engine is ready to receive commands\n");
+    fprintf(stdout, "eval............Static evaluation of loaded position\n");
+    fprintf(stdout, "position\n");
+    fprintf(stdout, "  startpos......Load starting position\n");
+    fprintf(stdout, "  fen <fen>.....Load the fen's position\n");
+    fprintf(stdout, "    moves.......List of moves to apply to the position\n");
+    fprintf(stdout, "print...........Draw the position on the screen\n");
+    fprintf(stdout, "perft #.........Count the number of legal positions at depth #\n");
+    fprintf(stdout, "go\n");
+    fprintf(stdout, "   depth #......Analyze at depth\n");
+    fprintf(stdout, "   wtime #......Analyze until the time runs out\n");
+    fprintf(stdout, "quit............Exit the engine\n");
+
+    fprintf(stdout, "\nExample of use:\n");
+    fprintf(stdout, "position startpos moves e2e4 e7e5\n");
+    fprintf(stdout, "print\n");
+    fprintf(stdout, "perft 6\n");
+    fprintf(stdout, "go depth 7\n");
+    fprintf(stdout, "-====----------------====-\n");
     fflush(stdout);
 }

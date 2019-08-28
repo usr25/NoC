@@ -45,18 +45,17 @@ int endgameAnalysis(const Board* b);
 int pieceDevelopment(const Board* b);
 int pawns(const Board* b);
 
-int hasMatingMat(const Board* b, int color);
-
-int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp);
-int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all);
+int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp);
+int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
 int twoBishops(void);
-int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all);
-int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp);
+int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
+int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp);
 
 int testMatrices(const Board* board, const int phase, const int color);
 //TO implement:
 int knightCoordination(void); //Two knights side by side are better
 
+/* TODO: Make the pawns bitboards as global to avoid passing too many arguments */
 int wPawn, bPawn;
 int wQueen, bQueen;
 int wRook, bRook;
@@ -239,20 +238,22 @@ inline int pieceActivity(const Board* b)
     return score;
 }
 
-inline int bishopMobility(uint64_t wh, uint64_t bl, uint64_t all)
+inline int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all)
 {
     return BISHOP_MOBILITY * ((POPCOUNT(getBishMagicMoves(MSB_INDEX(wh), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(wh), all))) 
                              -(POPCOUNT(getBishMagicMoves(MSB_INDEX(bl), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(bl), all))));
 }
 
-inline int safeKing(uint64_t wk, uint64_t bk, uint64_t wp, uint64_t bp)
+inline int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp)
 {
     return SAFE_KING *  (POPCOUNT(getKingMoves(LSB_INDEX(wk)) & wp)
                         -POPCOUNT(getKingMoves(LSB_INDEX(bk)) & bp));
 }
 
-inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all)
+inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all)
 {
+    /* TODO: Use the magics since they should be faster */
+    //res += (getRookMagicMoves(LSB_INDEX(wh), all) & wh) == wh;
     int res = 0;
 
     if (wh & (wh - 1))
@@ -282,7 +283,7 @@ inline int connectedRooks(uint64_t wh, uint64_t bl, uint64_t all)
 
     return CONNECTED_ROOKS * res;
 }
-inline int rookOnOpenFile(uint64_t wr, uint64_t wp, uint64_t br, uint64_t bp)
+inline int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp)
 {
     int w = 0, b = 0;
     if (wr)

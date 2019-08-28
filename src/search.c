@@ -107,10 +107,10 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     Move best = list[0], temp, secondBest;
     int bestScore = 0;
     int previousBestScore = -1;
-    int delta = 35;
+    int delta = 25;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = max(35, delta * .8f);
+        delta = max(25, delta * .8f);
         int alpha = MINS_INF, beta = PLUS_INF;
         if (depth >= 5)
         {
@@ -126,6 +126,8 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             last = clock();
             elapsed = last - start;
             sort(list, numMoves);
+            if ((calledTiming && (elapsed > timeToMove || (1.15f * (last - start) > timeToMove))) || temp.score >= PLUS_MATE)
+                break;
             if (temp.score >= beta)
             {
                 delta *= 2.5;
@@ -140,8 +142,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
                 researches++;
             }
             else
-                break;
-            if ((calledTiming && (elapsed > timeToMove || (1.15f * (last - start) > timeToMove))) || temp.score >= PLUS_MATE)
                 break;
         }
         if (calledTiming && elapsed > timeToMove)
@@ -289,8 +289,8 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     if (isSafe)
     {
         /* Razoring */
-        if (depth == 1 && ev + VROOK <= alpha && isSafe)
-            return qsearch(b, alpha, beta);
+        //if (depth == 1 && ev + VROOK <= alpha && isSafe)
+        //    return qsearch(b, alpha, beta);
         /* Static pruning */
         if (depth <= 4 && ev - (101 * depth) > beta)
             return ev;
@@ -451,6 +451,7 @@ int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash)
     b.turn ^= 1;
     int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
+
     if (val >= betaMargin)
         return 1;
     return 0;

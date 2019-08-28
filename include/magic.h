@@ -9,21 +9,21 @@ uint64_t bishMagic[64];
 uint64_t rookMagic[64];
 
 /* How it works:
- * 1- Get all the relevant bits for the attack using a mask getMoveTypeInt(index) & allPieces, it is not neccessary to include the bits of the blocking pieces in the mask
- * 2- Multiply * magicType[index]
- * 3- Bitshift the result 64 - 12 for rook and 64 - 9 for bish
- * 4- Refer to the respective array and return getTypeMoves[index][multShifted]
+ * 1- Get all the relevant bits for the attack using a mask getMoveTypeInt(sqr) & allPieces, it is not neccessary to include the bits of the blocking pieces in the mask
+ * 2- Multiply * magicType[sqr]
+ * 3- Bitshift the result 64 - 12 (55) for the rook and 64 - 9 (52) for the bishop
+ * 4- Refer to the respective array and return getTypeMoves[sqr][multShifted]
  * The return WILL include the blocking sqrs, so that the mask b.color[opp] can be applied
  * to include the opp pieces for captures
  */
 
-__attribute__((hot)) static inline uint64_t getRookMagicMoves(const int index, const uint64_t allPieces)
+__attribute__((hot)) static inline uint64_t getRookMagicMoves(const int sqr, const uint64_t allPieces)
 {
     //64 - 12 == 52, worst case scenario. To make it variable use POPCOUNT(mask)
-    return rookMagicMoves[index][((allPieces & getStraInt(index)) * rookMagic[index]) >> 52];
+    return rookMagicMoves[sqr][((allPieces & getStraInt(sqr)) * rookMagic[sqr]) >> 52];
 }
-__attribute__((hot)) static inline uint64_t getBishMagicMoves(const int index, const uint64_t allPieces)
+__attribute__((hot)) static inline uint64_t getBishMagicMoves(const int sqr, const uint64_t allPieces)
 {
     //64 - 9 == 55, worst case scenario
-    return bishMagicMoves[index][((allPieces & getDiagInt(index)) * bishMagic[index]) >> 55];
+    return bishMagicMoves[sqr][((allPieces & getDiagInt(sqr)) * bishMagic[sqr]) >> 55];
 }
