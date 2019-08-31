@@ -19,6 +19,7 @@
 #include "../include/mate.h"
 #include "../include/uci.h"
 #include "../include/io.h"
+#include "../include/gaviota.h"
 
 
 //Depth of the null move prunning
@@ -37,7 +38,8 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 __attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
 __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 
-int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
+static Move tableLookUp(Board b, int* tbAv);
+static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
 static inline const int marginDepth(const int depth);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
 
@@ -94,13 +96,20 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     timeToMoveT = timeToMove;
     startT = start;
 
-
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
 
     //It there is only one possible move, return it
     if (numMoves == 1)
         return list[0];
+
+    //If there is little time, caching can give problems
+    if (canGav(b.allPieces))
+    {
+        int tbAv; //This is to ensure that the engine still works without tb
+        Move tb = tableLookUp(b, &tbAv);
+        if (tbAv) return tb;
+    }
 
     initCall();
 
@@ -444,7 +453,57 @@ int qsearch(Board b, int alpha, const int beta)
 
     return alpha;
 }
-int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash)
+
+static Move tableLookUp(Board b, int* tbAv)
+{
+    Move list[NMOVES];
+    Move temp[NMOVES];
+
+    const int numMoves = legalMoves(&b, list) >> 1;
+    int bestScore = MINS_INF;
+    Move bestM = list[0];
+
+    History h;
+    for (int i = 0; i < numMoves; ++i)
+    {
+        makeMove(&b, list[i], &h);
+        const int lgm = legalMoves(&b, temp);
+        int score;
+        if (lgm == 1)
+        {
+            //Tablebases dont work the same when there is mate
+            bestScore = PLUS_MATE - 1;
+            bestM = list[i];
+            break;
+        }
+        else if (lgm == 0)
+        {
+            score = 0;
+        }
+        else
+            score = -gavScore(b, tbAv);
+
+        if (score > 0)
+            score = PLUS_MATE - score;
+        if (score >= 0)
+        {
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestM = list[i];
+            }
+        }
+        undoMove(&b, list[i], &h);
+    }
+
+    bestM.score = bestScore;
+    if (bestScore > 0)
+        bestM.score = 2 * PLUS_MATE - bestScore;
+
+    return bestM;
+}
+
+static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash)
 {
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};

@@ -105,10 +105,33 @@ Board genFromFen(char* const fen, int* counter)
     if (fen[i] != '-')
     {
         b.enPass = getIndex(fen[i], fen[i+1]) - (2 * b.turn - 1) * 8;
-        i+=2;
+        i++;
     }
 
+    i+=2;
+
     b.fifty = 0;
+
+    if (fen[i] >= '0' && fen[i] <= '9')
+    {
+        while (fen[i] >= '0' && fen[i] <= '9')
+        {
+            /*
+            b.fifty *= 10;
+            b.fifty += fen[i] - '0';
+            */
+            ++i;
+        }
+
+        ++i;
+
+        while (fen[i] >= '0' && fen[i] <= '9')
+        {
+            b.fifty *= 10;
+            b.fifty += fen[i] - '0';
+            ++i;
+        }
+    }
 
     assert(POPCOUNT(b.piece[WHITE][KING]) == 1);
     assert(POPCOUNT(b.piece[BLACK][KING]) == 1);

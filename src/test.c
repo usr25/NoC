@@ -363,6 +363,24 @@ void runTests(void)
     printf("[+] Hash: %d\n",            testHashing());
 }
 
+void testGav(void)
+{
+    int pawn = 1, rook = 1, queen = 1;
+    pawn &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", 1, 5);
+    pawn &= compMove("3k4/8/4P3/4K3/8/8/8/8 w - -", "e5d6", 1, 5);
+    pawn &= compMove("8/8/4k3/8/4PK2/8/8/8 b - -", "e6f6", 1, 5); //To draw
+
+    queen &= compMove("1Q6/8/2K5/8/k7/8/8/8 w - -", "b8b2", 1, 4);
+    queen &= compMove("8/8/2K5/8/8/1Q6/k7/8 b - -", "a2b3", 1, 4); //To draw
+
+    rook &= compMove("8/8/8/8/2K5/k7/1R6/8 w - -", "b2h2", 1, 4); //May fail if ordering changes
+    rook &= compMove("8/8/8/3k4/5r2/4K3/8/8 w - -", "e3f4", 1, 4); //To draw
+
+    printf("Pawn: %d\n", pawn);
+    printf("Rook: %d\n", rook);
+    printf("Queen: %d\n", queen);
+}
+
 void chooseTest(int mode)
 {
     switch (mode)
@@ -382,7 +400,10 @@ void chooseTest(int mode)
         case 4:
             parseFensFromFileEva();
             break;
+        case 5:
+            testGav();
+            break;
         default:
-            printf("Choose mode\n");
+            printf("Choose mode [0, 5]\n");
     }
 }

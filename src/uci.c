@@ -262,6 +262,9 @@ Board gen_(char* beg, Repetition* rep)
 
     beg += counter + 1;
 
+    while(beg[0] == ' ')
+        beg += 1;
+
     if (strncmp(beg, "moves", 5) == 0)
     {
         beg += 6;

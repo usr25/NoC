@@ -3,9 +3,10 @@ CC=gcc
 ODIR=obj
 SDIR=src
 IDIR=include
+GDIR=gav
 LICHESS=~/Desktop/lichess/lichess-bot-master/engines/
 
-CFLAGS=-I.$(IDIR) -std=c11 -finline-functions -lm
+CFLAGS= -finline-functions -std=c11
 
 DEPS=$(IDIR)/*
 
@@ -16,6 +17,8 @@ OBJ:=$(foreach wrd, $(_OBJ), $(subst $(SDIR),$(ODIR),$(wrd)))
 OBJO:=$(foreach wrd, $(OBJ), $(subst .o,O.o,$(wrd)))
 OBJR:=$(foreach wrd, $(OBJ), $(subst .o,R.o,$(wrd)))
 
+GAVLIB=-L$(GDIR) -lgtb -lpthread -lm
+
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
@@ -23,15 +26,15 @@ $(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) -O3
 
 $(ODIR)/%R.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -fno-associative-math -O3 -flto
+	$(CC) -c -o $@ $< $(CFLAGS) -O3 -flto $(GAVLIB)
 
 .PHONY: clean optimized lichess all release
 
 release: $(OBJR)
-	$(CC) -o $@ $^ $(CFLAGS) -fno-associative-math -O3 -flto $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) -O3 -flto $(LIBS) $(GAVLIB)
 
 optimized: $(OBJO)
-	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS) $(GAVLIB)
 
 lichess:
 	make release
