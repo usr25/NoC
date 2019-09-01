@@ -72,10 +72,12 @@ uint64_t qsearchNodes = 0;
 uint64_t nullCutOffs = 0;
 uint64_t betaCutOff = 0;
 uint64_t betaCutOffHit = 0;
+uint64_t queries = 0;
 
 
 void initCall(void)
 {
+    queries = 0;
     betaCutOff = 0;
     betaCutOffHit = 0;
     qsearchNodes = 0;
@@ -108,7 +110,11 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     {
         int tbAv; //This is to ensure that the engine still works without tb
         Move tb = tableLookUp(b, &tbAv);
-        if (tbAv) return tb;
+        if (tbAv)
+        {
+            infoString(tb, 0, 0, 1000 * (clock() - start) / CLOCKS_PER_SEC);
+            return tb;
+        }
     }
 
     initCall();
@@ -135,7 +141,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             last = clock();
             elapsed = last - start;
             sort(list, numMoves);
-            if ((calledTiming && (elapsed > timeToMove || (1.15f * (last - start) > timeToMove))) || temp.score >= PLUS_MATE)
+            if ((calledTiming && elapsed > timeToMove) || temp.score >= PLUS_MATE)
                 break;
             if (temp.score >= beta)
             {
@@ -172,6 +178,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     printf("Null Cutoffs: %llu\n", nullCutOffs);
     printf("Researches: %llu\n", researches);
     printf("Repetitions: %llu\n", repe);
+    printf("Queries: %llu\n", queries);
     #endif
 
     //Choose a worse move in order to avoid 3fold repetition, if the risk is low enough
@@ -253,6 +260,21 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 {
     //assert(beta >= alpha);
     nodes++;
+
+    if (canGav(b.allPieces))
+    {
+        int usable;
+        int gavScore = gavWDL(b, &usable) * PLUS_MATE;
+        gavScore = b.turn? gavScore : -gavScore;
+        if (usable)
+        {
+            #ifdef DEBUG
+            queries++;
+            #endif
+            return gavScore;
+        }
+    }
+
     if (calledTiming && clock() - startT > timeToMoveT)
         return 0;
 
@@ -298,7 +320,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     if (isSafe)
     {
         /* Razoring */
-        //if (depth == 1 && ev + VROOK <= alpha && isSafe)
+        //if (depth == 1 && ev + VROOK + 101 <= alpha && isSafe)
         //    return qsearch(b, alpha, beta);
         /* Static pruning */
         if (depth <= 4 && ev - (101 * depth) > beta)
@@ -460,7 +482,7 @@ static Move tableLookUp(Board b, int* tbAv)
     Move temp[NMOVES];
 
     const int numMoves = legalMoves(&b, list) >> 1;
-    int bestScore = MINS_INF;
+    int bestScore = -1;
     Move bestM = list[0];
 
     History h;
@@ -485,14 +507,22 @@ static Move tableLookUp(Board b, int* tbAv)
 
         if (score > 0)
             score = PLUS_MATE - score;
-        if (score >= 0)
+        if (score < bestScore && bestScore < 0) //Find the longest losing mate, hoping the opponent will draw or 50 move rule
         {
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestM = list[i];
-            }
+            bestScore = score;
+            bestM = list[i];
         }
+        else if (score == 0 && bestScore < 0) //Go for draw if we are losing
+        {
+            bestScore = score;
+            bestM = list[i];
+        }
+        else if (score > 0 && score > bestScore) //Shortest distance to mate
+        {
+            bestScore = score;
+            bestM = list[i];
+        }
+
         undoMove(&b, list[i], &h);
     }
 

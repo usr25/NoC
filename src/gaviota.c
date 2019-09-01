@@ -49,10 +49,10 @@ static int tb_available;           /* 0 => FALSE, 1 => TRUE */
 static unsigned info = tb_UNKNOWN; /* default, no tbvalue */
 static unsigned pliestomate;   
 
-static int verbosity = 1;      /* initialization 0 = non-verbose, 1 = verbose */
+static int verbosity = 0;      /* initialization 0 = non-verbose, 1 = verbose */
 static int scheme = tb_CP4;    /* compression scheme to be used */
 static const char ** paths;    /* paths where files will be searched */
-static size_t cache_size = 32*1024*1024; /* 32 MiB in this example */
+static size_t cache_size = 64*1024*1024; /* 64 MiB in this example */
 
 /*  wdl_fraction:
 fraction, over 128, that will be dedicated to wdl information. 
@@ -60,17 +60,20 @@ In other words, 96 means 3/4 of the cache will be dedicated to
 win-draw-loss info, and 1/4 dedicated to distance to mate 
 information.
 */
-static int wdl_fraction = 96; 
+static int wdl_fraction = 128; //The DTM info is only used once per call, no need to waste cache
 
-//boolean array with the availability each tablebase, 3, 4, 5 and 6
+//boolean array with the availability of each tablebase, 3, 4, 5 and 6 respectively
 static int tablebasesAvailable[4];
 
 
 void initGav(const char* path)
 {
     paths = tbpaths_init();
+
     if (NULL == paths) printf ("Error while updating the paths");
-        paths = tbpaths_add (paths, path);
+    paths = tbpaths_add (paths, "gav/gtb"); //This is the default for 3 piece
+    if (NULL == paths) printf ("Error while updating the paths");
+    paths = tbpaths_add (paths, path);
 
     initinfo = tb_init (verbosity, scheme, paths);
     tbcache_init(cache_size, wdl_fraction);
@@ -79,17 +82,28 @@ void initGav(const char* path)
     const int availability = tb_availability();
 
     if (!availability)
-        printf("[-] No table available, pass the path to the tb as arguments Eg.: ./e /home/Chess/gtb\n");
+        fprintf(stdout, "[-] No tablebases available, the engine will proceed without them. Ensure $cwd is ../Engine/ or pass the path to the tb as arguments Eg.: ./e /home/Chess/gtb");
+    else
+        fprintf(stdout, "[+] Gaviota tablebases available (~ == incomplete): ");
     for (int i = 0; i < 4; ++i)
     {
         if (availability & (0b11 << (2 * i)))
+        {
             tablebasesAvailable[i] = 1;
+            if (availability & (0b10 << (2 * i)))
+                fprintf(stdout, "%d ", i + 3);
+            else if (availability & (0b1 << (2 * i)))
+                fprintf(stdout, "~%d ", i + 3);
+        }
         else
             tablebasesAvailable[i] = 0;
     }
+
+    fprintf(stdout, "\n");
+    fflush(stdout);
 }
 
-int canGav(const uint64_t all)
+inline int canGav(const uint64_t all)
 {
     const int pc = POPCOUNT(all);
     if (pc > 6)
@@ -120,6 +134,23 @@ int gavScore(Board b, int* tbIsAv)
     return multiplier * pliestomate;
 }
 
+/* Returns the query of the position with WDL info.
+ * From the perspective of white: 1 -> white win, 0 -> draw, -1 -> black win
+ */
+int gavWDL(Board b, int* tbIsAv)
+{
+    parseBoard(&b);
+
+    *tbIsAv = tb_probe_WDL_hard(stm, epsquare, castling, ws, bs, wp, bp, &info);
+
+    if (info == tb_WMATE)
+        return 1;
+    else if (info == tb_BMATE)
+        return -1;
+    else
+        return 0;
+}
+
 static void parseBoard(Board* b)
 {
     stm = b->turn? tb_WHITE_TO_MOVE : tb_BLACK_TO_MOVE;
@@ -137,7 +168,7 @@ static void parseCastle(Board* b)
     if (WCASTLEK & b->castleInfo) castling |= tb_WOO;
     if (WCASTLEQ & b->castleInfo) castling |= tb_WOOO;
 }
-static void parseEpSqr(Board* b)
+static void parseEpSqr(Board* b) //TODO: Add support for enPassand
 {
     epsquare = tb_NOSQUARE;
 }
@@ -174,7 +205,6 @@ static void parseColor(int color, Board* b)
         bp[counter] = tb_NOPIECE;
     }
 }
-
 
 static void dtm_print (unsigned stm, int tb_available, unsigned info, unsigned pliestomate)
 {

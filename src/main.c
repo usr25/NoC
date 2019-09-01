@@ -16,6 +16,7 @@
 #include "../include/uci.h"
 #include "../include/io.h"
 #include "../include/magic.h"
+#include "../include/search.h"
 #include "../include/sort.h"
 #include "../include/gaviota.h"
 
@@ -26,7 +27,10 @@ int main(const int argc, char** const argv)
 {
     initMemo();
     initMagics();
-    initGav("gav/gtb");
+    if (argc > 1)
+        initGav(argv[1]);
+    else
+        initGav("\0");
 
     //0, 1->51'4, 2->4'1s, 3->2:4, 4->1:20, 5-> -
     //chooseTest(1);

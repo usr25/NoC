@@ -368,17 +368,23 @@ void testGav(void)
     int pawn = 1, rook = 1, queen = 1;
     pawn &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", 1, 5);
     pawn &= compMove("3k4/8/4P3/4K3/8/8/8/8 w - -", "e5d6", 1, 5);
+    pawn &= compMove("8/8/8/5k2/8/8/4PK2/8 w - -", "f2f3", 1, 5);
     pawn &= compMove("8/8/4k3/8/4PK2/8/8/8 b - -", "e6f6", 1, 5); //To draw
+    pawn &= compMove("8/8/8/8/8/6k1/P1K5/8 b - -", "g3f4", 1, 5); //To draw
 
     queen &= compMove("1Q6/8/2K5/8/k7/8/8/8 w - -", "b8b2", 1, 4);
+    queen &= compMove("K7/8/2k5/8/1q6/8/8/8 b - -", "b4b7", 1, 4); //Gives checkmate
     queen &= compMove("8/8/2K5/8/8/1Q6/k7/8 b - -", "a2b3", 1, 4); //To draw
+    queen &= compMove("1K6/8/3Q4/8/8/4k3/8/8 b - -", "e3e4", 1, 4); //Go for longest distance to mate
 
+    rook &= compMove("8/8/8/8/8/6r1/2k5/K7 b - -", "g3a3", 1, 4); //Gives checkmate
     rook &= compMove("8/8/8/8/2K5/k7/1R6/8 w - -", "b2h2", 1, 4); //May fail if ordering changes
+    rook &= compMove("7K/8/8/8/3k4/8/4R3/8 b - -", "d4d3", 1, 4); //Go for longest distance to mate
     rook &= compMove("8/8/8/3k4/5r2/4K3/8/8 w - -", "e3f4", 1, 4); //To draw
 
-    printf("Pawn: %d\n", pawn);
-    printf("Rook: %d\n", rook);
-    printf("Queen: %d\n", queen);
+    printf("Pawn  TB: %d\n", pawn);
+    printf("Rook  TB: %d\n", rook);
+    printf("Queen TB: %d\n", queen);
 }
 
 void chooseTest(int mode)

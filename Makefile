@@ -41,7 +41,7 @@ lichess:
 	mv release $(LICHESS)
 
 all:
-	(mkdir $(ODIR) && make release) || make release 
+	mkdir -p $(ODIR) && make release
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
