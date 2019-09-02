@@ -85,7 +85,6 @@ void initCall(void)
     researches = 0;
     repe = 0;
     noMoveGen = 0;
-    starts = 0;
     initKM();
 }
 
