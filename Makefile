@@ -1,5 +1,6 @@
 CC=gcc
 
+NAME=NoC
 ODIR=obj
 SDIR=src
 IDIR=include
@@ -41,7 +42,10 @@ lichess:
 	mv release $(LICHESS)
 
 all:
-	mkdir -p $(ODIR) && make release
+	mkdir -p $(ODIR)
+	make release
+	mv release $(NAME)
+
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~

@@ -74,6 +74,9 @@ void loop(void)
         if (strncmp(beg, "isready", 7) == 0)
             isready();
 
+        else if (strncmp(beg, "uci", 3) == 0)
+            uci();
+
         else if (strncmp(beg, "ucinewgame", 10) == 0)
             b = defaultBoard();
 
