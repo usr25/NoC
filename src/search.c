@@ -85,6 +85,7 @@ void initCall(void)
     researches = 0;
     repe = 0;
     noMoveGen = 0;
+    starts = 0;
     initKM();
 }
 
@@ -260,6 +261,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 {
     //assert(beta >= alpha);
     nodes++;
+    const int index = prevHash & MOD_ENTRIES;
 
     if (canGav(b.allPieces))
     {
@@ -286,7 +288,6 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
         return qsearch(b, alpha, beta);
 
     int val;
-    const int index = prevHash & MOD_ENTRIES;
     Move bestM = NO_MOVE;
     if (table[index].key == prevHash)
     {
@@ -344,6 +345,12 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     if (!numMoves)
         return isInC * (MINS_MATE - depth);
 
+    if (depth >= 5 && bestM.from == -1)
+    {
+        pvSearch(b, -alpha-1, -alpha, (depth-1) / 4, null, prevHash, rep);
+        bestM = table[index].m;
+    }
+
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, numMoves);
 
@@ -383,6 +390,9 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
                 int reduction = 1;
                 if (depth >= 3 && i > 4 && list[i].score < 100 && !isInC)
                     reduction++;
+
+                //if (list[i].piece == KING && list[i].castle)
+                //    reduction--;
 
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep);
                 if (val > alpha && val < beta)

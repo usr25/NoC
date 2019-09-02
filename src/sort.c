@@ -116,7 +116,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
 {
     for (int i = 0; i < numMoves; ++i)
     {
-        if (list[i].promotion > 1) //Promotions have their score assigned
+        if (list[i].promotion > 0) //Promotions have their score assigned
             continue;
         if(list[i].capture > 0) //There has been a capture
         {
@@ -128,10 +128,11 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
 
         if (compMoves(&bestFromPos, &list[i])) //It was the best refutation in the same position
         {
-            list[i].score += 500;
+            list[i].score += 1000;
         }
         else
         {
+            /*
             for (int j = 0; j < NUM_KM; ++j)
             {
                 if (compMoves(&killerMoves[depth][j], &list[i]))
@@ -140,12 +141,20 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
                     break;
                 }
             }
+            */
+            if (compMoves(&killerMoves[depth][0], &list[i]))
+                list[i].score += 50;
+            else if (compMoves(&killerMoves[depth][1], &list[i]))
+                list[i].score += 51;
         }
-        /* TODO: gvC doesnt seem to give elo, do some testing */
+        /* TODO: gvC makes the program slower, do some testing */
         /*
-        int gvC = list[i].score < 300 && givesCheck(b, list[i]);
-        if (gvC)
-            list[i].score += 100 * gvC * gvC; //Double check is more than 2 times better than a normal check, at least thats the idea
+        if (list[i].score < 300)
+        {
+            int gvC = givesCheck(b, list[i]);
+            if (gvC)
+                list[i].score += 50 * gvC * gvC; //Double check is more than 2 times better than a normal check, at least thats the idea
+        }
         */
     }
 }
@@ -153,7 +162,7 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
 {
     for (int i = 0; i < numMoves; ++i)
     {
-        if (list[i].promotion > 1)
+        if (list[i].promotion > 0)
             continue;
         if(list[i].capture > 0)
         {
@@ -166,10 +175,15 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
 }
 inline void addKM(const Move m, const int depth)
 {
+    //Keep this commented out until we stop using NUM_KM == 2
+    /*
     for (int i = 1; i < NUM_KM; ++i)
         killerMoves[depth][i-1] = killerMoves[depth][i];
 
     killerMoves[depth][NUM_KM-1] = m;
+    */
+    killerMoves[depth][0] = killerMoves[depth][1];
+    killerMoves[depth][1] = m;
 }
 /* Sorts all the moves based on their score, the algorithm is insertion sort
  */

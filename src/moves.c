@@ -133,6 +133,7 @@ int canCastle(Board* b, const int color, const uint64_t forbidden)
 
     return (canQ << 1) | canK;
 }
+//TODO: Give extra score to castling?
 inline Move castleKSide(const int color)
 {
     return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1};
@@ -301,25 +302,41 @@ inline int isInCheck(Board* b, const int kingsColor)
  */
 int givesCheck(const Board* b, const Move m)
 {
-    const int k = LSB_INDEX(b->piece[b->turn][KING]);
-    const int opp = 1 ^ b->turn;
+    const int k = LSB_INDEX(b->piece[1 ^ b->turn][KING]);
+    const int col = b->turn;
+    const uint64_t toBB = 1ULL << m.to, fromBB = 1ULL << m.from;
+
+    uint64_t ro = b->piece[col][ROOK] | b->piece[col][QUEEN];
+    uint64_t bi = b->piece[col][BISH] | b->piece[col][QUEEN];
+
     int numChecks = 0;
     switch(m.piece)
     {
         case KNIGHT:
-        numChecks += (getKnightMoves(k) & b->piece[opp][KNIGHT]) != 0;
+            numChecks += (getKnightMoves(k) & toBB) != 0;
         break;
 
         case PAWN:
-        if (b->turn)
-            numChecks += (getWhitePawnCaptures(k) & b->piece[BLACK][PAWN]) != 0;
-        else
-            numChecks += (getBlackPawnCaptures(k) & b->piece[WHITE][PAWN]) != 0;
+            if (b->turn)
+                numChecks += (getBlackPawnCaptures(k) & toBB) != 0;
+            else
+                numChecks += (getWhitePawnCaptures(k) & toBB) != 0;
+        break;
+
+        case ROOK:
+            ro ^= fromBB | toBB;
+        break;
+
+        case BISH:
+            bi ^= fromBB | toBB;
+        break;
+
+        case QUEEN:
+            ro ^= fromBB | toBB;
+            bi ^= fromBB | toBB;
         break;
     }
-    uint64_t newPieces = b->allPieces ^ (1ULL << m.to) ^ (1ULL << m.from);
-    uint64_t ro = b->piece[opp][ROOK] | b->piece[opp][QUEEN];
-    uint64_t bi = b->piece[opp][BISH] | b->piece[opp][QUEEN];
+    uint64_t newPieces = b->allPieces ^ toBB ^ fromBB;
 
     if (ro)
         numChecks += (getRookMagicMoves(k, newPieces) & ro) != 0;
