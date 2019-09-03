@@ -25,7 +25,7 @@
 //Depth of the null move prunning
 #define R 3
 //Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
-#define MARGIN 13
+#define MARGIN 11
 //The centipawn loss it is willing to accept in order to avoid a 3fold repetition
 #define RISK 11
 
@@ -35,7 +35,7 @@
 #define MINS_INF  -9999999
 
 Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
-__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
+__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep, const int pv);
 __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 
 static Move tableLookUp(Board b, int* tbAv);
@@ -229,13 +229,13 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
             addHash(&rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep, 1);
             }
             else
             {
-                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, &rep);
+                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, &rep, 0);
                 if (val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep, 0);
             }
             remHash(&rep);
         }
@@ -256,7 +256,7 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 
     return currBest;
 }
-int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep)
+int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep, const int pv)
 {
     //assert(beta >= alpha);
     nodes++;
@@ -323,8 +323,12 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
         //if (depth == 1 && ev + VROOK + 101 <= alpha && isSafe)
         //    return qsearch(b, alpha, beta);
         /* Static pruning */
-        if (depth <= 4 && ev - (101 * depth) > beta)
+        if (!pv && depth <= 4 && ev - (100 * depth) >= beta)
             return ev;
+
+        if (!pv && depth <= 6 && ev - (215 * depth) >= beta && ev < PLUS_MATE)
+            return ev;
+
         /* Null move pruning */
         //int r = R + (depth >> 3); //Make a variable r
         if (!null && depth > R)
@@ -346,12 +350,15 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     if (depth >= 5 && bestM.from == -1)
     {
-        pvSearch(b, -alpha-1, -alpha, (depth-1) / 4, null, prevHash, rep);
+        pvSearch(b, -alpha-1, -alpha, (depth-1) / 4, null, prevHash, rep, 0);
         bestM = table[index].m;
     }
 
-    assignScores(&b, list, numMoves, bestM, depth);
-    sort(list, numMoves);
+    if (numMoves > 1) //Smart
+    {
+        assignScores(&b, list, numMoves, bestM, depth);
+        sort(list, numMoves);
+    }
 
     uint64_t newHash;
     int best = MINS_INF;
@@ -382,7 +389,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
             addHash(rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep, 1);
             }
             else
             {
@@ -393,9 +400,9 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
                 //if (list[i].piece == KING && list[i].castle)
                 //    reduction--;
 
-                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep);
+                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep, 0);
                 if (val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep, 0);
             }
             remHash(rep);
         }
@@ -449,7 +456,7 @@ int qsearch(Board b, int alpha, const int beta)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + VQUEEN /*+ ((m.promotion > 0)? VQUEEN : 0)*/ < alpha) /*TODO: Check for zugz*/
+    else if (score + VQUEEN /*+ ((m.promotion > 0)? VQUEEN : 0)*/ <= alpha) /*TODO: Check for zugz*/
         return alpha;
 
     Move list[NMOVES];
@@ -463,8 +470,8 @@ int qsearch(Board b, int alpha, const int beta)
 
     for (int i = 0; i < numMoves; ++i)
     {
-        //if ((list[i].score + score + 200 <= alpha) || list[i].score < 10) /*TODO: This seems to lose elo, maybe up 200? */
-        if (list[i].score < 60)
+        if ((list[i].score + score + 125 <= alpha) || list[i].score < 60)
+        //if (list[i].score < 60)
             break;
 
         makeMove(&b, list[i], &h);
@@ -547,7 +554,7 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
-    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
+    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep, 0);
     b.turn ^= 1;
 
     if (val >= betaMargin)
