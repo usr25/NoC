@@ -287,8 +287,8 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
     if (m.capture > 0)
         prev ^= calcPos(col, m.capture, m.to);
 
-    if (h.enPass)
-        prev ^= random[EPAS_OFFSET + (h.enPass & 7)];
+    //if (h.enPass)
+    //    prev ^= random[EPAS_OFFSET + (h.enPass & 7)];
 
     switch (m.piece)
     {
@@ -298,8 +298,8 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
             else
                 prev ^= calcPos(opp, PAWN, m.to);
 
-            if (b->enPass)
-                prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
+            //if (b->enPass)
+            //    prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
 
             if (m.enPass)
                 prev ^= calcPos(col, PAWN, m.enPass);

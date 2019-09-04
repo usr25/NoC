@@ -35,7 +35,7 @@
 #define MINS_INF  -9999999
 
 Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
-__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep, const int pv);
+__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
 __attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
 
 static Move tableLookUp(Board b, int* tbAv);
@@ -51,7 +51,7 @@ static inline int rookVSKing(const Board b)
 }
 static inline int noZugz(const Board b)
 {
-    return POPCOUNT(b.allPieces ^ b.piece[WHITE][PAWN] ^ b.piece[BLACK][PAWN]) == 2;
+    return POPCOUNT(b.color[b.turn] ^ b.piece[b.turn][PAWN]) <= 2;
 }
 
 const Move NO_MOVE = (Move) {.from = -1, .to = -1};
@@ -117,15 +117,16 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         }
     }
 
+    assignScores(&b, list, numMoves, NO_MOVE, 0);
     initCall();
 
     Move best = list[0], temp, secondBest;
     int bestScore = 0;
     int previousBestScore = -1;
-    int delta = 25;
+    int delta = 11;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = max(25, delta * .8f);
+        //delta = max(25, delta * .8f);
         int alpha = MINS_INF, beta = PLUS_INF;
         if (depth >= 5)
         {
@@ -145,13 +146,13 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
                 break;
             if (temp.score >= beta)
             {
-                delta *= 2.5;
+                delta *= 2;
                 beta += delta;
                 researches++;
             }
             else if (temp.score <= alpha)
             {
-                delta *= 2.5;
+                delta *= 2;
                 beta = (beta + alpha) / 2;
                 alpha -= delta;
                 researches++;
@@ -229,13 +230,13 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
             addHash(&rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep, 1);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
             }
             else
             {
-                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, &rep, 0);
+                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, &rep);
                 if (val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep, 0);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
             }
             remHash(&rep);
         }
@@ -256,8 +257,9 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 
     return currBest;
 }
-int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep, const int pv)
+int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep)
 {
+    const int pv = beta - alpha > 1;
     //assert(beta >= alpha);
     nodes++;
     const int index = prevHash & MOD_ENTRIES;
@@ -290,8 +292,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     Move bestM = NO_MOVE;
     if (table[index].key == prevHash)
     {
-        /*
-        if (table[index].depth == depth)
+        if (table[index].depth >= depth)
         {
             switch (table[index].flag)
             {
@@ -301,15 +302,17 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
                 case HI:
                     beta = min(beta, table[index].val);
                     break;
+                    /*
                 case EXACT:
                     val = table[index].val;
                     if (val > PLUS_MATE) val -= 1;
                     return val;
+                */
             }
             if (alpha >= beta)
                 return table[index].val;
         }
-        */
+
         bestM = table[index].m;
     }
 
@@ -323,10 +326,10 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
         //if (depth == 1 && ev + VROOK + 101 <= alpha && isSafe)
         //    return qsearch(b, alpha, beta);
         /* Static pruning */
-        if (!pv && depth <= 4 && ev - (100 * depth) >= beta)
+        if (!pv && depth <= 4 && ev - 100 * depth >= beta && ev < 8000)
             return ev;
 
-        if (!pv && depth <= 6 && ev - (215 * depth) >= beta && ev < PLUS_MATE)
+        if (!pv && depth <= 6 && ev - 180 * depth >= beta && ev < 7500)
             return ev;
 
         /* Null move pruning */
@@ -350,7 +353,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     if (depth >= 5 && bestM.from == -1)
     {
-        pvSearch(b, -alpha-1, -alpha, (depth-1) / 4, null, prevHash, rep, 0);
+        pvSearch(b, -alpha-1, -alpha, (depth-1) / 4, null, prevHash, rep);
         bestM = table[index].m;
     }
 
@@ -386,23 +389,31 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
         }
         else
         {
+            int reduction = 1;
             addHash(rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep, 1);
+                if (pv && list[i].score > 60 && list[i].capture > 1)
+                    reduction--;
+                val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
             }
             else
             {
-                int reduction = 1;
                 if (depth >= 3 && i > 4 && list[i].score < 100 && !isInC)
                     reduction++;
-
+                if (!pv && list[i].piece == KING && isInC && list[i].capture < 1)
+                    reduction++;
+                if (pv && list[i].score > 60 && list[i].capture > 0)
+                    reduction--;
                 //if (list[i].piece == KING && list[i].castle)
                 //    reduction--;
 
-                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep, 0);
+                if (reduction > depth)
+                    reduction = depth;
+
+                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep);
                 if (val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep, 0);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
             }
             remHash(rep);
         }
@@ -440,7 +451,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     else if (best >= beta)
         flag = LO;
 
-    table[index] = (Eval) {.key = prevHash, .m = bestM, /*.val = best, .depth = depth, .flag = flag*/};
+    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = best, .depth = depth, .flag = flag};
 
     return best;
 }
@@ -463,8 +474,11 @@ int qsearch(Board b, int alpha, const int beta)
     History h;
     const int numMoves = legalMoves(&b, list) >> 1;
 
-    assignScoresQuiesce(&b, list, numMoves);
-    sort(list, numMoves);
+    if (numMoves > 1) //Smarter
+    {
+        assignScoresQuiesce(&b, list, numMoves);
+        sort(list, numMoves);
+    }
 
     int val;
 
@@ -554,7 +568,7 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
-    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep, 0);
+    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
 
     if (val >= betaMargin)
