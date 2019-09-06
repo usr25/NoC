@@ -117,7 +117,11 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         }
     }
 
+    /*
+    TODO: Test if this works
     assignScores(&b, list, numMoves, NO_MOVE, 0);
+    sort(list, list+numMoves);
+    */
     initCall();
 
     Move best = list[0], temp, secondBest;
@@ -137,11 +141,13 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 
         for (int i = 0; i < 5; ++i)
         {
+            //TODO: Try placing sort before this call
             temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
+            sort(list, list+numMoves);
 
             last = clock();
             elapsed = last - start;
-            sort(list, numMoves);
+
             if ((calledTiming && elapsed > timeToMove) || temp.score >= PLUS_MATE)
                 break;
             if (temp.score >= beta)
@@ -160,13 +166,25 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             else
                 break;
         }
+        /*if (calledTiming && elapsed > timeToMove)
+        {
+            for (int i = 0; i < numMoves - 1; ++i)
+            {
+                if (compMoves(&temp, &list[i]))
+                {
+                    if (list[i+1].score != 0)
+                        best = temp;
+                    break;
+                }
+            }
+        }*/
         if (calledTiming && elapsed > timeToMove)
             break;
 
         best = temp;
-        previousBestScore = bestScore;
+        //previousBestScore = bestScore;
         bestScore = best.score;
-        secondBest = list[1];
+        //secondBest = list[1];
 
         infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
         if ((calledTiming && (1.15f * (last - start) > timeToMove)) || best.score >= PLUS_MATE)
@@ -268,17 +286,16 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     {
         int usable;
         int gavScore = gavWDL(b, &usable) * PLUS_MATE;
-        gavScore = b.turn? gavScore : -gavScore;
         if (usable)
         {
             #ifdef DEBUG
             queries++;
             #endif
-            return gavScore;
+            return b.turn? gavScore : -gavScore;
         }
     }
 
-    if (calledTiming && clock() - startT > timeToMoveT)
+    if (calledTiming && depth > 2 && clock() - startT > timeToMoveT)
         return 0;
 
     const int isInC = isInCheck(&b, b.turn);
@@ -307,12 +324,11 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
                     val = table[index].val;
                     if (val > PLUS_MATE) val -= 1;
                     return val;
-                */
+                    */
             }
             if (alpha >= beta)
                 return table[index].val;
         }
-
         bestM = table[index].m;
     }
 
@@ -357,11 +373,8 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
         bestM = table[index].m;
     }
 
-    if (numMoves > 1) //Smart
-    {
-        assignScores(&b, list, numMoves, bestM, depth);
-        sort(list, numMoves);
-    }
+    assignScores(&b, list, numMoves, bestM, depth);
+    sort(list, list+numMoves);
 
     uint64_t newHash;
     int best = MINS_INF;
@@ -455,6 +468,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
 
     return best;
 }
+
 int qsearch(Board b, int alpha, const int beta)
 {
     #ifdef DEBUG
@@ -471,14 +485,11 @@ int qsearch(Board b, int alpha, const int beta)
         return alpha;
 
     Move list[NMOVES];
+    const int numMoves = legalMovesQuiesce(&b, list) >> 1;
     History h;
-    const int numMoves = legalMoves(&b, list) >> 1;
 
-    if (numMoves > 1) //Smarter
-    {
-        assignScoresQuiesce(&b, list, numMoves);
-        sort(list, numMoves);
-    }
+    assignScoresQuiesce(&b, list, numMoves);
+    sort(list, list+numMoves);
 
     int val;
 
@@ -502,7 +513,6 @@ int qsearch(Board b, int alpha, const int beta)
 
         undoMove(&b, list[i], &h);
     }
-
     return alpha;
 }
 

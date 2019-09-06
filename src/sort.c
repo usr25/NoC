@@ -185,23 +185,21 @@ inline void addKM(const Move m, const int depth)
     killerMoves[depth][0] = killerMoves[depth][1];
     killerMoves[depth][1] = m;
 }
-/* Sorts all the moves based on their score, the algorithm is insertion sort
- */
-void sort(Move* list, const int numMoves)
-{
-    int j;
-    Move temp;
-    for (int i = 1; i < numMoves; ++i)
-    {
-        temp = list[i];
-        j = i - 1;
 
-        while(j > -1 && list[j].score < temp.score)
+void sort(Move* start, Move* end)
+{
+    Move* q, temp;
+    for (Move* p = start + 1; p < end; ++p)
+    {
+        temp = *p;
+        q = p - 1;
+
+        while(q >= start && q->score < temp.score)
         {
-            list[j + 1] = list[j];
-            --j;
+            *(q+1) = *q;
+            --q;
         }
 
-        list[j + 1] = temp;
+        *(q+1) = temp;
     }
 }

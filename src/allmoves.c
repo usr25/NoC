@@ -3,6 +3,8 @@
  * legalMoves is the main function.
  */
 
+#include <stdio.h>
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -17,9 +19,9 @@
 #define NOT_SEVENTH_RANK 0xff00ffffffffffff
 #define NOT_SECOND_RANK 0xffffffffffff00ff
 
-__attribute__((hot)) int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
-__attribute__((hot)) int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
-__attribute__((hot)) int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
+__attribute__((hot)) static int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
+__attribute__((hot)) static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
+__attribute__((hot)) static int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 
 /* Generates all the legal moves for a given position and color
  */
@@ -136,7 +138,7 @@ uint64_t pinnedPieces(Board* b, const int color)
 /* Generates all legal moves if the king isnt in check nor is there a pinned piece
  * No move will leave the king in check except for enPassand, since the discoveries are harder to detect
  */
-int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden)
+static int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden)
 {
     Move* p = list;
     const int opp = 1 ^ b->turn;
@@ -359,7 +361,7 @@ int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidde
 /* Generates all legal moves when there is a pinned piece
  * Notice that a pinned piece can only move in the direction it is pinned
  */
-int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
+static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
     Move* p = list;
     const int opp = 1 ^ b->turn;
@@ -626,7 +628,7 @@ int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbi
  * Notice that when the king is in check no pinned piece can move and if the number of attackers
  * is greater than 1 the only option is to move the king
  */
-int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
+static int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
     Move* p = list;
     const int opp = 1 ^ b->turn;
@@ -831,4 +833,362 @@ int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, 
     }
 
     return p - list;
+}
+
+static int movesQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned)
+{
+    Move* p = list;
+    const int color = b->turn, opp = 1 ^ b->turn;
+    const uint64_t oppPieces = b->color[opp];
+    const int k = LSB_INDEX(b->piece[b->turn][KING]);
+    const uint64_t pinStra = getStraMoves(k);
+    const uint64_t pinDiag = getDiagMoves(k);
+
+    int from, to;
+    uint64_t temp, tempCaptures, tempMoves;
+
+    temp = b->piece[b->turn][PAWN] & (b->turn? SEVENTH_RANK : SECOND_RANK);
+    while(temp)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+
+        if (b->turn)
+        {
+            tempMoves = getWhitePawnMoves(from) & ~b->allPieces;
+            tempCaptures = getWhitePawnCaptures(from) & oppPieces;
+        }
+        else
+        {
+            tempMoves = getBlackPawnMoves(from) & ~b->allPieces;
+            tempCaptures = getBlackPawnCaptures(from) & oppPieces;
+        }
+        if (pinned & POW2[from])
+        {
+            if (pinStra & POW2[from])
+            {
+                tempMoves &= pinStra;
+                tempCaptures = 0;
+            }
+            else
+            {
+                tempMoves = 0;
+                tempCaptures &= pinDiag;
+            }
+        }
+
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = pieceAt(b, POW2[to], opp), .score = 850};
+            REMOVE_LSB(tempCaptures);
+        }
+        while (tempMoves)
+        {
+            *p++ = (Move) {.piece = PAWN, .from = from, .to = LSB_INDEX(tempMoves), .promotion = QUEEN, .score = 800};
+            REMOVE_LSB(tempMoves);
+        }
+    }
+
+    temp = b->piece[b->turn][PAWN] & (b->turn? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
+    while(temp)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+
+        if (b->turn)
+            tempCaptures = getWhitePawnCaptures(from) & oppPieces;
+        else
+            tempCaptures = getBlackPawnCaptures(from) & oppPieces;
+
+        if (pinned & POW2[from]){
+            if (pinDiag & POW2[from])
+                tempCaptures &= pinDiag;
+            else
+                tempCaptures = 0;
+        }
+
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
+
+        if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
+        {
+            Move m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * b->turn - 1) * 8, .enPass = b->enPass, .score = 101};
+            History h;
+            if (moveIsValidSliding(b, m, h)) *p++ = m;
+        }
+        else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
+        {
+            Move m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * b->turn - 1) * 8, .enPass = b->enPass, .score = 101};
+            History h;
+            if (moveIsValidSliding(b, m, h)) *p++ = m;
+        }
+    }
+
+    temp = b->piece[color][QUEEN];
+    while(temp)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+
+        uint64_t movesR = posRookMoves(b, color, from);
+        uint64_t movesB = posBishMoves(b, color, from);
+
+        if (pinned & POW2[from])
+        {
+            movesR &= ((pinStra & POW2[from]) != 0) * pinStra; //To avoid branching
+            movesB &= ((pinDiag & POW2[from]) != 0) * pinDiag;
+        }
+
+        tempCaptures = (movesR | movesB) & oppPieces;
+
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            *p++ = (Move) {.piece = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
+    }
+
+
+    temp = b->piece[color][ROOK];
+    while(temp)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempCaptures = posRookMoves(b, color, from) & oppPieces;
+
+        if (pinned & POW2[from])
+            tempCaptures &= ((pinStra & POW2[from]) != 0) * pinStra;
+
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            *p++ = (Move) {.piece = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
+    }
+
+
+    temp = b->piece[color][BISH];
+    while(temp)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+        tempCaptures = posBishMoves(b, color, from) & oppPieces;
+
+        if (pinned & POW2[from])
+            tempCaptures &= ((pinDiag & POW2[from]) != 0) * pinDiag;
+
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            *p++ = (Move) {.piece = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
+    }
+
+
+    temp = b->piece[color][KNIGHT];
+    while(temp)
+    {
+        from = LSB_INDEX(temp);
+        REMOVE_LSB(temp);
+
+        if (!(pinned & POW2[from]))
+        {
+            tempCaptures = getKnightMoves(from) & oppPieces;
+
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                *p++ = (Move) {.piece = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
+        }
+    }
+
+
+    tempCaptures = getKingMoves(k) & ~forbidden & oppPieces;
+    while (tempCaptures)
+    {
+        to = LSB_INDEX(tempCaptures);
+        *p++ = (Move) {.piece = KING, .from = k, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+        REMOVE_LSB(tempCaptures);
+    }
+
+    return p - list;
+}
+static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned)
+{
+    Move* p = list;
+    const int color = b->turn, opp = 1 ^ b->turn;
+    const int k = LSB_INDEX(b->piece[b->turn][KING]);
+    const uint64_t oppPieces = b->color[opp];
+    const uint64_t pinnedMask = ~pinned;
+    const AttacksOnK att = getCheckTiles(b, color);
+    const uint64_t interfere = att.tiles;
+
+    int from, to;
+    uint64_t temp, tempMoves, tempCaptures;
+
+    tempCaptures = getKingMoves(k) & ~forbidden & b->color[opp];
+    while (tempCaptures)
+    {
+        to = LSB_INDEX(tempCaptures);
+        *p++ = (Move) {.piece = KING, .from = k, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+        REMOVE_LSB(tempCaptures);
+    }
+
+    if (att.num == 1)
+    {
+        //Promoting pawns
+        temp = b->piece[b->turn][PAWN] & pinnedMask & (b->turn? SEVENTH_RANK : SECOND_RANK);
+        while(temp)
+        {
+            from = LSB_INDEX(temp);
+            REMOVE_LSB(temp);
+
+            if (b->turn)
+            {
+                tempMoves = getWhitePawnMoves(from) & ~b->allPieces & interfere;
+                tempCaptures = getWhitePawnCaptures(from) & oppPieces & interfere;
+            }
+            else
+            {
+                tempMoves = getBlackPawnMoves(from) & ~b->allPieces & interfere;
+                tempCaptures = getBlackPawnCaptures(from) & oppPieces & interfere;
+            }
+
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                REMOVE_LSB(tempCaptures);
+                int capt = pieceAt(b, POW2[to], opp);
+
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt, .score = 850};
+            }
+            while (tempMoves)
+            {
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = LSB_INDEX(tempMoves), .promotion = QUEEN, .score = 800};
+                REMOVE_LSB(tempMoves);
+            }
+        }
+
+        temp = b->piece[b->turn][PAWN] & pinnedMask & (b->turn? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
+        while(temp)
+        {
+            from = LSB_INDEX(temp);
+            REMOVE_LSB(temp);
+
+           if (b->turn)
+                tempCaptures = getWhitePawnCaptures(from) & oppPieces & interfere;
+            else
+                tempCaptures = getBlackPawnCaptures(from) & oppPieces & interfere;
+
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
+
+            if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
+            {
+                Move m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * b->turn - 1) * 8, .enPass = b->enPass, .score = 101};
+                History h;
+                if (moveIsValidSliding(b, m, h)) *p++ = m;
+            }
+            else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
+            {
+                Move m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * b->turn - 1) * 8, .enPass = b->enPass, .score = 101};
+                History h;
+                if (moveIsValidSliding(b, m, h)) *p++ = m;
+            }
+        }
+
+
+        temp = b->piece[color][QUEEN] & pinnedMask;
+        while(temp)
+        {
+            from = LSB_INDEX(temp);
+            REMOVE_LSB(temp);
+
+            tempCaptures = (posRookMoves(b, color, from) | posBishMoves(b, color, from)) & interfere & oppPieces;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                *p++ = (Move) {.piece = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
+        }
+
+
+        temp = b->piece[color][ROOK] & pinnedMask;
+        while(temp)
+        {
+            from = LSB_INDEX(temp);
+            REMOVE_LSB(temp);
+
+            tempCaptures = posRookMoves(b, color, from) & interfere & oppPieces;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                *p++ = (Move) {.piece = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
+        }
+
+
+        temp = b->piece[color][BISH] & pinnedMask;
+        while(temp)
+        {
+            from = LSB_INDEX(temp);
+            REMOVE_LSB(temp);
+
+            tempCaptures = posBishMoves(b, color, from) & interfere & oppPieces;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                *p++ = (Move) {.piece = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
+        }
+
+
+        temp = b->piece[color][KNIGHT] & pinnedMask;
+        while(temp)
+        {
+            from = LSB_INDEX(temp);
+            REMOVE_LSB(temp);
+
+            tempCaptures = getKnightMoves(from) & interfere & oppPieces;
+            while (tempCaptures)
+            {
+                to = LSB_INDEX(tempCaptures);
+                *p++ = (Move) {.piece = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+                REMOVE_LSB(tempCaptures);
+            }
+        }
+    }
+
+    return p - list;
+}
+
+int legalMovesQuiesce(Board* b, Move* list)
+{
+    //Squares attacked by opp pieces, to detect checks and castling
+    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces ^ b->piece[b->turn][KING]) | controlledKingPawnKnight(b, 1 ^ b->turn);
+
+    //All the pinned pieces for the side to move
+    uint64_t pinned = pinnedPieces(b, b->turn);
+
+    if (forbidden & b->piece[b->turn][KING])
+        return (movesCheckQuiesce(b, list, forbidden, pinned) << 1) | 1;
+    else
+        return movesQuiesce(b, list, forbidden, pinned) << 1;
 }

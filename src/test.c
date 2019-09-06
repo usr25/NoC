@@ -312,47 +312,47 @@ void slowTests(void)
 
 
     b = genFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -", &ignore);
-    printf("No pawns depth 5: %d\n", perftRecursive(b, 5) == 191462298ULL);
+    printf("No pawns depth 5: %d\n", perft(b, 5, 0) == 191462298ULL);
 
     b = genFromFen("8/1p3k2/7K/8/2P5/8/8/8 w - -", &ignore);
-    printf("En passand + promotion: %d\n", perftRecursive(b, 8) == 3558853ULL);
+    printf("En passand + promotion: %d\n", perft(b, 8, 0) == 3558853ULL);
 
     b = genFromFen("8/5k2/P4P1K/8/8/8/4p3/8 w - -", &ignore);
-    printf("Promotion: %d\n", perftRecursive(b, 8) == 38555705ULL);
+    printf("Promotion: %d\n", perft(b, 8, 0) == 38555705ULL);
 
     b = genFromFen("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -", &ignore);
-    printf("Castle: %d\n", perftRecursive(b, 5) == 7288108ULL);
+    printf("Castle: %d\n", perft(b, 5, 0) == 7288108ULL);
 
     b = genFromFen("4k3/1b2nbb1/3n4/8/8/4N3/1B1N1BB1/4K3 w - -", &ignore);
-    printf("Bish & Knight: %d\n", perftRecursive(b, 5) == 48483119ULL);
+    printf("Bish & Knight: %d\n", perft(b, 5, 0) == 48483119ULL);
 
     b = genFromFen("4kq2/4q3/8/8/8/8/1Q6/Q3K3 w - -", &ignore);
-    printf("Queen: %d\n", perftRecursive(b, 6) == 71878391ULL);
+    printf("Queen: %d\n", perft(b, 6, 0) == 71878391ULL);
 
     b = genFromFen("8/8/8/3k1K3/8/8/8/8 w - -", &ignore);
-    printf("King: %d\n", perftRecursive(b, 9) == 31356171ULL);
+    printf("King: %d\n", perft(b, 9, 0) == 31356171ULL);
 
     b = genFromFen("8/5K2/5PR1/7k/7p/5P2/6P1/8 w - -", &ignore);
-    printf("Check enP: %d\n", perftRecursive(b, 8) == 7991633ULL);
+    printf("Check enP: %d\n", perft(b, 8, 0) == 7991633ULL);
 
 
     b = genFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", &ignore);
-    printf("Perfect 1: %d\n", perftRecursive(b, 6) == 119060324ULL);
+    printf("Perfect 1: %d\n", perft(b, 6, 0) == 119060324ULL);
 
     b = genFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", &ignore);
-    printf("Perfect 2: %d\n", perftRecursive(b, 5) == 193690690ULL);
+    printf("Perfect 2: %d\n", perft(b, 5, 0) == 193690690ULL);
 
     b = genFromFen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", &ignore);
-    printf("Perfect 3: %d\n", perftRecursive(b, 7) == 178633661ULL);
+    printf("Perfect 3: %d\n", perft(b, 7, 0) == 178633661ULL);
 
     b = genFromFen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -", &ignore);
-    printf("Perfect 4: %d\n", perftRecursive(b, 6) == 706045033ULL);
+    printf("Perfect 4: %d\n", perft(b, 6, 0) == 706045033ULL);
 
     b = genFromFen("1k6/1b6/8/8/7R/8/8/4K2R b K -", &ignore);
-    printf("Perfect 5: %d\n", perftRecursive(b, 5) == 1063513ULL);
+    printf("Perfect 5: %d\n", perft(b, 5, 0) == 1063513ULL);
 
     b = genFromFen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -", &ignore);
-    printf("Complex: %d\n", perftRecursive(b, 6) == 706045033ULL);
+    printf("Complex: %d\n", perft(b, 6, 0) == 706045033ULL);
 }
 
 void runTests(void)
@@ -410,6 +410,6 @@ void chooseTest(int mode)
             testGav();
             break;
         default:
-            printf("Choose mode [0, 5]\n");
+            printf("Choose mode [0..5]\n");
     }
 }
