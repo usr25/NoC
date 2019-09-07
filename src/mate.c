@@ -90,9 +90,9 @@ Move rookMate(const Board b)
     const int wrCol = wrLSB & 7;
     const int lkCol = lkLSB & 7;
     
-    const int wrRow = wrLSB / 8;
-    const int wkRow = wkLSB / 8;
-    const int lkRow = lkLSB / 8;
+    const int wrRow = wrLSB >> 3;
+    const int wkRow = wkLSB >> 3;
+    const int lkRow = lkLSB >> 3;
 
     const int kingsDist = abs(wkLSB - lkLSB);
 

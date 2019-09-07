@@ -19,9 +19,13 @@
 #define NOT_SEVENTH_RANK 0xff00ffffffffffff
 #define NOT_SECOND_RANK 0xffffffffffff00ff
 
+//TODO: Place negative scores on rook and bish promotions
+
 __attribute__((hot)) static int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
 __attribute__((hot)) static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 __attribute__((hot)) static int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
+__attribute__((hot)) static int movesQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned);
+__attribute__((hot)) static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned);
 
 /* Generates all the legal moves for a given position and color
  */
@@ -39,6 +43,22 @@ int legalMoves(Board* b, Move* list)
         return movesPinnedPiece(b, list, b->turn, forbidden, pinned) << 1;
     else
         return movesKingFree(b, list, b->turn, forbidden) << 1;
+}
+
+/* Only compute captures and queen promotions
+ */
+int legalMovesQuiesce(Board* b, Move* list)
+{
+    //Squares attacked by opp pieces, to detect checks and castling
+    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces ^ b->piece[b->turn][KING]) | controlledKingPawnKnight(b, 1 ^ b->turn);
+
+    //All the pinned pieces for the side to move
+    uint64_t pinned = pinnedPieces(b, b->turn);
+
+    if (forbidden & b->piece[b->turn][KING])
+        return (movesCheckQuiesce(b, list, forbidden, pinned) << 1) | 1;
+    else
+        return movesQuiesce(b, list, forbidden, pinned) << 1;
 }
 
 /* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves
@@ -1177,18 +1197,4 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
     }
 
     return p - list;
-}
-
-int legalMovesQuiesce(Board* b, Move* list)
-{
-    //Squares attacked by opp pieces, to detect checks and castling
-    uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->turn, b->allPieces ^ b->piece[b->turn][KING]) | controlledKingPawnKnight(b, 1 ^ b->turn);
-
-    //All the pinned pieces for the side to move
-    uint64_t pinned = pinnedPieces(b, b->turn);
-
-    if (forbidden & b->piece[b->turn][KING])
-        return (movesCheckQuiesce(b, list, forbidden, pinned) << 1) | 1;
-    else
-        return movesQuiesce(b, list, forbidden, pinned) << 1;
 }

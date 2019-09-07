@@ -13,15 +13,13 @@
 
 #define NUM_KM 2
 
-int smallestAttackerSqr(const Board* b, const int sqr, const int col);
+static int smallestAttackerSqr(const Board* b, const int sqr, const int col);
 inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) int see(Board* b, const int to, const int pieceAtSqr);
 
-const Move NOMOVE = (Move) {.from = -1, .to = -1};
+static const Move NOMOVE = (Move) {.from = -1, .to = -1};
 const int pVal[6] = {1500, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
 Move killerMoves[99][NUM_KM];
-
-uint64_t relevantPieces[2][6];
 
 inline int compMoves(const Move* m1, const Move* m2)
 {
@@ -63,7 +61,7 @@ int see(Board* b, const int sqr, const int pieceAtSqr)
     return value;
 }
 
-int smallestAttackerSqr(const Board* b, const int sqr, const int col)
+static int smallestAttackerSqr(const Board* b, const int sqr, const int col)
 {
     const int opp = 1 ^ col;
     const uint64_t obst = b->allPieces;

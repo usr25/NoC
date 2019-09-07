@@ -35,8 +35,8 @@
 
 //Starting: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-int textToPiece(char piece);
-int color(char piece);
+int textToPiece(const char piece);
+int color(const char piece);
 
 //TODO: 50 moves in the fen are ignored, the moves are set to 0
 Board genFromFen(char* const fen, int* counter)
@@ -195,13 +195,7 @@ int equal(const Board* a, const Board* b)
     return data && pieces && other;
 }
 
-Board duplicate(const Board b)
-{
-    Board a = b;
-    return a;
-}
-
-int textToPiece(char piece)
+int textToPiece(const char piece)
 {
     switch(piece)
     {
@@ -228,7 +222,7 @@ int textToPiece(char piece)
             return NO_PIECE;
     }
 }
-int color(char piece)
+int color(const char piece)
 {
     return 'A' <= piece && piece <= 'Z';
 }

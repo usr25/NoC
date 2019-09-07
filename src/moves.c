@@ -190,7 +190,7 @@ uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles)
     return res;
 }
 
-/*Any piece placed in one of this tiles will stop a check, either by capturing or by pinning itself
+/* Any piece placed in one of this tiles will stop a check, either by capturing or by pinning itself
  */
 AttacksOnK getCheckTiles(Board* b, const int color)
 {
@@ -270,10 +270,10 @@ inline int slidingCheck(Board* b, const int kingsColor)
 {
     const int k = LSB_INDEX(b->piece[kingsColor][KING]);
 
-    uint64_t stra = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][ROOK];
+    const uint64_t stra = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][ROOK];
     if (stra && (stra & getRookMagicMoves(k, b->allPieces))) return 1;
 
-    uint64_t diag = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][BISH];
+    const uint64_t diag = b->piece[1 ^ kingsColor][QUEEN] | b->piece[1 ^ kingsColor][BISH];
     if (diag && (diag & getBishMagicMoves(k, b->allPieces))) return 1;
 
     return 0;
@@ -287,18 +287,19 @@ inline int isInCheck(Board* b, const int kingsColor)
     if (b->piece[opp][KING] & getKingMoves(k)) return 1;
     if (b->piece[opp][PAWN] & pawnCaptures(k, kingsColor)) return 1;
     if (b->piece[opp][KNIGHT] & getKnightMoves(k)) return 1;
-    
-    uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
+
+    const uint64_t stra = b->piece[opp][QUEEN] | b->piece[opp][ROOK];
     if (stra && (stra & getRookMagicMoves(k, b->allPieces))) return 1;
 
-    uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
+    const uint64_t diag = b->piece[opp][QUEEN] | b->piece[opp][BISH];
     if (diag && (diag & getBishMagicMoves(k, b->allPieces))) return 1;
 
     return 0;
 }
 /* Returns the number of checks a move produces
  * PRE: The move hasnt been applied to the board and it is a legal move
- * Castling / promotion is not included so far
+ * Castling / promotion / EnPassand is not included so far
+ * TODO: It is full of mistakes
  */
 int givesCheck(const Board* b, const Move m)
 {
@@ -336,7 +337,7 @@ int givesCheck(const Board* b, const Move m)
             bi ^= fromBB | toBB;
         break;
     }
-    uint64_t newPieces = b->allPieces ^ toBB ^ fromBB;
+    const uint64_t newPieces = (b->allPieces ^ toBB) | fromBB; //It is | so that captures don't make both pieces disappear
 
     if (ro)
         numChecks += (getRookMagicMoves(k, newPieces) & ro) != 0;

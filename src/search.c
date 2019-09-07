@@ -34,9 +34,9 @@
 #define PLUS_INF   9999999
 #define MINS_INF  -9999999
 
-Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
-__attribute__((hot)) int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
-__attribute__((hot)) int qsearch(Board b, int alpha, const int beta);
+static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
+__attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
+__attribute__((hot)) static int qsearch(Board b, int alpha, const int beta);
 
 static Move tableLookUp(Board b, int* tbAv);
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
@@ -210,7 +210,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 }
 
 int callDepth;
-Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
+static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
     nodes = 0;
@@ -275,7 +275,7 @@ Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, con
 
     return currBest;
 }
-int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep)
+static int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep)
 {
     const int pv = beta - alpha > 1;
     //assert(beta >= alpha);
@@ -469,7 +469,7 @@ int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint
     return best;
 }
 
-int qsearch(Board b, int alpha, const int beta)
+static int qsearch(Board b, int alpha, const int beta)
 {
     #ifdef DEBUG
     ++qsearchNodes;

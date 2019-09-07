@@ -20,18 +20,16 @@
 
 #define LEN 4096
 
-void uci(void);
-void isready(void);
-void perft_(Board b, int depth);
-void eval_(Board b);
-void best_(Board b, char* beg, Repetition* rep);
-void best_time(Board, char* beg, Repetition* rep);
-void help_(void);
-int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash);
-Board gen_(char* beg, Repetition* rep);
-Board gen_def(char* beg, Repetition* rep);
-
-Move evalPos(char* beg);
+static void uci(void);
+static void isready(void);
+static void perft_(Board b, int depth);
+static void eval_(Board b);
+static void best_(Board b, char* beg, Repetition* rep);
+static void best_time(Board, char* beg, Repetition* rep);
+static void help_(void);
+static int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash);
+static Board gen_(char* beg, Repetition* rep);
+static Board gen_def(char* beg, Repetition* rep);
 
 /* Main loop, listens to user input and performs the desired actions
  */
@@ -114,29 +112,29 @@ void loop(void)
     }
 }
 
-void uci(void)
+static void uci(void)
 {
     fprintf(stdout, "id name %s\n", ENGINE_NAME);
     fprintf(stdout, "id author %s\n", ENGINE_AUTHOR);
     fprintf(stdout, "uciok\n");
     fflush(stdout);
 }
-void isready(void)
+static void isready(void)
 {
     fprintf(stdout, "readyok\n");
     fflush(stdout);
 }
-void perft_(Board b, int depth)
+static void perft_(Board b, int depth)
 {
     clock_t startTime = clock();
     printf("Node count: %llu\n", perft(b, depth, 1));
     printf("Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
 }
-void eval_(Board b)
+static void eval_(Board b)
 {
     printf("%d\n", eval(&b));
 }
-void best_time(Board b, char* beg, Repetition* rep)
+static void best_time(Board b, char* beg, Repetition* rep)
 {
     int callDepth = 0;
     int wtime = 0, btime = 0, winc = 0, binc = 0, movestogo = 0;
@@ -190,7 +188,7 @@ void best_time(Board b, char* beg, Repetition* rep)
     fprintf(stdout, "bestmove %s\n", mv);
     fflush(stdout);
 }
-int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
+static int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
 {
     int prom = 0, from, to;
     from = getIndex(beg[0], beg[1]);
@@ -238,7 +236,8 @@ int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
 
     return 4 + prom;
 }
-Board gen_def(char* beg, Repetition* rep)
+
+static Board gen_def(char* beg, Repetition* rep)
 {
     Board b = defaultBoard();
     uint64_t startHash = hashPosition(&b);
@@ -254,8 +253,7 @@ Board gen_def(char* beg, Repetition* rep)
 
     return b;
 }
-
-Board gen_(char* beg, Repetition* rep)
+static Board gen_(char* beg, Repetition* rep)
 {
     int counter;
     Board b = genFromFen(beg, &counter);
@@ -285,7 +283,7 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
     fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu pv %s\n", m.score, depth, duration, nodes, mv);
     fflush(stdout);
 }
-void help_(void)
+static void help_(void)
 {
     fprintf(stdout, "-====----------------====-\n");
     fprintf(stdout, "Chess Engine made by J; the commands are:\n");

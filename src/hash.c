@@ -216,7 +216,7 @@ void initializeTable(void)
 }
 
 /* Detects if the last move makes a 3fold repetion
- * PRE: Hash isnt in the array
+ * PRE: Hash isn't in the array
  */
 int isThreeRep(const Repetition* r, const uint64_t hash)
 {

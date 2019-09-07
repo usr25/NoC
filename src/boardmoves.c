@@ -139,7 +139,7 @@ void makeMove(Board* b, const Move move, History* h)
     b->allPieces = b->color[WHITE] | b->color[BLACK];
 }
 
-/* Equivalent to makeMove but doesnt need History, since it wont be undone
+/* Equivalent to makeMove but doesn't need History, since it won't be undone
  */
 void makePermaMove(Board* b, const Move move)
 {
@@ -251,7 +251,7 @@ void undoMove(Board* b, const Move move, History* h)
 
 /* Returns if a move is legal in the given position
  * PRE: The move hasnt been applied to the board and is a valid move
- * it currently doesnt work with enPass or castle, they are returned as false (0)
+ * It currently doesn't work with enPass or castle, they are returned as false (0)
  */
 int isValid(Board b, const Move m)
 {

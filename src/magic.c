@@ -13,8 +13,8 @@ uint64_t rookMagic[64] = {0x80002040008010, 0x40200040001000, 0x401000400204060,
 
 const uint64_t indexToBitboard(int index, int bits, uint64_t m);
 uint64_t findMagic(int sqr, int isBishop);
-void populateRookMagics(void);
-void populateBishMagics(void);
+static void populateRookMagics(void);
+static void populateBishMagics(void);
 
 /* Generate a random uint64_t
  */
@@ -103,7 +103,7 @@ uint64_t findMagic(int sqr, int isBishop)
 
 /* Map the respective bitboards to the magics for the rook movements
  */
-void populateRookMagics(void)
+static void populateRookMagics(void)
 {
     for (int i = 0; i < 64; ++i)
     {
@@ -121,7 +121,7 @@ void populateRookMagics(void)
 }
 /* Map the respective bitboards to the magics for the bishop movements
  */
-void populateBishMagics(void)
+static void populateBishMagics(void)
 {
     for (int i = 0; i < 64; ++i)
     {

@@ -39,28 +39,50 @@
 
 #include <stdio.h>
 
-int material(void);
-int pieceActivity(const Board* b);
-int endgameAnalysis(const Board* b);
-int pieceDevelopment(const Board* b);
-int pawns(const Board* b);
+static int phase(void);
+static void assignPC(const Board* b);
 
-int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp);
-int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
-int twoBishops(void);
-int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
-int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp);
+static int material(void);
+static int pieceActivity(const Board* b);
+static int endgameAnalysis(const Board* b);
+static int pieceDevelopment(const Board* b);
+static int pawns(const Board* b);
 
-int testMatrices(const Board* board, const int phase, const int color);
+static int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp);
+static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
+static int twoBishops(void);
+static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
+static int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp);
+
+static int pst(const Board* board, const int phase, const int color);
 //TO implement:
-int knightCoordination(void); //Two knights side by side are better
+static int knightCoordination(void); //Two knights side by side are better
 
 /* TODO: Make the pawns bitboards as global to avoid passing too many arguments */
-int wPawn, bPawn;
-int wQueen, bQueen;
-int wRook, bRook;
-int wBish, bBish;
-int wKnight, bKnight;
+static int wPawn, bPawn;
+static int wQueen, bQueen;
+static int wRook, bRook;
+static int wBish, bBish;
+static int wKnight, bKnight;
+
+
+int eval(const Board* b)
+{
+    assignPC(b);
+    int ph = phase();
+
+    int evaluation = material();
+
+    evaluation += pst(b, ph, WHITE) - pst(b, ph, BLACK);
+
+    evaluation += pieceActivity(b);
+
+    //evaluation += pawns(b);
+
+    //evaluation += pieceDevelopment(b);
+
+    return b->turn? evaluation : -evaluation;
+}
 
 int insuffMat(const Board* b)
 {
@@ -95,7 +117,7 @@ int insuffMat(const Board* b)
     return 0;
 }
 
-inline void assignPC(const Board* b)
+static inline void assignPC(const Board* b)
 {
     wPawn = POPCOUNT(b->piece[WHITE][PAWN]), bPawn = POPCOUNT(b->piece[BLACK][PAWN]);
     wQueen = POPCOUNT(b->piece[WHITE][QUEEN]), bQueen = POPCOUNT(b->piece[BLACK][QUEEN]);
@@ -104,7 +126,7 @@ inline void assignPC(const Board* b)
     wKnight = POPCOUNT(b->piece[WHITE][KNIGHT]), bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
 }
 
-inline int standPatEval(const Board* b, const int color)
+inline int evalWithOffset(const Board* b, const int color)
 {
     int hPiece = VBISH + SP_MARGIN;
     if (b->piece[color][QUEEN]) hPiece = VQUEEN;
@@ -113,7 +135,7 @@ inline int standPatEval(const Board* b, const int color)
     return hPiece + eval(b);
 }
 
-int phase(void)
+static int phase(void)
 {
     const int knPh = 1;
     const int biPh = 1;
@@ -132,31 +154,13 @@ int phase(void)
     return (256 * currPh + totPh / 2) / totPh;
 }
 
-inline int taperedEval(const int ph, const int beg, const int end)
+static inline int taperedEval(const int ph, const int beg, const int end)
 {
     return ((beg * (256 - ph)) + (end * ph)) / 256;
 }
 
-//It is considered an endgame if there are 7 pieces or less in each side, (< 10 taking into account the kings)
-int eval(const Board* b)
-{
-    assignPC(b);
-    int ph = phase();
 
-    int evaluation = material();
-
-    evaluation += testMatrices(b, ph, WHITE) - testMatrices(b, ph, BLACK);
-
-    evaluation += pieceActivity(b);
-
-    //evaluation += pawns(b);
-
-    //evaluation += pieceDevelopment(b);
-
-    return b->turn? evaluation : -evaluation;
-}
-
-inline int material(void)
+static inline int material(void)
 {
     return   VQUEEN     *(wQueen    - bQueen)
             +VROOK      *(wRook     - bRook)
@@ -166,14 +170,14 @@ inline int material(void)
 }
 //TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
 //TODO: Disable piece_slow_dev if all the pieces have already moved or if it is the middlegame
-inline int pieceDevelopment(const Board* b)
+static inline int pieceDevelopment(const Board* b)
 {
     return 
          N_PIECE_SLOW_DEV * (POPCOUNT(0x66ULL & b->color[WHITE]) - POPCOUNT(0x6600000000000000ULL & b->color[BLACK]))
         +STABLE_KING * (((0x6b & b->piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b->piece[BLACK][KING]) != 0));
 }
 
-inline int pawns(const Board* b)
+static inline int pawns(const Board* b)
 {
     uint64_t wPawnBB = b->piece[WHITE][PAWN];
     uint64_t bPawnBB = b->piece[BLACK][PAWN];
@@ -212,7 +216,7 @@ inline int pawns(const Board* b)
     return final;
 }
 
-inline int endgameAnalysis(const Board* b)
+static inline int endgameAnalysis(const Board* b)
 {
     const int wAvg = b->piece[WHITE][PAWN] ? 
     (LSB_INDEX(b->piece[WHITE][PAWN]) + MSB_INDEX(b->piece[WHITE][PAWN])) >> 1 
@@ -226,7 +230,7 @@ inline int endgameAnalysis(const Board* b)
         +E_ADVANCED_PAWN * ((wAvg >> 3) - ((63 - bAvg) >> 3));
 }
 
-inline int pieceActivity(const Board* b)
+static inline int pieceActivity(const Board* b)
 {
     int score = twoBishops();
 
@@ -238,19 +242,19 @@ inline int pieceActivity(const Board* b)
     return score;
 }
 
-inline int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all)
+static inline int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all)
 {
     return BISHOP_MOBILITY * ((POPCOUNT(getBishMagicMoves(MSB_INDEX(wh), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(wh), all))) 
                              -(POPCOUNT(getBishMagicMoves(MSB_INDEX(bl), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(bl), all))));
 }
 
-inline int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp)
+static inline int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp)
 {
     return SAFE_KING *  (POPCOUNT(getKingMoves(LSB_INDEX(wk)) & wp)
                         -POPCOUNT(getKingMoves(LSB_INDEX(bk)) & bp));
 }
 
-inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all)
+static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all)
 {
     /* TODO: Use the magics since they should be faster */
     //res += (getRookMagicMoves(LSB_INDEX(wh), all) & wh) == wh;
@@ -283,7 +287,7 @@ inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t a
 
     return CONNECTED_ROOKS * res;
 }
-inline int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp)
+static inline int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp)
 {
     int w = 0, b = 0;
     if (wr)
@@ -300,7 +304,7 @@ inline int twoBishops(void)
     return TWO_BISH * ((wBish > 1) - (bBish > 1));
 }
 
-int testMatrices(const Board* board, const int phase, const int color)
+static int pst(const Board* board, const int phase, const int color)
 {
     static const int pst[2][6][64] = {
     {
