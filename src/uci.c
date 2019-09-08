@@ -35,33 +35,12 @@ static Board gen_def(char* beg, Repetition* rep);
  */
 void loop(void)
 {
-    Board b;
+    Board b = defaultBoard();
     Repetition rep = (Repetition) {.index = 0};
 
     char input[LEN];
     char* res, *beg;
     int quit = 0;
-
-    res = fgets(input, LEN, stdin);
-    if (res == NULL) return;
-    beg = input;
-
-    if (strncmp(beg, "ucinewgame", 10) == 0)
-    {
-        b = defaultBoard();
-        rep.hashTable[rep.index++] = hashPosition(&b);
-    }
-    else if (strncmp(beg, "uci", 3) == 0)
-        uci();
-
-    else if (strncmp(beg, "isready", 7) == 0)
-        isready();
-
-    else if (strncmp(beg, "quit", 4) == 0)
-        return;
-
-    else
-        help_();
 
     while(!quit)
     {
@@ -72,11 +51,15 @@ void loop(void)
         if (strncmp(beg, "isready", 7) == 0)
             isready();
 
+        else if (strncmp(beg, "ucinewgame", 10) == 0)
+        {
+            b = defaultBoard();
+            rep.index = 0;
+            rep.hashTable[rep.index++] = hashPosition(&b);
+        }
+
         else if (strncmp(beg, "uci", 3) == 0)
             uci();
-
-        else if (strncmp(beg, "ucinewgame", 10) == 0)
-            b = defaultBoard();
 
         else if (strncmp(beg, "print", 5) == 0)
             drawPosition(b, 1);
@@ -106,7 +89,7 @@ void loop(void)
             help_();
 
         else
-            fprintf(stdout, "# invalid command\n");
+            fprintf(stdout, "# invalid command; type 'help'\n");
 
         fflush(stdout);
     }
@@ -177,6 +160,7 @@ static void best_time(Board b, char* beg, Repetition* rep)
         clock_t increment = b.turn? winc : binc;
         clock_t timeToMove = min(remTime >> 3, (remTime >> 5) + (clock_t)(increment * .9)) - 20; // remTime / 32
         clock_t calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
+
         best = bestTime(b, calcTime, *rep, 0);
     }
     else

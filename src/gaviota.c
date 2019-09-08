@@ -85,6 +85,7 @@ void initGav(const char* path)
         fprintf(stdout, "[-] No tablebases available, the engine will proceed without them. Ensure $cwd is ../Engine/ or pass the path to the tb as arguments Eg.: ./e /home/Chess/gtb");
     else
         fprintf(stdout, "[+] Gaviota tablebases available (~ == incomplete): ");
+
     for (int i = 0; i < 4; ++i)
     {
         if (availability & (0b11 << (2 * i)))
@@ -111,6 +112,9 @@ inline int canGav(const uint64_t all)
     return tablebasesAvailable[pc - 3];
 }
 
+/* Returns the score of a position based on the distance to mate using
+ * the gaviota tablebases
+ */
 int gavScore(Board b, int* tbIsAv)
 {
     parseBoard(&b);
