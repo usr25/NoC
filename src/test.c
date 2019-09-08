@@ -18,6 +18,7 @@
 #include "../include/hash.h"
 #include "../include/search.h"
 #include "../include/perft.h"
+#include "../include/gaviota.h"
 
 #define PATH "/home/j/Desktop/Chess/Engine/positions.fen"
 
@@ -34,7 +35,7 @@
 
 int ignore;
 
-int compMove(char* fen, char* target, int depth, int len)
+static int compMove(char* fen, char* target, int depth, int len)
 {
     char mv[6] = "";
     Board b = genFromFen(fen, &ignore);
@@ -363,6 +364,15 @@ void runTests(void)
     printf("[+] Hash: %d\n",            testHashing());
 }
 
+static int compWDL(char* fen, int expected)
+{
+    int a;
+    Board b = genFromFen(fen, &a);
+    int res = gavWDL(b, &a);
+
+    return a && (expected == res);
+}
+
 void testGav(void)
 {
     int pawn = 1, rook = 1, queen = 1;
@@ -385,9 +395,40 @@ void testGav(void)
     printf("Pawn  TB: %d\n", pawn);
     printf("Rook  TB: %d\n", rook);
     printf("Queen TB: %d\n", queen);
+
+
+    int pawn4 = 1;
+    pawn4 &= compMove("8/8/8/8/p7/8/1PK5/7k w - -", "c2c3", 1, 4); //To ensure enPass works
+    pawn4 &= compMove("K4k2/6p1/8/7P/8/8/8/8 b - -", "f8f7", 1, 4); //To ensure enPass works
+
+    printf("Pawn 4TB: %d\n", pawn4);
+
+
+    int pawnWDL = 1, rookWDL = 1, queenWDL = 1;
+    pawnWDL &= compWDL("1k6/8/4P3/4K3/8/8/8/8 w - -",  1);
+    pawnWDL &= compWDL("1k6/8/4P3/4K3/8/8/8/8 b - -",  1);
+    pawnWDL &= compWDL("4k3/8/4P3/4K3/8/8/8/8 w - -",  0);
+    pawnWDL &= compWDL("8/8/8/8/3k1K2/2p5/8/8 w - -", -1);
+    pawnWDL &= compWDL("8/8/8/8/3k1K2/2p5/8/8 b - -", -1);
+
+    rookWDL &= compWDL("4R3/8/8/6K1/3k4/8/8/8 w - -",  1);
+    rookWDL &= compWDL("4R3/8/8/6K1/3k4/8/8/8 b - -",  1);
+    rookWDL &= compWDL("8/8/8/2R3K1/3k4/8/8/8 b - -",  0);
+    rookWDL &= compWDL("8/8/8/8/3k1K2/8/8/5r2 w - -", -1);
+    rookWDL &= compWDL("8/8/8/6K1/3k4/8/8/5r2 b - -", -1);
+
+    queenWDL &= compWDL("5Q2/8/8/6K1/3k4/8/8/8 w - -",  1);
+    queenWDL &= compWDL("5Q2/8/8/6K1/3k4/8/8/8 b - -",  1);
+    queenWDL &= compWDL("8/8/6q1/6K1/3k4/8/8/8 w - -",  0);
+    queenWDL &= compWDL("8/5q2/8/6K1/3k4/8/8/8 w - -", -1);
+    queenWDL &= compWDL("8/5q2/8/6K1/3k4/8/8/8 b - -", -1);
+
+    printf("P WDL: %d\n", pawnWDL);
+    printf("R WDL: %d\n", rookWDL);
+    printf("Q WDL: %d\n", queenWDL);
 }
 
-void chooseTest(int mode)
+void chooseTest(const int mode)
 {
     switch (mode)
     {

@@ -10,7 +10,7 @@
 #include "../include/board.h"
 #include "../include/gaviota.h"
 
-static int getSqr(int inBoard)
+static int getGavSqr(int inBoard)
 {
     int sqr = inBoard - inBoard % 8;
     sqr += 7 - inBoard % 8;
@@ -29,11 +29,11 @@ static int pieceAtGav(Board* const b, const uint64_t pos, const int color)
     return tb_NOPIECE;
 }
 
-static void dtm_print (unsigned stm, int tb_available, unsigned info, unsigned pliestomate);
+static void dtmPrint (unsigned stm, int tb_available, unsigned info, unsigned pliestomate);
 static void parseBoard(Board* b);
-static void parseColor(int color, Board* b);
-static void parseCastle(Board* b);
-static void parseEpSqr(Board* b);
+static void parsePieces(Board* b);
+static void parseCastle(const Board* b);
+static void parseEpSqr(const Board* b);
 
 /* Necessary variables */
 static unsigned int  stm;      /* side to move */
@@ -151,66 +151,82 @@ int gavWDL(Board b, int* tbIsAv)
         return 0;
 }
 
+int gavWDLSoft(Board b, int* tbIsAv)
+{
+    parseBoard(&b);
+
+    *tbIsAv = tb_probe_WDL_soft(stm, epsquare, castling, ws, bs, wp, bp, &info);
+
+    if (info == tb_WMATE)
+        return 1;
+    else if (info == tb_BMATE)
+        return -1;
+    else
+        return 0;
+}
+
 static void parseBoard(Board* b)
 {
     stm = b->turn? tb_WHITE_TO_MOVE : tb_BLACK_TO_MOVE;
     parseCastle(b);
     parseEpSqr(b);
-    parseColor(BLACK, b);
-    parseColor(WHITE, b);
+    parsePieces(b);
 }
 
-static void parseCastle(Board* b)
+static void parseCastle(const Board* b)
 {
-    castling = b->castleInfo? 0 : tb_NOCASTLE;
+    castling = tb_NOCASTLE;
+    if (!b->castleInfo)
+        return;
     if (BCASTLEK & b->castleInfo) castling |= tb_BOO;
     if (BCASTLEQ & b->castleInfo) castling |= tb_BOOO;
     if (WCASTLEK & b->castleInfo) castling |= tb_WOO;
     if (WCASTLEQ & b->castleInfo) castling |= tb_WOOO;
 }
-static void parseEpSqr(Board* b) //TODO: Add support for enPassand
+static void parseEpSqr(const Board* b)
 {
-    epsquare = tb_NOSQUARE;
+    if (b->enPass > 8 && b->enPass < 56)
+        epsquare = getGavSqr(b->enPass - (b->turn? -8 : 8));
+    else
+        epsquare = tb_NOSQUARE;
 }
-static void parseColor(int color, Board* b)
+static void parsePieces(Board* b)
 {
-    uint64_t temp = b->color[color];
-    int counter = 0;
+    uint64_t temp = b->allPieces, indexBB;
+    int counterB = 0, counterW = 0, index, sqr;
     while (temp)
     {
-        int index = LSB_INDEX(temp);
-        int sqr = getSqr(index);
-        if (color)
+        index = LSB_INDEX(temp);
+        indexBB = 1ULL << index;
+        sqr = getGavSqr(index);
+
+        if (indexBB & b->color[WHITE])
         {
-            ws[counter] = sqr;
-            wp[counter] = pieceAtGav(b, 1ULL << index, color);
+            ws[counterW] = sqr;
+            wp[counterW] = pieceAtGav(b, indexBB, WHITE);
+            counterW++;
         }
         else
         {
-            bs[counter] = sqr;
-            bp[counter] = pieceAtGav(b, 1ULL << index, color);
+            bs[counterB] = sqr;
+            bp[counterB] = pieceAtGav(b, indexBB, BLACK);
+            counterB++;
         }
-        counter++;
         REMOVE_LSB(temp);
     }
 
-    if (color)
-    {
-        ws[counter] = tb_NOSQUARE;
-        wp[counter] = tb_NOPIECE;
-    }
-    else
-    {
-        bs[counter] = tb_NOSQUARE;
-        bp[counter] = tb_NOPIECE;
-    }
+
+    ws[counterW] = tb_NOSQUARE;
+    wp[counterW] = tb_NOPIECE;
+
+    bs[counterB] = tb_NOSQUARE;
+    bp[counterB] = tb_NOPIECE;
 }
 
-static void dtm_print (unsigned stm, int tb_available, unsigned info, unsigned pliestomate)
+static void dtmPrint (unsigned stm, int tb_available, unsigned info, unsigned pliestomate)
 {
     if (tb_available)
     {
-
         if (info == tb_DRAW)
             printf ("Draw\n");
         else if (info == tb_WMATE && stm == tb_WHITE_TO_MOVE)
