@@ -35,10 +35,10 @@
 #define MINS_INF  -9999999
 
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
-__attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
+__attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, const int height, int null, const uint64_t prevHash, Repetition* rep);
 __attribute__((hot)) static int qsearch(Board b, int alpha, const int beta);
 
-static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const uint64_t prevHash, const int depth, Repetition* rep);
+static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep);
 static Move tableLookUp(Board b, int* tbAv);
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
 static inline const int marginDepth(const int depth);
@@ -249,13 +249,13 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
             addHash(&rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, 1, 0, newHash, &rep);
             }
             else
             {
-                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 0, newHash, &rep);
+                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 1, 0, newHash, &rep);
                 if (val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, 0, newHash, &rep);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, 1, 0, newHash, &rep);
             }
             remHash(&rep);
         }
@@ -276,7 +276,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
     return currBest;
 }
-static int pvSearch(Board b, int alpha, int beta, int depth, const int null, const uint64_t prevHash, Repetition* rep)
+static int pvSearch(Board b, int alpha, int beta, int depth, const int height, const int null, const uint64_t prevHash, Repetition* rep)
 {
     const int pv = beta - alpha > 1;
     //assert(beta >= alpha);
@@ -286,7 +286,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int null, con
     if (canGav(b.allPieces))
     {
         int usable;
-        int gavScore = gavWDL(b, &usable) * PLUS_MATE;
+        int gavScore = gavWDL(b, &usable) * (PLUS_MATE - 110 + height);
         if (usable)
         {
             #ifdef DEBUG
@@ -366,11 +366,13 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int null, con
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
     if (!numMoves)
-        return isInC * (MINS_MATE - depth);
+        return isInC * (MINS_MATE - 100 + height);
 
+    const int newHeight = height + 1;
+/*
     if (depth >= 5 && pv && bestM.from == -1)
     {
-        expensiveSort(b, list, numMoves, alpha, beta, prevHash, depth / 5, rep);
+        expensiveSort(b, list, numMoves, alpha, beta, depth / 5, newHeight, prevHash, rep);
         sort(list, list+numMoves);
     }
     else
@@ -378,6 +380,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int null, con
         assignScores(&b, list, numMoves, bestM, depth);
         sort(list, list+numMoves);
     }
+*/
+    assignScores(&b, list, numMoves, bestM, depth);
+    sort(list, list+numMoves);
 
     uint64_t newHash;
     int best = MINS_INF;
@@ -411,7 +416,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int null, con
             {
                 if (pv && list[i].score > 60 && list[i].capture > 1)
                     reduction--;
-                val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
+                val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
             }
             else
             {
@@ -427,9 +432,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int null, con
                 if (reduction > depth)
                     reduction = depth;
 
-                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, null, newHash, rep);
+                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep);
                 if (val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, null, newHash, rep);
+                    val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
             }
             remHash(rep);
         }
@@ -521,7 +526,7 @@ static int qsearch(Board b, int alpha, const int beta)
 
 /* In this function there are no assumptions made about the sorting of the list
  */
-static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const uint64_t prevHash, const int depth, Repetition* rep)
+static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
 {
     assert(depth > 0);
     //assert(beta >= alpha);
@@ -542,7 +547,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -alpha-1, -alpha, depth - 1, 1, newHash, rep);
+            val = -pvSearch(b, -alpha-1, -alpha, depth - 1, 0, 0, newHash, rep);
             remHash(rep);
         }
 
@@ -614,7 +619,7 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
-    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, changeTurn(prevHash), &_rep);
+    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
 
     if (val >= betaMargin)
