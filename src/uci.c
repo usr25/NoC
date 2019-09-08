@@ -27,7 +27,7 @@ static void eval_(Board b);
 static void best_(Board b, char* beg, Repetition* rep);
 static void best_time(Board, char* beg, Repetition* rep);
 static void help_(void);
-static int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash);
+static int move_(Board* b, char* beg, Repetition* rep);
 static Board gen_(char* beg, Repetition* rep);
 static Board gen_def(char* beg, Repetition* rep);
 
@@ -158,7 +158,7 @@ static void best_time(Board b, char* beg, Repetition* rep)
         //Play with time
         clock_t remTime = b.turn? wtime : btime;
         clock_t increment = b.turn? winc : binc;
-        clock_t timeToMove = min(remTime >> 3, (remTime >> 5) + (clock_t)(increment * .9)) - 20; // remTime / 32
+        clock_t timeToMove = min(remTime >> 2, (remTime >> 6) + (clock_t)((double)increment * .95));
         clock_t calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
 
         best = bestTime(b, calcTime, *rep, 0);
@@ -172,7 +172,7 @@ static void best_time(Board b, char* beg, Repetition* rep)
     fprintf(stdout, "bestmove %s\n", mv);
     fflush(stdout);
 }
-static int move_(Board* b, char* beg, Repetition* rep, uint64_t prevHash)
+static int move_(Board* b, char* beg, Repetition* rep)
 {
     int prom = 0, from, to;
     from = getIndex(beg[0], beg[1]);
@@ -232,7 +232,7 @@ static Board gen_def(char* beg, Repetition* rep)
     {
         beg += 6;
         while(beg[0] <= 'h' && beg[0] >= 'a')
-            beg += move_(&b, beg, rep, rep->hashTable[rep->index - 1]) + 1;
+            beg += move_(&b, beg, rep) + 1;
     }
 
     return b;
@@ -254,7 +254,7 @@ static Board gen_(char* beg, Repetition* rep)
     {
         beg += 6;
         while(beg[0] != ' ' && beg[0] != '\0' && beg[0] <= 'h' && beg[0] >= 'a')
-            beg += move_(&b, beg, rep, rep->hashTable[rep->index - 1]) + 1;
+            beg += move_(&b, beg, rep) + 1;
     }
 
     return b;
