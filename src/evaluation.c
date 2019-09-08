@@ -237,7 +237,7 @@ static inline int pieceActivity(const Board* b)
     score += connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN]);
     score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[WHITE][PAWN], b->piece[BLACK][ROOK], b->piece[BLACK][PAWN]);
     score += safeKing(b->piece[WHITE][KING], b->piece[BLACK][KING], b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
-    score += bishopMobility(b->piece[WHITE][BISH], b->piece[BLACK][BISH], b->allPieces);
+    //score += bishopMobility(b->piece[WHITE][BISH], b->piece[BLACK][BISH], b->allPieces);
 
     return score;
 }

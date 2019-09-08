@@ -209,7 +209,7 @@ void parseFensFromFileEva(void)
 
     Board b;
     char buff[256] = "";
-    int hasEnded = 0, depth = 9, cnt = 0;
+    int hasEnded = 0, depth = 10, cnt = 0;
 
     //fen,depth,perft(TODO:,move)
     //Dont put spaces, except in the fen

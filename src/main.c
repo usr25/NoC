@@ -32,7 +32,7 @@ int main(const int argc, char** const argv)
     else
         initGav("\0");
 
-    //0, 1->53'9, 2->6'0s, 3->2:4, 4->51s, 5-> -
+    //0, 1->53'9, 2->6'0s, 3->2:4, 4->1:7s, 5-> -
     //chooseTest(1);
 
     loop();

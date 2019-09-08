@@ -38,6 +38,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 __attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, int null, const uint64_t prevHash, Repetition* rep);
 __attribute__((hot)) static int qsearch(Board b, int alpha, const int beta);
 
+static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const uint64_t prevHash, const int depth, Repetition* rep);
 static Move tableLookUp(Board b, int* tbAv);
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
 static inline const int marginDepth(const int depth);
@@ -367,14 +368,16 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int null, con
     if (!numMoves)
         return isInC * (MINS_MATE - depth);
 
-    if (depth >= 5 && bestM.from == -1)
+    if (depth >= 5 && pv && bestM.from == -1)
     {
-        pvSearch(b, -alpha-1, -alpha, (depth-1) / 4, null, prevHash, rep);
-        bestM = table[index].m;
+        expensiveSort(b, list, numMoves, alpha, beta, prevHash, depth / 5, rep);
+        sort(list, list+numMoves);
     }
-
-    assignScores(&b, list, numMoves, bestM, depth);
-    sort(list, list+numMoves);
+    else
+    {
+        assignScores(&b, list, numMoves, bestM, depth);
+        sort(list, list+numMoves);
+    }
 
     uint64_t newHash;
     int best = MINS_INF;
@@ -514,6 +517,39 @@ static int qsearch(Board b, int alpha, const int beta)
         undoMove(&b, list[i], &h);
     }
     return alpha;
+}
+
+/* In this function there are no assumptions made about the sorting of the list
+ */
+static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const uint64_t prevHash, const int depth, Repetition* rep)
+{
+    assert(depth > 0);
+    //assert(beta >= alpha);
+
+    uint64_t newHash;
+    int val;
+
+    History h;
+    for (int i = 0; i < numMoves; ++i)
+    {
+        makeMove(&b, list[i], &h);
+        newHash = makeMoveHash(prevHash, &b, list[i], h);
+
+        if (isDraw(&b, rep, newHash, list[i].capture > 0))
+        {
+            val = 0;
+        }
+        else
+        {
+            addHash(rep, newHash);
+            val = -pvSearch(b, -alpha-1, -alpha, depth - 1, 1, newHash, rep);
+            remHash(rep);
+        }
+
+        list[i].score = val;
+
+        undoMove(&b, list[i], &h);
+    }
 }
 
 static Move tableLookUp(Board b, int* tbAv)
