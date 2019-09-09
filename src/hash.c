@@ -278,17 +278,17 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
     prev ^= random[TURN_OFFSET];
     const int col = b->turn;
     const int opp = 1 ^ col;
+
     //Piece from
     prev ^= calcPos(opp, m.piece, m.from);
-    //Castle info
-    const int xorPosInfos = b->castleInfo ^ h.castleInfo;
 
+    int xorCastle;
     //There has been a capture
     if (m.capture > 0)
         prev ^= calcPos(col, m.capture, m.to);
 
-    //if (h.enPass)
-    //    prev ^= random[EPAS_OFFSET + (h.enPass & 7)];
+    if (h.enPass)
+        prev ^= random[EPAS_OFFSET + (h.enPass & 7)];
 
     switch (m.piece)
     {
@@ -298,8 +298,8 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
             else
                 prev ^= calcPos(opp, PAWN, m.to);
 
-            //if (b->enPass)
-            //    prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
+            if (b->enPass)
+                prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
 
             if (m.enPass)
                 prev ^= calcPos(col, PAWN, m.enPass);
@@ -318,11 +318,11 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
             }
         /* no break */
         case ROOK:
-            if (xorPosInfos)
+            if (xorCastle = b->castleInfo ^ h.castleInfo)
             {
                 for (int i = 0; i < 4; ++i)
                 {
-                    if (xorPosInfos & (1 << i))
+                    if (xorCastle & (1 << i))
                         prev ^= random[CAST_OFFSET + i];
                 }
             }

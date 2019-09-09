@@ -7,6 +7,7 @@
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
+#include "../include/hash.h"
 #include "../include/io.h"
 
 #include <stdio.h>
@@ -61,6 +62,33 @@ uint64_t perft(Board b, const int depth, const int divide)
         }
 
         tot += temp;
+
+        undoMove(&b, moves[i], &h);
+    }
+
+    return tot;
+}
+
+/* This is an especial version of the perft to ensure update hash is working
+ */
+int hashPerft(Board b, const int depth, const uint64_t prevHash)
+{
+    if (depth == 0) return 1;
+
+    Move moves[NMOVES];
+    History h;
+    uint64_t tot = 1;
+
+    const int numMoves = legalMoves(&b, moves) >> 1;
+
+    for (int i = 0; i < numMoves; ++i)
+    {
+        makeMove(&b, moves[i], &h);
+        uint64_t newHash = makeMoveHash(prevHash, &b, moves[i], h);
+        if (newHash != hashPosition(&b))
+            return 0;
+
+        tot &= hashPerft(b, depth - 1, newHash);
 
         undoMove(&b, moves[i], &h);
     }

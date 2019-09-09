@@ -18,6 +18,7 @@
 #include "../include/magic.h"
 #include "../include/search.h"
 #include "../include/sort.h"
+#include "../include/perft.h"
 #include "../include/gaviota.h"
 
 

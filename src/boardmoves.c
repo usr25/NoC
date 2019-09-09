@@ -10,6 +10,8 @@
 #include "../include/magic.h"
 #include "../include/boardmoves.h"
 
+#include <assert.h>
+
 /* Returns the piece in the determined sqr, pos has to be a bitboard (POW2)
  * Returns NO_PIECE (-1) if there is no piece
  */
@@ -88,7 +90,7 @@ void makeMove(Board* b, const Move move, History* h)
     switch(move.piece)
     {
         case PAWN:
-            if (move.to - move.from == (2 * b->turn - 1) << 4)
+            if (move.to - move.from == (2 * b->turn - 1) * 16)
                 b->enPass = move.to;
             if (move.enPass)
             {
@@ -123,8 +125,8 @@ void makeMove(Board* b, const Move move, History* h)
         break;
 
         default:
-            b->fifty++;
             flipBits(b, toBit, move.piece, b->turn);
+            b->fifty++;
         break;
     }
 
@@ -186,8 +188,8 @@ void makePermaMove(Board* b, const Move move)
         break;
 
         default:
-            b->fifty++;
             flipBits(b, toBit, move.piece, b->turn);
+            b->fifty++;
         break;
     }
 

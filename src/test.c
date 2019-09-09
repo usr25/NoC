@@ -22,17 +22,6 @@
 
 #define PATH "/home/j/Desktop/Chess/Engine/positions.fen"
 
-//rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1  Starting pos
-//8/pppppppp/rnbqkbNr/8/8/RNBQKBnR/PPPPPPPP/8 w KQkq - 0 1  All pieces in front of pawns
-//5N2/5Pkq/5p2/3P4/3pKQ2/3n4/8/8 w - -                      King moves
-//8/2n2N2/8/1br2rb1/n1Q2q1N/1BR2RB1/8/8 w - -               Queen moves
-//8/8/2Br2R1/8/8/2BR2r1/8/8 w - -                           Rook moves
-//8/2r4R/3B2b1/8/8/3B2b1/2R4r/8 w - -                       Bish moves
-//8/1p1p1Pk1/2N3K1/n3N3/2n3p1/qP1PQ3/8/8 w - -              Knight moves
-//8/4p3/3Q1q2/4q3/4q3/pq3P1p/P5P1/8 w - -                   Pawn moves
-
-//8/5k2/P6K/8/8/8/4p3/8 w - -                               2x faster than sf10 at depth 9(!)
-
 int ignore;
 
 static int compMove(char* fen, char* target, int depth, int len)
@@ -100,11 +89,49 @@ int testHashing()
     makeMove(&b, m, &h);
     uint64_t after = makeMoveHash(start, &b, m, h);
 
-
     b = genFromFen("2k5/6p1/q7/7P/6Pp/8/Q7/3K4 b - -", &a);
     int enPass = hashPosition(&b) != after && after != start;
 
+    b = defaultBoard();
+    uint64_t prev = hashPosition(&b);
+    Move pawnW = (Move) {.piece = PAWN, .from = 8, .to = 24};
+    makeMove(&b, pawnW, &h);
+    Board white = genFromFen("rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq h3", &ignore);
+    enPass &= hashPosition(&white) == makeMoveHash(prev, &b, pawnW, h);
+
+    b = defaultBoard();
+    b.turn = BLACK;
+    prev = hashPosition(&b);
+    Move pawnB = (Move) {.piece = PAWN, .from = 48, .to = 32};
+    makeMove(&b, pawnB, &h);
+    Board black = genFromFen("rnbqkbnr/ppppppp1/8/7p/8/8/PPPPPPPP/RNBQKBNR w KQkq h6", &ignore);
+    enPass &= hashPosition(&black) == makeMoveHash(prev, &b, pawnB, h);
+
     return updating && enPass;
+}
+
+static int perftH(char* fen, const int depth)
+{
+    int a;
+    Board b = genFromFen(fen, &a);
+    return hashPerft(b, depth, hashPosition(&b));
+}
+
+static int testHashingPerfts()
+{
+    printf("H Knight: %d\n", perftH("8/3nn3/1k6/8/8/6K1/3NN3/8 w - -", 5));
+    printf("H Bish:   %d\n", perftH("8/3bb3/1k6/8/8/6K1/3BB3/8 w - -", 5));
+    printf("H Rook:   %d\n", perftH("3r4/8/1k6/8/8/6K1/4R3/8 w - -", 4));
+    printf("H Queen:  %d\n", perftH("8/4q3/1k6/8/8/6K1/4Q3/8 w - -", 4));
+    printf("H PawnNormal:  %d\n", perftH("8/8/1kp5/7p/P7/5PK1/8/8 w - -", 6));
+    printf("H PawnProm:  %d\n", perftH("8/4P3/1kp5/7p/P7/5PK1/4p3/8 w - -", 6));
+    printf("H PawnDouble:  %d\n", perftH("8/p7/1k6/7p/8/5PK1/3P4/8 w - -", 6));
+    printf("H PawnPassand:  %d\n", perftH("8/2p5/K7/3P4/6p1/8/5P1k/8 w - -", 6));
+    printf("H Castle: %d\n", perftH("r3k2r/8/8/8/8/8/8/R3K2R w KQkq -", 5));
+
+    printf("H Startpos: %d\n", perftH("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", 4));
+    printf("H Perfect 4: %d\n", perftH("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -", 5));
+    printf("H Complete: %d\n", perftH("r3kn2/5p2/8/4P3/6p1/8/5P2/R3K2N w Qq -", 6));
 }
 
 int testRookMate()
@@ -133,6 +160,8 @@ int testRookMate()
     black &= compMove("8/8/8/5k2/7K/8/8/6r1 b - -", "g1g8", depth, 4);
     black &= compMove("3r4/8/8/8/8/2K5/4k3/8 b - -", "d8d7", depth, 4);
     black &= compMove("3r4/8/8/8/8/8/4k3/2K5 b - -", "d8c8", depth, 4);
+
+    printf("WARNING: This won't work if tablebases are implemented\n");
 
     return white && black;
 }
@@ -434,6 +463,7 @@ void chooseTest(const int mode)
     {
         case 0:
             runTests();
+            testHashingPerfts();
             break;
         case 1:
             slowTests();
