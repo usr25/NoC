@@ -75,6 +75,7 @@ uint64_t betaCutOff = 0;
 uint64_t betaCutOffHit = 0;
 uint64_t queries = 0;
 
+int exitFlag = 0;
 
 void initCall(void)
 {
@@ -86,6 +87,8 @@ void initCall(void)
     researches = 0;
     repe = 0;
     noMoveGen = 0;
+    exitFlag = 0;
+
     initKM();
 }
 
@@ -296,8 +299,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
     }
 
-    if (calledTiming && depth > 2 && clock() - startT > timeToMoveT)
+    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT))
+    {
+        exitFlag = 1;
         return 0;
+    }
 
     const int isInC = isInCheck(&b, b.turn);
 
