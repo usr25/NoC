@@ -217,7 +217,6 @@ int callDepth;
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
-    nodes = 0;
     if (rookVSKing(b))
     {
         Move rookM = rookMate(b);
@@ -375,25 +374,31 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         return isInC * (MINS_MATE - 100 + height);
 
     const int newHeight = height + 1;
-/*
-    if (depth >= 5 && pv && bestM.from == -1)
-    {
-        expensiveSort(b, list, numMoves, alpha, beta, depth / 5, newHeight, prevHash, rep);
-        sort(list, list+numMoves);
-    }
-    else
-    {
-        assignScores(&b, list, numMoves, bestM, depth);
-        sort(list, list+numMoves);
-    }
-*/
-    assignScores(&b, list, numMoves, bestM, depth);
-    sort(list, list+numMoves);
-
     uint64_t newHash;
     int best = MINS_INF;
-
     const int origAlpha = alpha;
+
+    assignScores(&b, list, numMoves, bestM, depth);
+    sort(list, list+numMoves);
+    Move mt = list[0];
+/*
+    if (depth >= 5)
+    {
+        makeMove(&b, mt, &h);
+        newHash = makeMoveHash(prevHash, &b, mt, h);
+        best = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
+        if (best > alpha)
+        {
+            alpha = best;
+            if (best >= beta)
+                return best;
+        }
+        undoMove(&b, mt, &h);
+        expensiveSort(b, list, numMoves, alpha, beta, depth / 5, newHeight, prevHash, rep);
+        expSort = 1;
+    }
+*/
+
 
     int spEval = 0;
     if (depth <= 3)
@@ -406,6 +411,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     {
         if (canBreak && i > 4 && list[i].score < 100)
             break;
+        //if (expSort && compMoves(&mt, &list[i]))
+        //  continue;
 
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(prevHash, &b, list[i], h);
@@ -420,8 +427,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             addHash(rep, newHash);
             if (i == 0)
             {
-                if (pv && list[i].score > 60 && list[i].capture > 1)
-                    reduction--;
                 val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
             }
             else
@@ -553,7 +558,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -alpha-1, -alpha, depth - 1, 0, 0, newHash, rep);
+            val = -pvSearch(b, -beta - 25, -alpha + 25, depth - 1, 0, 0, newHash, rep);
             remHash(rep);
         }
 
@@ -561,6 +566,8 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
 
         undoMove(&b, list[i], &h);
     }
+
+    sort(list, list+numMoves);
 }
 
 static Move tableLookUp(Board b, int* tbAv)
@@ -625,12 +632,11 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
-    int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth - R - 1, 1, 1, changeTurn(prevHash), &_rep);
+    //In stead of depth - R - 1 do depth / 5, it is cheaper and gives about 30 elo
+    const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth / 5, 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
 
-    if (val >= betaMargin)
-        return 1;
-    return 0;
+    return val >= betaMargin;
 }
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture)
 {
@@ -641,6 +647,7 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
         #ifdef DEBUG
         if (isRepetition(rep, newHash)) repe++;
         #endif
+        //Repetition pruning, it doesnt seem to give or take elo, but since I came up with it it is going to stay
         return isRepetition(rep, newHash) || isThreeRep(rep, newHash);
     }
 
