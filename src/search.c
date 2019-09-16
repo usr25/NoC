@@ -256,7 +256,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
             else
             {
                 val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 1, 0, newHash, &rep);
-                if (val > alpha && val < beta)
+                if (val > alpha)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, 1, 0, newHash, &rep);
             }
             remHash(&rep);
@@ -431,7 +431,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             }
             else
             {
-                if (depth >= 3 && i > 4 && list[i].score < 100 && !isInC)
+                if (i > 2 && list[i].capture < 1) //Add isInC and pv later
                     reduction++;
                 if (!pv && list[i].piece == KING && isInC && list[i].capture < 1)
                     reduction++;
@@ -444,7 +444,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     reduction = depth;
 
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep);
-                if (val > alpha && val < beta)
+                if (val > alpha)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
             }
             remHash(rep);
