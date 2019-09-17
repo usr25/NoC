@@ -121,22 +121,18 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         }
     }
 
-    /*
-    TODO: Test if this works
     assignScores(&b, list, numMoves, NO_MOVE, 0);
     sort(list, list+numMoves);
-    */
     initCall();
 
-    Move best = list[0], temp, secondBest;
+    Move best = list[0], temp;
     int bestScore = 0;
-    int previousBestScore = -1;
     int delta = 11;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
         //delta = max(25, delta * .8f);
         int alpha = MINS_INF, beta = PLUS_INF;
-        if (depth >= 5)
+        if (depth >= 6)
         {
             alpha = bestScore - delta;
             beta = bestScore + delta;
@@ -152,7 +148,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             last = clock();
             elapsed = last - start;
 
-            if ((calledTiming && elapsed > timeToMove) || temp.score >= PLUS_MATE)
+            if (calledTiming && elapsed > timeToMove)
                 break;
             if (temp.score >= beta)
             {
@@ -170,7 +166,8 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             else
                 break;
         }
-        /*if (calledTiming && elapsed > timeToMove)
+        /*
+        if (calledTiming && elapsed > timeToMove)
         {
             for (int i = 0; i < numMoves - 1; ++i)
             {
@@ -186,9 +183,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             break;
 
         best = temp;
-        //previousBestScore = bestScore;
         bestScore = best.score;
-        //secondBest = list[1];
 
         infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
         if ((calledTiming && (1.15f * (last - start) > timeToMove)) || best.score >= PLUS_MATE)
@@ -203,11 +198,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     printf("Repetitions: %llu\n", repe);
     printf("Queries: %llu\n", queries);
     #endif
-
-    //Choose a worse move in order to avoid 3fold repetition, if the risk is low enough
-    //Another (better) alternative is to include random noise when the score is assigned if it is a 3fold rep, to avoid messing up other evaluations
-    //if (bestScore == 0 && previousBestScore == 0 && numMoves > 1 && -secondBest.score < RISK)
-    //    best = secondBest;
 
     calledTiming = 0;
     return best;
@@ -344,17 +334,17 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (isSafe)
     {
-        /* Razoring */
+        // Razoring
         //if (depth == 1 && ev + VROOK + 101 <= alpha && isSafe)
         //    return qsearch(b, alpha, beta);
-        /* Static pruning */
+        // Static pruning
         if (!pv && depth <= 4 && ev - 100 * depth >= beta && ev < 8000)
             return ev;
 
-        if (!pv && depth <= 6 && ev - 180 * depth >= beta && ev < 7500)
-            return ev;
+        //if (!pv && depth <= 6 && ev - 180 * depth >= beta && ev < 7500)
+        //    return ev;
 
-        /* Null move pruning */
+        // Null move pruning
         //int r = R + (depth >> 3); //Make a variable r
         if (!null && depth > R)
         {
@@ -380,8 +370,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
-    Move mt = list[0];
 /*
+    Move mt = list[0];
+    int expSort = 0;
     if (depth >= 5)
     {
         makeMove(&b, mt, &h);
@@ -399,12 +390,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
 */
 
-
-    int spEval = 0;
-    if (depth <= 3)
-        spEval = ev + marginDepth(depth);
-
-    const int canBreak = depth <= 3 && spEval <= alpha && isSafe;
+    const int canBreak = depth <= 3 && ev + marginDepth(depth) <= alpha && isSafe;
 
     History h;
     for (int i = 0; i < numMoves; ++i)
@@ -500,7 +486,7 @@ static int qsearch(Board b, int alpha, const int beta)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + VQUEEN /*+ ((m.promotion > 0)? VQUEEN : 0)*/ <= alpha) /*TODO: Check for zugz*/
+    else if (score + VQUEEN <= alpha)
         return alpha;
 
     Move list[NMOVES];
@@ -632,8 +618,7 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
-    //In stead of depth - R - 1 do depth / 5, it is cheaper and gives about 30 elo
-    const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, depth / 5, 1, 1, changeTurn(prevHash), &_rep);
+    const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, (depth < 7)? 2 : depth / 4 + 1, 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
 
     return val >= betaMargin;
