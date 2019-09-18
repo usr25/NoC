@@ -121,9 +121,10 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         }
     }
 
+    initCall();
+
     assignScores(&b, list, numMoves, NO_MOVE, 0);
     sort(list, list+numMoves);
-    initCall();
 
     Move best = list[0], temp;
     int bestScore = 0;
@@ -298,7 +299,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (isInC)
         depth++;
-    else if (depth == 0)
+    if (depth <= 0)
         return qsearch(b, alpha, beta);
 
     int val;
@@ -419,15 +420,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             {
                 if (i > 2 && list[i].capture < 1) //Add isInC and pv later
                     reduction++;
-                if (!pv && list[i].piece == KING && isInC && list[i].capture < 1)
+                if (i > 4 && list[i].piece == KING && list[i].capture < 1 && nZg)
                     reduction++;
-                if (pv && list[i].score > 60 && list[i].capture > 0)
+                if (pv && list[i].score > 58 && list[i].capture > 0)
                     reduction--;
                 //if (list[i].piece == KING && list[i].castle)
                 //    reduction--;
-
-                if (reduction > depth)
-                    reduction = depth;
 
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep);
                 if (val > alpha)

@@ -12,14 +12,14 @@
 #define N_DOUBLED_PAWNS (-36) //Penalization for doubled pawns (proportional to the pawns in line - 1)
 #define PAWN_CHAIN 20 //Bonus for making a pawn chain
 #define PAWN_PROTECTION 15 //Bonus for Bish / Knight protected by pawn
-#define ATTACKED_BY_PAWN 30 //Bonus if a pawn can attack a piece
-#define ATTACKED_BY_PAWN_LATER 12 //Bonus if a pawn can attack a piece after moving once
+#define ATTACKED_BY_PAWN 10 //Bonus if a pawn can attack a piece
+#define ATTACKED_BY_PAWN_LATER 6 //Bonus if a pawn can attack a piece after moving once
 #define E_ADVANCED_KING 2 //Endgame, bonus for advanced king
 #define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
 #define N_PIECE_SLOW_DEV (-10) //Penalization for keeping the pieces in the back-rank
 #define STABLE_KING 25 //Bonus for king in e1/8 or castled
-#define PASSED_PAWN 30 //Bonus for passed pawns
-#define N_ISOLATED_PAWN (-20) //Penalization for isolated pawns
+#define PASSED_PAWN 20 //Bonus for passed pawns
+#define N_ISOLATED_PAWN (-10) //Penalization for isolated pawns
 #define N_TARGET_PAWN (-7) //Penalization for a pawn that cant be protected by another pawn
 #define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
 #define SAFE_KING 2 //Bonus for pawns surrounding the king
@@ -177,6 +177,21 @@ static inline int pieceDevelopment(const Board* b)
         +STABLE_KING * (((0x6b & b->piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b->piece[BLACK][KING]) != 0));
 }
 
+inline uint64_t shiftSideways(const uint64_t bb)
+{
+    return ((bb << 1) & 0xfefefefefefefefe) | ((bb >> 1) & 0x7f7f7f7f7f7f7f7f);
+}
+
+inline uint64_t shiftUpwards(const uint64_t bb)
+{
+    return (bb << 8) | (bb << 16) | (bb << 24) | (bb << 32) | (bb << 40);
+}
+
+inline uint64_t shiftDownwards(const uint64_t bb)
+{
+    return (bb >> 8) | (bb >> 16) | (bb >> 24) | (bb >> 32) | (bb >> 40);
+}
+
 static inline int pawns(const Board* b)
 {
     uint64_t wPawnBB = b->piece[WHITE][PAWN];
@@ -184,34 +199,46 @@ static inline int pawns(const Board* b)
     uint64_t attW = ((wPawnBB << 9) & 0xfefefefefefefefe) | ((wPawnBB << 7) & 0x7f7f7f7f7f7f7f7f);
     uint64_t attB = ((bPawnBB >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bPawnBB >> 7) & 0xfefefefefefefefe);
 
-    int isolW = 0, isolB = 0, passW = 0, passB = 0, targW = 0, targB = 0, cleanW = 0, cleanB = 0;
+    uint64_t wPawnsRays = (wPawnBB << 8) | (wPawnBB << 16) | (wPawnBB << 24) | (wPawnBB << 32) | (wPawnBB << 40);
+    uint64_t bPawnsRays = (bPawnBB >> 8) | (bPawnBB >> 16) | (bPawnBB >> 24) | (bPawnBB >> 32) | (bPawnBB >> 40); 
+
+    int isolW = 0, isolB = 0, passW = 0, passB = 0;//, targW = 0, targB = 0, cleanW = 0, cleanB = 0;
     int lsb;
     uint64_t tempW = wPawn, tempB = bPawn;
     while(tempW)
     {
         lsb = LSB_INDEX(tempW);
         isolW += (getPawnLanes(lsb) & wPawnBB) != 0;
-        passW += (getWPassedPawn(lsb) & bPawnBB) == 0;
-        targW += POPCOUNT(getBPassedPawn(lsb + 8) & wPawnBB) == 1;
-        cleanW += (lsb > 31) * ((POW2[lsb + 8] & b->allPieces) == 0);
+        //passW += (getWPassedPawn(lsb) & bPawnBB) == 0; //TODO: See if this is better than the other method
+
+        //targW += POPCOUNT(getBPassedPawn(lsb + 8) & wPawnBB) == 1;
+        //cleanW += (lsb > 31) * ((POW2[lsb + 8] & b->allPieces) == 0);
+
         REMOVE_LSB(tempW);
     }
     while(tempB)
     {
         lsb = LSB_INDEX(tempB);
         isolB += (getPawnLanes(lsb) & bPawnBB) != 0;
-        passB += (getBPassedPawn(lsb) & wPawnBB) == 0;
-        targB += POPCOUNT(getWPassedPawn(lsb - 8) & bPawnBB) == 1;
-        cleanB += (lsb < 32) * ((POW2[lsb - 8] & b->allPieces) == 0);
+        //passB += (getBPassedPawn(lsb) & wPawnBB) == 0;
+
+        //targB += POPCOUNT(getWPassedPawn(lsb - 8) & bPawnBB) == 1;
+        //cleanB += (lsb < 32) * ((POW2[lsb - 8] & b->allPieces) == 0);
+
         REMOVE_LSB(tempB);
     }
+
+    uint64_t sidesW = shiftSideways(wPawnBB), sidesB = shiftSideways(bPawnBB);
+
+    passW = POPCOUNT(wPawnBB) - POPCOUNT(shiftDownwards(bPawnBB | sidesB) & wPawnBB);
+    passB = POPCOUNT(bPawnBB) - POPCOUNT(shiftUpwards(wPawnBB | sidesW) & bPawnBB);
 
     int final = PAWN_CHAIN * (POPCOUNT(wPawnBB & attW) - POPCOUNT(bPawnBB & attB));
     final += PAWN_PROTECTION * (POPCOUNT(attW & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
     final += N_DOUBLED_PAWNS * (POPCOUNT(wPawnBB & (wPawnBB * 0x10100)) - POPCOUNT(bPawn & (bPawnBB >> 8 | bPawnBB >> 16)));
-    final += ATTACKED_BY_PAWN * (POPCOUNT(attW & b->color[BLACK]) - POPCOUNT(attB & b->color[WHITE]));
-    final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b->color[BLACK]) - POPCOUNT((attB >> 8) & b->color[WHITE]));
-    final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB) + N_TARGET_PAWN * (targW - targB);
+    //final += ATTACKED_BY_PAWN * (POPCOUNT(attW & b->color[BLACK]) - POPCOUNT(attB & b->color[WHITE]));
+    //final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b->color[BLACK]) - POPCOUNT((attB >> 8) & b->color[WHITE]));
+    final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB);// + N_TARGET_PAWN * (targW - targB);
 
     return final;
 }
