@@ -11,6 +11,7 @@
 #include "../include/board.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
+#include "../include/memoization.h"
 #include "../include/allmoves.h"
 #include "../include/hash.h"
 #include "../include/sort.h"
@@ -53,6 +54,13 @@ static inline int rookVSKing(const Board b)
 static inline int noZugz(const Board b)
 {
     return POPCOUNT(b.color[b.turn] ^ b.piece[b.turn][PAWN]) <= 2;
+}
+static inline int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, const int color)
+{
+    if (color)
+        return m.to > 39 && ((getWPassedPawn(m.to) & oppPawns) == 0);
+    else
+        return m.to < 24 && ((getBPassedPawn(m.to) & oppPawns) == 0);
 }
 
 const Move NO_MOVE = (Move) {.from = -1, .to = -1};
@@ -262,7 +270,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
             currBest = list[i];
             alpha = val;
 
-            if (val >= PLUS_MATE + depth - 1 || val >= beta)
+            if (val >= beta)
                 break;
         }
     }
@@ -299,7 +307,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (isInC)
         depth++;
-    if (depth <= 0)
+    else if (depth == 0)
         return qsearch(b, alpha, beta);
 
     int val;
@@ -420,12 +428,16 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             {
                 if (i > 2 && list[i].capture < 1) //Add isInC and pv later
                     reduction++;
-                if (i > 4 && list[i].piece == KING && list[i].capture < 1 && nZg)
+                if (!pv && list[i].piece == KING && list[i].capture < 1 && isInC)
                     reduction++;
-                if (pv && list[i].score > 58 && list[i].capture > 0)
+                if (pv && list[i].score > 60 && list[i].capture > 0)
+                    reduction--;
+                else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.turn][PAWN], 1 ^ b.turn))
                     reduction--;
                 //if (list[i].piece == KING && list[i].castle)
                 //    reduction--;
+
+                if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
 
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep);
                 if (val > alpha)
@@ -616,7 +628,8 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
-    const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, (depth < 7)? 2 : depth / 4 + 1, 1, 1, changeTurn(prevHash), &_rep);
+    const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, (depth < 6)? depth - R : depth / 4 + 1, 1, 1, changeTurn(prevHash), &_rep);
+    //const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, (depth < 7)? 2 : depth / 4 + 1, 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
 
     return val >= betaMargin;

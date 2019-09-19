@@ -54,6 +54,8 @@ static int twoBishops(void);
 static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
 static int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp);
 
+static int passedPawns(const uint64_t wp, const uint64_t bp);
+
 static int pst(const Board* board, const int phase, const int color);
 //TO implement:
 static int knightCoordination(void); //Two knights side by side are better
@@ -76,6 +78,8 @@ int eval(const Board* b)
     evaluation += pst(b, ph, WHITE) - pst(b, ph, BLACK);
 
     evaluation += pieceActivity(b);
+
+    evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
 
     //evaluation += pawns(b);
 
@@ -168,6 +172,39 @@ static inline int material(void)
             +VKNIGHT    *(wKnight   - bKnight)
             +VPAWN      *(wPawn     - bPawn);
 }
+
+static const int passedPawnValues[8] = {0, 0, 5, 20, 40, 60, 100, 0};
+static int passedPawns(const uint64_t wp, const uint64_t bp)
+{
+    int lsb = 0, accPawn = 0;
+    uint64_t tempW = wp & 0xffffffff00000000, tempB = bp & 0xffffffff;
+    uint64_t wAtt = ((wp << 9) & 0xfefefefefefefefe) | ((wp << 7) & 0x7f7f7f7f7f7f7f7f);
+    uint64_t bAtt = ((bp >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bp >> 7) & 0xfefefefefefefefe);
+    int isProtected;
+    while(tempW)
+    {
+        lsb = LSB_INDEX(tempW);
+        if ((getWPassedPawn(lsb) & bp) == 0)
+        {
+            isProtected = (wAtt & (1ULL << lsb)) != 0;
+            accPawn += passedPawnValues[lsb >> 3] + (isProtected? 12 + (lsb >> 3) : 0);
+        }
+        REMOVE_LSB(tempW);
+    }
+    while (tempB)
+    {
+        lsb = LSB_INDEX(tempB);
+        if ((getBPassedPawn(lsb) & wp) == 0)
+        {
+            isProtected = (bAtt & (1ULL << lsb)) != 0;
+            accPawn -= passedPawnValues[7 ^ (lsb >> 3)] + (isProtected? 12 + (7 ^ (lsb >> 3)) : 0);
+        }
+        REMOVE_LSB(tempB);
+    }
+
+    return accPawn;
+}
+
 //TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
 //TODO: Disable piece_slow_dev if all the pieces have already moved or if it is the middlegame
 static inline int pieceDevelopment(const Board* b)
