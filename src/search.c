@@ -168,9 +168,9 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             }
             else if (temp.score <= alpha)
             {
-                delta += delta / 4;
                 beta = (beta + alpha) / 2;
                 alpha -= delta;
+                delta += delta / 4;
                 researches++;
             }
             else
