@@ -146,7 +146,7 @@ static int phase(void)
     const int roPh = 2;
     const int quPh = 4;
 
-    const int totPh = ((knPh + biPh + roPh) * 4) + (quPh * 2);
+    const int totPh = 24;//((knPh + biPh + roPh) * 4) + (quPh * 2);
 
     const int currPh =
          totPh
@@ -155,7 +155,7 @@ static int phase(void)
         -roPh * (wRook + bRook)
         -quPh * (wQueen + bQueen);
 
-    return (256 * currPh + totPh / 2) / totPh;
+    return ((currPh << 8) + (totPh >> 1)) / totPh;
 }
 
 static inline int taperedEval(const int ph, const int beg, const int end)

@@ -136,11 +136,12 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 
     Move best = list[0], temp;
     int bestScore = 0;
-    int delta = 11;
+    int delta = 50;
+    int alpha = MINS_INF, beta = PLUS_INF;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
+        delta = 50;// + depth;
         //delta = max(25, delta * .8f);
-        int alpha = MINS_INF, beta = PLUS_INF;
         if (depth >= 6)
         {
             alpha = bestScore - delta;
@@ -161,13 +162,13 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
                 break;
             if (temp.score >= beta)
             {
-                delta *= 2;
                 beta += delta;
+                delta += delta / 4;
                 researches++;
             }
             else if (temp.score <= alpha)
             {
-                delta *= 2;
+                delta += delta / 4;
                 beta = (beta + alpha) / 2;
                 alpha -= delta;
                 researches++;
@@ -379,11 +380,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
-/*
+
     Move mt = list[0];
     int expSort = 0;
-    if (depth >= 5)
+    if (depth >= 6 && mt.score < 250)
     {
+        /*
         makeMove(&b, mt, &h);
         newHash = makeMoveHash(prevHash, &b, mt, h);
         best = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
@@ -394,10 +396,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 return best;
         }
         undoMove(&b, mt, &h);
-        expensiveSort(b, list, numMoves, alpha, beta, depth / 5, newHeight, prevHash, rep);
+        */
+        expensiveSort(b, list, numMoves, alpha, beta, depth / 5 + 1, newHeight, prevHash, rep);
         expSort = 1;
     }
-*/
+
 
     const int canBreak = depth <= 3 && ev + marginDepth(depth) <= alpha && isSafe;
 
@@ -426,11 +429,13 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             }
             else
             {
+                if (expSort && i > 3 && list[i].capture < 1)
+                    reduction++;
                 if (i > 2 && list[i].capture < 1) //Add isInC and pv later
                     reduction++;
                 if (!pv && list[i].piece == KING && list[i].capture < 1 && isInC)
                     reduction++;
-                if (pv && list[i].score > 60 && list[i].capture > 0)
+                if (!expSort && pv && list[i].score > 60 && list[i].capture > 0)
                     reduction--;
                 else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.turn][PAWN], 1 ^ b.turn))
                     reduction--;
@@ -554,7 +559,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta - 25, -alpha + 25, depth - 1, 0, 0, newHash, rep);
+            val = -pvSearch(b, -beta - 5, -alpha + 5, depth - 1, 0, 0, newHash, rep);
             remHash(rep);
         }
 
