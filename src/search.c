@@ -100,6 +100,7 @@ void initCall(void)
     initKM();
 }
 
+int us;
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
 {
     /* All the time management */
@@ -109,6 +110,8 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 
     timeToMoveT = timeToMove;
     startT = start;
+
+    us = b.turn;
 
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
@@ -315,7 +318,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     Move bestM = NO_MOVE;
     if (table[index].key == prevHash)
     {
-        if (table[index].depth >= depth)
+        if (height > 3 && table[index].depth >= depth)
         {
             switch (table[index].flag)
             {
@@ -345,8 +348,13 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (isSafe)
     {
         // Razoring
-        //if (depth == 1 && ev + VROOK + 101 <= alpha && isSafe)
-        //    return qsearch(b, alpha, beta);
+        /*
+        if (depth == 1 && ev + VROOK + 101 <= alpha && isSafe){
+            int razScore = qsearch(b, alpha, beta);
+            if (razScore >= beta)
+                return razScore;
+        }
+        */
         // Static pruning
         if (!pv && depth <= 4 && ev - 100 * depth >= beta && ev < 8000)
             return ev;
@@ -355,7 +363,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         //    return ev;
 
         // Null move pruning
-        //int r = R + (depth >> 3); //Make a variable r
         if (!null && depth > R)
         {
             if (nullMove(b, depth, beta, prevHash))
@@ -381,6 +388,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
 
+    History h;
     Move mt = list[0];
     int expSort = 0;
     if (depth >= 6 && mt.score < 250)
@@ -397,14 +405,13 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         undoMove(&b, mt, &h);
         */
-        expensiveSort(b, list, numMoves, alpha, beta, depth / 5 + 1, newHeight, prevHash, rep);
+        expensiveSort(b, list, numMoves, alpha, beta, pv? depth - 4 : depth / 4, newHeight, prevHash, rep);
         expSort = 1;
     }
 
-
     const int canBreak = depth <= 3 && ev + marginDepth(depth) <= alpha && isSafe;
+    //const int fewMovesExt = b.turn != us && numMoves < 5;
 
-    History h;
     for (int i = 0; i < numMoves; ++i)
     {
         if (canBreak && i > 4 && list[i].score < 100)
@@ -421,7 +428,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         else
         {
-            int reduction = 1;
             addHash(rep, newHash);
             if (i == 0)
             {
@@ -429,6 +435,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             }
             else
             {
+                int reduction = 1;
                 if (expSort && i > 3 && list[i].capture < 1)
                     reduction++;
                 if (i > 2 && list[i].capture < 1) //Add isInC and pv later
@@ -439,13 +446,15 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     reduction--;
                 else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.turn][PAWN], 1 ^ b.turn))
                     reduction--;
+                //else if (fewMovesExt)
+                //    reduction--;
                 //if (list[i].piece == KING && list[i].castle)
                 //    reduction--;
 
                 if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
 
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep);
-                if (val > alpha)
+                if (val > alpha)// && (beta != alpha + 1 || reduction != 1))
                     val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
             }
             remHash(rep);
@@ -559,7 +568,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta - 5, -alpha + 5, depth - 1, 0, 0, newHash, rep);
+            val = -pvSearch(b, -beta - 5, -alpha + 5, depth - 1, 1, 1, newHash, rep);
             remHash(rep);
         }
 
@@ -642,13 +651,15 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture)
 {
     if (lastMCapture)
+    {
         return insuffMat(b);
+    }
     else
     {
         #ifdef DEBUG
         if (isRepetition(rep, newHash)) repe++;
         #endif
-        //Repetition pruning, it doesnt seem to give or take elo, but since I came up with it it is going to stay
+
         return isRepetition(rep, newHash) || isThreeRep(rep, newHash);
     }
 
