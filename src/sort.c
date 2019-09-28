@@ -109,7 +109,7 @@ static int smallestAttackerSqr(const Board* b, const int sqr, const int col)
     return -1;
 }
 
-
+//TODO: Set a flag to use SEE depending on the depth or sthng
 inline void assignScores(Board* b, Move* list, const int numMoves, const Move bestFromPos, const int depth)
 {
     for (int i = 0; i < numMoves; ++i)
@@ -118,10 +118,13 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             continue;
         if(list[i].capture > 0) //There has been a capture
         {
+            list[i].score = pVal[list[i].capture] - pVal[list[i].piece] / 10;
+            /*
             if (list[i].piece == PAWN)
                 list[i].score = pVal[list[i].capture] - 20;
             else
                 list[i].score = 60 + seeCapture(*b, list[i]);
+            */
         }
 
         if (compMoves(&bestFromPos, &list[i])) //It was the best refutation in the same position
