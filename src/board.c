@@ -135,6 +135,8 @@ Board genFromFen(char* const fen, int* counter)
 
     assert(POPCOUNT(b.piece[WHITE][KING]) == 1);
     assert(POPCOUNT(b.piece[BLACK][KING]) == 1);
+    assert((b.color[WHITE] & b.color[BLACK]) == 0);
+    assert(((b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN]) & 0xff000000000000ff) == 0);
 
     if (b.enPass < 8 || b.enPass >= 56)
         b.enPass = 0;

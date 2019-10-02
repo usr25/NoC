@@ -1,9 +1,8 @@
 #define ALL 0xffffffffffffffffULL //(~0ULL)
 
 #define ENGINE_AUTHOR "usr"
-#define ENGINE_NAME "DEV"
+#define ENGINE_NAME "NoC"
 
-//#define DEBUG
 
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)
@@ -50,7 +49,14 @@
 #define VKNIGHT 310
 #define VPAWN 100
 
+#define PLUS_MATE    99999
+#define MINS_MATE   -99999
+#define PLUS_INF   9999999
+#define MINS_INF  -9999999
+
+#ifndef uint64_t
 #define uint64_t unsigned long long
+#endif
 
 inline int min(const int a, const int b) {return (a < b)? a : b;}
 inline int max(const int a, const int b) {return (a > b)? a : b;}

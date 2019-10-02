@@ -76,6 +76,10 @@ static inline void flipCastle(Board* b, const Move move, const int color)
  */
 void makeMove(Board* b, const Move move, History* h)
 {
+    assert(move.from >= 0 && move.from < 64);
+    assert(move.to >= 0 && move.to < 64);
+    assert(move.piece >= KING && move.piece <= PAWN);
+
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
     //Save the data
@@ -145,6 +149,10 @@ void makeMove(Board* b, const Move move, History* h)
  */
 void makePermaMove(Board* b, const Move move)
 {
+    assert(move.from >= 0 && move.from < 64);
+    assert(move.to >= 0 && move.to < 64);
+    assert(move.piece >= KING && move.piece <= PAWN);
+
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
     b->enPass = 0;

@@ -14,8 +14,8 @@
 #define NUM_KM 2
 
 static int smallestAttackerSqr(const Board* b, const int sqr, const int col);
-inline int seeCapture(Board b, const Move m);
-__attribute__((hot)) int see(Board* b, const int to, const int pieceAtSqr);
+static inline int seeCapture(Board b, const Move m);
+__attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr);
 
 static const Move NOMOVE = (Move) {.from = -1, .to = -1};
 const int pVal[6] = {1500, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
@@ -35,12 +35,12 @@ void initKM(void)
     }
 }
 
-inline int seeCapture(Board b, const Move m)
+static inline int seeCapture(Board b, const Move m)
 {
     makePermaMove(&b, m);
     return pVal[m.capture] - see(&b, m.to, m.piece);
 }
-int see(Board* b, const int sqr, const int pieceAtSqr)
+static int see(Board* b, const int sqr, const int pieceAtSqr)
 {
     const int col = b->turn;
     const int from = smallestAttackerSqr(b, sqr, 1 ^ col);
@@ -148,7 +148,6 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             else if (compMoves(&killerMoves[depth][1], &list[i]))
                 list[i].score += 51;
         }
-        /* TODO: gvC makes the program slower, do some testing */
         /*
         if (list[i].score < 300)
         {

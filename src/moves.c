@@ -112,7 +112,7 @@ static inline uint64_t pawnCaptures(const int lsb, const int color)
 
 /*
  * Determines if the king can castle
- * This function does NOT determine if the king is in check, since it is only called from genCheckMoves
+ * This function does assumes that the king isn't in check, since it should only be called from genCheckMoves
  */
 int canCastle(Board* b, const int color, const uint64_t forbidden)
 {
@@ -167,7 +167,7 @@ uint64_t controlledKingPawnKnight(Board* b, const int opp)
 uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles)
 {
     uint64_t temp, res = 0ULL;
-    
+
     temp = b->piece[color][QUEEN];
     while(temp)
     {

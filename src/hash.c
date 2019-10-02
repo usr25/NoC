@@ -210,9 +210,8 @@ uint64_t random[781] =
  */
 void initializeTable(void)
 {
-    Eval empty = (Eval) {.key = 0};
     for (int i = 0; i < NUM_ENTRIES; ++i)
-        table[i] = empty;
+        table[i].key = 0;
 }
 
 /* Detects if the last move makes a 3fold repetion

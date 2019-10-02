@@ -9,7 +9,7 @@
 #include "../include/moves.h"
 #include "../include/io.h"
 
-char pieces[6] = {'k', 'q', 'r', 'b', 'n', 'p'};
+static const char pieces[6] = {'k', 'q', 'r', 'b', 'n', 'p'};
 
 void drawPosition(const Board b, const int drawCoords){
     uint64_t pos = POW2[63];
@@ -97,7 +97,7 @@ void moveToText(const Move m, char* mv)
         mv[4] = pieces[m.promotion];
 }
 
-void generateFen(const Board b, char* c)
+void generateFen(const Board b, char* fen)
 {
     int counter = 0;
     for (int i = 7; i >= 0; --i)
@@ -110,76 +110,72 @@ void generateFen(const Board b, char* c)
             if (b.color[WHITE] & pos)
             {
                 if (blankSquares){
-                    c[counter++] = '0' + blankSquares;
+                    fen[counter++] = '0' + blankSquares;
                     blankSquares = 0;
                 }
 
-                if (b.piece[WHITE][KING] & pos)
-                    c[counter++] = 'K';
-                else if (b.piece[WHITE][QUEEN] & pos)
-                    c[counter++] = 'Q';
-                else if (b.piece[WHITE][ROOK] & pos)
-                    c[counter++] = 'R';
-                else if (b.piece[WHITE][BISH] & pos)
-                    c[counter++] = 'B';
-                else if (b.piece[WHITE][KNIGHT] & pos)
-                    c[counter++] = 'N';
-                else if (b.piece[WHITE][PAWN] & pos)
-                    c[counter++] = 'P';
+                for (int i = KING; i <= PAWN; ++i)
+                {
+                    if (b.piece[WHITE][i] & pos)
+                    {
+                        fen[counter++] = pieces[i] - ('a' - 'A');
+                        break;
+                    }
+                }
             }
             else if(b.color[BLACK] & pos)
             {
-                if(blankSquares){
-                    c[counter++] = '0' + blankSquares;
+                if(blankSquares)
+                {
+                    fen[counter++] = '0' + blankSquares;
                     blankSquares = 0;
                 }
 
-                if (b.piece[BLACK][KING] & pos)
-                    c[counter++] = 'k';
-                else if (b.piece[BLACK][QUEEN] & pos)
-                    c[counter++] = 'q';
-                else if (b.piece[BLACK][ROOK] & pos)
-                    c[counter++] = 'r';
-                else if (b.piece[BLACK][BISH] & pos)
-                    c[counter++] = 'b';
-                else if (b.piece[BLACK][KNIGHT] & pos)
-                    c[counter++] = 'n';
-                else if (b.piece[BLACK][PAWN] & pos)
-                    c[counter++] = 'p';
+                for (int i = KING; i <= PAWN; ++i)
+                {
+                    if (b.piece[BLACK][i] & pos)
+                    {
+                        fen[counter++] = pieces[i];
+                        break;
+                    }
+                }
             }
             else
                 blankSquares++;
         }
-        if (blankSquares){
-            c[counter++] = '0' + blankSquares;
+        if (blankSquares)
+        {
+            fen[counter++] = '0' + blankSquares;
             blankSquares = 0;
         }
 
         if (i != 0)
-            c[counter++] = '/';
+            fen[counter++] = '/';
     }
 
-    c[counter++] = ' ';
-    c[counter++] = (b.castleInfo & 1) ? 'w' : 'b';
-    c[counter++] = ' ';
+    fen[counter++] = ' ';
+    fen[counter++] = (b.castleInfo & 1) ? 'w' : 'b';
+    fen[counter++] = ' ';
 
-    if(b.castleInfo & 0b11110)
+    if(b.castleInfo & 0b1111)
     {
-        if(b.castleInfo & WCASTLEK) c[counter++] = 'K';
-        if(b.castleInfo & WCASTLEQ) c[counter++] = 'Q';
-        if(b.castleInfo & BCASTLEK) c[counter++] = 'k';
-        if(b.castleInfo & BCASTLEQ) c[counter++] = 'q';
+        if(b.castleInfo & WCASTLEK) fen[counter++] = 'K';
+        if(b.castleInfo & WCASTLEQ) fen[counter++] = 'Q';
+        if(b.castleInfo & BCASTLEK) fen[counter++] = 'k';
+        if(b.castleInfo & BCASTLEQ) fen[counter++] = 'q';
     }
     else
-        c[counter++] = '-';
+        fen[counter++] = '-';
 
-    c[counter++] = ' ';
+    fen[counter++] = ' ';
 
     if (b.enPass)
     {
-        c[counter++] = 'h' - (b.enPass % 8);
-        c[counter++] = '1' + (b.enPass / 8);
+        fen[counter++] = 'h' - (b.enPass % 8);
+        fen[counter++] = '1' + (b.enPass / 8);
     }
     else
-        c[counter++] = '-';
+        fen[counter++] = '-';
+
+    fen[counter] = '\0';
 }

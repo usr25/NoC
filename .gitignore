@@ -5,6 +5,7 @@
 main
 optimized
 release
+debug
 usr
 DEV
 NoC

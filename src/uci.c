@@ -110,17 +110,21 @@ static void isready(void)
 static void perft_(Board b, int depth)
 {
     clock_t startTime = clock();
-    printf("Node count: %llu\n", perft(b, depth, 1));
-    printf("Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
+    fprintf(stdout, "Node count: %llu\n", perft(b, depth, 1));
+    fprintf(stdout, "Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
+    fflush (stdout);
 }
 static void eval_(Board b)
 {
-    printf("%d\n", eval(&b));
+    fprintf(stdout, "%d\n", eval(&b));
+    fflush(stdout);
 }
 static void best_time(Board b, char* beg, Repetition* rep)
 {
     int callDepth = 0;
     int wtime = 0, btime = 0, winc = 0, binc = 0, movestogo = 0;
+
+    clock_t movetime = 0;
 
     while (beg[1] != '\0' && beg[1] != '\n')
     {
@@ -144,7 +148,7 @@ static void best_time(Board b, char* beg, Repetition* rep)
             callDepth = atoi(beg);
         } else if (strncmp(beg, "movetime", 8) == 0) {
             beg += 9;
-            //movetime = atoi(beg);
+            movetime = atoi(beg);
         }
 
         ++beg;
@@ -156,10 +160,16 @@ static void best_time(Board b, char* beg, Repetition* rep)
     if (!callDepth)
     {
         //Play with time
-        clock_t remTime = b.turn? wtime : btime;
-        clock_t increment = b.turn? winc : binc;
-        clock_t timeToMove = min(remTime >> 2, (remTime >> 6) + (clock_t)((double)increment * .95));
-        clock_t calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
+        clock_t calcTime = 0;
+        if (!movetime)
+        {
+            clock_t remTime = b.turn? wtime : btime;
+            clock_t increment = b.turn? winc : binc;
+            clock_t timeToMove = min(remTime >> 2, (remTime >> 6) + (clock_t)((double)increment * .95));
+            calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
+        }
+        else
+            calcTime = (movetime * CLOCKS_PER_SEC) / 1000;
 
         best = bestTime(b, calcTime, *rep, 0);
     }
@@ -168,7 +178,9 @@ static void best_time(Board b, char* beg, Repetition* rep)
         //Go for depth
         best = bestTime(b, 0, *rep, callDepth);
     }
+
     moveToText(best, mv);
+
     fprintf(stdout, "bestmove %s\n", mv);
     fflush(stdout);
 }
@@ -264,7 +276,7 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
 {
     char mv[6] = "";
     moveToText(m, mv);
-    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu pv %s\n", m.score, depth, duration, nodes, mv);
+    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", m.score, depth, duration, nodes, 100 * nodes / (duration + 1), mv);
     fflush(stdout);
 }
 static void help_(void)
@@ -292,5 +304,5 @@ static void help_(void)
     fprintf(stdout, "perft 6\n");
     fprintf(stdout, "go depth 7\n");
     fprintf(stdout, "-====----------------====-\n");
-    fflush(stdout);
+    fflush (stdout);
 }

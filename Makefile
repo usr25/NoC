@@ -7,7 +7,7 @@ IDIR=include
 GDIR=gav
 LICHESS=~/Desktop/lichess/lichess-bot-master/engines/
 
-CFLAGS= -finline-functions -std=c11
+CFLAGS= -finline-functions -std=c11 -O3 -flto
 
 DEPS=$(IDIR)/*
 
@@ -20,22 +20,20 @@ OBJR:=$(foreach wrd, $(OBJ), $(subst .o,R.o,$(wrd)))
 
 GAVLIB=-L$(GDIR) -lgtb -lpthread -lm
 
-$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -O3
+	$(CC) -c -o $@ $< $(CFLAGS) -DEBUG
 
 $(ODIR)/%R.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -O3 -flto $(GAVLIB)
+	$(CC) -c -o $@ $< $(CFLAGS) -DNDEBUG $(GAVLIB)
 
-.PHONY: clean optimized lichess all release
+.PHONY: clean debug lichess all release
 
 release: $(OBJR)
-	$(CC) -o $@ $^ $(CFLAGS) -O3 -flto $(LIBS) $(GAVLIB)
+	$(CC) -o $@ $^ $(CFLAGS) -DNDEBUG $(LIBS) $(GAVLIB)
 
-optimized: $(OBJO)
-	$(CC) -o $@ $^ $(CFLAGS) -O3 $(LIBS) $(GAVLIB)
+debug: $(OBJO)
+	$(CC) -o $@ $^ $(CFLAGS) -DEBUG $(LIBS) $(GAVLIB)
 
 lichess:
 	make release
@@ -49,6 +47,5 @@ all:
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
-	rm -f main
-	rm -f optimized
+	rm -f debug
 	rm -f release

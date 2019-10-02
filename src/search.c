@@ -30,10 +30,6 @@
 //The centipawn loss it is willing to accept in order to avoid a 3fold repetition
 #define RISK 11
 
-#define PLUS_MATE    99999
-#define MINS_MATE   -99999
-#define PLUS_INF   9999999
-#define MINS_INF  -9999999
 
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
 __attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, const int height, int null, const uint64_t prevHash, Repetition* rep);
@@ -66,24 +62,24 @@ static inline int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, co
 const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 
 /* Time management */
-clock_t startT = 0;
-clock_t timeToMoveT = 0;
-int calledTiming = 0;
+static clock_t startT = 0;
+static clock_t timeToMoveT = 0;
+static int calledTiming = 0;
 
 /* Info string */
-uint64_t nodes = 0;
+static uint64_t nodes = 0;
 
 /* Debug info */
-uint64_t noMoveGen = 0;
-uint64_t repe = 0;
-uint64_t researches = 0;
-uint64_t qsearchNodes = 0;
-uint64_t nullCutOffs = 0;
-uint64_t betaCutOff = 0;
-uint64_t betaCutOffHit = 0;
-uint64_t queries = 0;
+static uint64_t noMoveGen = 0;
+static uint64_t repe = 0;
+static uint64_t researches = 0;
+static uint64_t qsearchNodes = 0;
+static uint64_t nullCutOffs = 0;
+static uint64_t betaCutOff = 0;
+static uint64_t betaCutOffHit = 0;
+static uint64_t queries = 0;
 
-int exitFlag = 0;
+static int exitFlag = 0;
 
 void initCall(void)
 {
@@ -100,9 +96,12 @@ void initCall(void)
     initKM();
 }
 
-int us;
+static int us;
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
 {
+    assert(timeToMove >= 0);
+    assert(targetDepth >= 0);
+    assert(rep.index >= 0);
     /* All the time management */
     calledTiming = (targetDepth == 0)? 1 : 0;
     targetDepth  = (targetDepth == 0)? 99 : targetDepth;
@@ -216,7 +215,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     return best;
 }
 
-int callDepth;
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
@@ -234,7 +232,6 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
                 //printf("ROOK MATE FAIL");
         }
     }
-    callDepth = depth;
 
     History h;
     Move currBest = list[0];
@@ -283,8 +280,12 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 }
 static int pvSearch(Board b, int alpha, int beta, int depth, const int height, const int null, const uint64_t prevHash, Repetition* rep)
 {
+    assert(rep->index >= 0);
+    assert(height > 0);
+    assert(beta >= alpha);
+    assert(b.fifty >= 0);
+
     const int pv = beta - alpha > 1;
-    //assert(beta >= alpha);
     nodes++;
     const int index = prevHash & MOD_ENTRIES;
 
@@ -500,6 +501,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
 static int qsearch(Board b, int alpha, const int beta)
 {
+    assert(beta >= alpha);
     #ifdef DEBUG
     ++qsearchNodes;
     #endif

@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-//TODO: Add support #include <assert.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -22,7 +21,7 @@
 
 #define PATH "/home/j/Desktop/Chess/Engine/positions.fen"
 
-int ignore;
+static int ignore;
 
 static int compMove(char* fen, char* target, int depth, int len)
 {
@@ -36,7 +35,7 @@ static int compMove(char* fen, char* target, int depth, int len)
     return strncmp(mv, target, len) == 0;
 }
 
-int testHashingInPos(char* fen)
+static int testHashingInPos(char* fen)
 {
     int a;
     Board b = genFromFen(fen, &a);
@@ -61,7 +60,7 @@ int testHashingInPos(char* fen)
     return works;
 }
 
-int testHashing()
+static int testHashing()
 {
     int updating = 1;
 
@@ -134,7 +133,7 @@ static int testHashingPerfts()
     printf("H Complete: %d\n", perftH("r3kn2/5p2/8/4P3/6p1/8/5P2/R3K2N w Qq -", 6));
 }
 
-int testRookMate()
+static int testRookMate()
 {
     int white = 1, black = 1;
     int depth = 3;
@@ -166,12 +165,12 @@ int testRookMate()
     return white && black;
 }
 
-void clear(char* str)
+static void clear(char* str)
 {
     for (int i = 0; i < 256; ++i)
         str[i] = '\0';
 }
-int upTo(FILE* fp, char* buf, char target)
+static int upTo(FILE* fp, char* buf, char target)
 {
     clear(buf);
     int i = 0;
@@ -189,7 +188,7 @@ int upTo(FILE* fp, char* buf, char target)
     return (ch == EOF);
 }
 
-void parseFensFromFilePerft(void)
+static void parseFensFromFilePerft(void)
 {
     FILE* fp = fopen(PATH, "r");
     if (fp == NULL)
@@ -228,7 +227,7 @@ void parseFensFromFilePerft(void)
     fclose(fp);
     printf("Evaluated %d positions and %llu nodes\n", cnt, tot);
 }
-void parseFensFromFileEva(void)
+static void parseFensFromFileEva(void)
 {
     FILE* fp = fopen(PATH, "r");
     if (fp == NULL)
@@ -256,16 +255,18 @@ void parseFensFromFileEva(void)
         if (cnt % 10 == 0)
             printf("cnt: %d\n", cnt);
         cnt++;
+        //Clean tts to avoid problems
+        initializeTable();
     }
 
     fclose(fp);
 }
 
-void slowEval(void)
+static void slowEval(void)
 {
     printf("\n---= This will take a long time =---\n");
 
-    int depth = 8;
+    int depth = 10;
     int white = 1, black = 1;
     Board b;
 
@@ -277,7 +278,7 @@ void slowEval(void)
     drawMove(bestTime(b, 0, (Repetition){}, depth));
     printf("\n");
 
-    depth = 10;
+    depth = 12;
 
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
 
@@ -330,7 +331,7 @@ void slowEval(void)
 }
 
 //This are deep perfts to ensure that everything is working, use this as well to benchmark
-void slowTests(void)
+static void slowTests(void)
 {
     printf("\n---= This will take a long time =---\n");
     Board b;
@@ -385,7 +386,7 @@ void slowTests(void)
     printf("Complex: %d\n", perft(b, 6, 0) == 706045033ULL);
 }
 
-void runTests(void)
+static void runTests(void)
 {
     //Rook mate
     printf("[+] Rook Mate: %d\n",       testRookMate());
@@ -402,7 +403,7 @@ static int compWDL(char* fen, int expected)
     return a && (expected == res);
 }
 
-void testGav(void)
+static void testGav(void)
 {
     int pawn = 1, rook = 1, queen = 1;
     pawn &= compMove("8/k1P5/2K5/8/8/8/8/8 w - -", "c7c8r", 1, 5);

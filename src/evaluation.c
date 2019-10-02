@@ -38,6 +38,7 @@
 #include "../include/evaluation.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 static int phase(void);
 static void assignPC(const Board* b);
@@ -70,6 +71,11 @@ static int wKnight, bKnight;
 
 int eval(const Board* b)
 {
+    assert(POPCOUNT(b->allPieces) <= 32);
+    assert(((b->piece[WHITE][PAWN] | b->piece[BLACK][PAWN]) & 0xff000000000000ff) == 0);
+    assert(POPCOUNT(b->piece[WHITE][KING]) == 1);
+    assert(POPCOUNT(b->piece[BLACK][KING]) == 1);
+
     assignPC(b);
     int ph = phase();
 
@@ -85,6 +91,7 @@ int eval(const Board* b)
 
     //evaluation += pieceDevelopment(b);
 
+    assert(evaluation < PLUS_MATE && evaluation > MINS_MATE);
     return b->turn? evaluation : -evaluation;
 }
 

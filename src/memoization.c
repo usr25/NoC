@@ -6,12 +6,12 @@
 #include "../include/global.h"
 #include "../include/memoization.h"
 
-static inline int GETX(int i)
+static inline const int GETX(const int i)
 {return i & 7;} //i % 8
-static inline int GETY(int i)
+static inline const int GETY(const int i)
 {return i >> 3;}//i / 8
 
-static inline int ISVALID(int x, int y)
+static inline int ISVALID(const int x, const int y)
 {return x >= 0 && x < 8 && y >= 0 && y < 8;}
 
 const void initializePOW2(void)
