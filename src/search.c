@@ -288,6 +288,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int pv = beta - alpha > 1;
     nodes++;
     const int index = prevHash & MOD_ENTRIES;
+    assert(index >= 0 && index < NUM_ENTRIES);
 
     if (canGav(b.allPieces))
     {
@@ -329,12 +330,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 case HI:
                     beta = min(beta, table[index].val);
                     break;
-                    /*
                 case EXACT:
                     val = table[index].val;
-                    if (val > PLUS_MATE) val -= 1;
+                    if (val > PLUS_MATE) val -= 10;
                     return val;
-                    */
             }
             if (alpha >= beta)
                 return table[index].val;

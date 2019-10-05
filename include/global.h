@@ -43,10 +43,10 @@
 #define EDGE        0xff818181818181ffULL
 #define EDGE_RANKS  0xff000000000000ffULL
 
-#define VQUEEN 950
-#define VROOK 525
-#define VBISH 335
-#define VKNIGHT 310
+#define VQUEEN 1100
+#define VROOK 560
+#define VBISH 360
+#define VKNIGHT 350
 #define VPAWN 100
 
 #define PLUS_MATE    99999

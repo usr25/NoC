@@ -7,6 +7,7 @@
 #include "../include/moves.h"
 #include "../include/hash.h"
 
+#include <assert.h>
 
 uint64_t random[781] = 
 {0xa4eb873de16a53d0, 0xadaba31f919ffb63, 0x3463394ba75e4d58, 0xc2856572e6e47f50,
@@ -222,6 +223,7 @@ void initializeTable(void)
  */
 int isThreeRep(const Repetition* r, const uint64_t hash)
 {
+    assert(r->index >= 0);
     int count = 0;
     for (int i = r->index - 2; i >= 0; i -= 2)
     {
@@ -233,6 +235,8 @@ int isThreeRep(const Repetition* r, const uint64_t hash)
 
 inline uint64_t calcPos(const int color, const int piece, const int sqr)
 {
+    assert(KING <= piece && piece <= PAWN);
+    assert(color == BLACK || color == WHITE);
     return random[(color * COLOR_OFFSET) + (piece * PIECE_OFFSET) + sqr];
 }
 

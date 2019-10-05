@@ -18,7 +18,7 @@ static inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr);
 
 static const Move NOMOVE = (Move) {.from = -1, .to = -1};
-const int pVal[6] = {1500, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
+const int pVal[6] = {2000, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
 Move killerMoves[99][NUM_KM];
 
 inline int compMoves(const Move* m1, const Move* m2)
@@ -118,7 +118,8 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             continue;
         if(list[i].capture > 0) //There has been a capture
         {
-            list[i].score = pVal[list[i].capture] - pVal[list[i].piece] / 10;
+            int subst = (list[i].piece < ROOK)? pVal[ROOK] / 7 : pVal[list[i].piece] / 10;
+            list[i].score = pVal[list[i].capture] - subst;
             /*
             if (list[i].piece == PAWN)
                 list[i].score = pVal[list[i].capture] - 20;
