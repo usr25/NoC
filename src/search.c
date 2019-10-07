@@ -99,6 +99,7 @@ void initCall(void)
 static int us;
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
 {
+    nodes = 0;
     assert(timeToMove >= 0);
     assert(targetDepth >= 0);
     assert(rep.index >= 0);
@@ -149,7 +150,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             alpha = bestScore - delta;
             beta = bestScore + delta;
         }
-        nodes = 0;
 
         for (int i = 0; i < 5; ++i)
         {
@@ -436,22 +436,33 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             else
             {
                 int reduction = 1;
-                if (expSort && i > 3 && list[i].capture < 1)
-                    reduction++;
-                if (i > 2 && list[i].capture < 1) //Add isInC and pv later
-                    reduction++;
-                if (!pv && list[i].piece == KING && list[i].capture < 1 && isInC)
-                    reduction++;
-                if (!expSort && pv && list[i].score > 60 && list[i].capture > 0)
-                    reduction--;
-                else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.turn][PAWN], 1 ^ b.turn))
-                    reduction--;
-                //else if (fewMovesExt)
-                //    reduction--;
-                //if (list[i].piece == KING && list[i].castle)
-                //    reduction--;
+                if (depth > 1 && !isInCheck(&b, b.turn))
+                {
+                    if (expSort && i > 3 && list[i].capture < 1)
+                    {
+                        reduction++;
+                        if (i > 6 && list[i].capture < 1)
+                            reduction++;
+                    }
+                    if (i > 3 && list[i].capture < 1) //Add isInC and pv later
+                    {
+                        reduction++;
+                        if (i > 10)
+                            reduction++;
+                    }
+                    if (!pv && list[i].piece == KING && list[i].capture < 1)
+                        reduction++;
+                    if (!expSort && pv && list[i].score > 60 && list[i].capture > 0)
+                        reduction--;
+                    else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.turn][PAWN], 1 ^ b.turn))
+                        reduction--;
+                    //else if (fewMovesExt)
+                    //    reduction--;
+                    //if (list[i].piece == KING && list[i].castle)
+                    //    reduction--;
 
-                if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
+                    if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
+                }
 
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep);
                 if (val > alpha)// && (beta != alpha + 1 || reduction != 1))
@@ -569,7 +580,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta - 5, -alpha + 5, depth - 1, 1, 1, newHash, rep);
+            val = -pvSearch(b, -beta - 1, -alpha + 1, depth - 1, 1, 1, newHash, rep);
             remHash(rep);
         }
 
