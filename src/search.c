@@ -216,7 +216,8 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     return best;
 }
 
-double percentage = 0;
+static double percentage = 0;
+static int isInNullMove = 0; //TODO: Use a global variable to detect when the engine is in a null move
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
@@ -346,7 +347,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     const int ev = eval(&b);
     const int nZg = noZugz(b);
-    const int isSafe = !isInC && !nZg;
+    const int isSafe = !isInC && !nZg && height >= 2;
 
     if (isSafe)
     {
@@ -451,6 +452,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     {
                         reduction++;
                         if (i > 10)
+                            reduction++;
+                        if (!expSort && list[i].score < 0)
                             reduction++;
                     }
                     if (!pv && list[i].piece == KING && list[i].capture < 1)
