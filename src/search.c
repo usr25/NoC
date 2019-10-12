@@ -150,7 +150,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             alpha = bestScore - delta;
             beta = bestScore + delta;
         }
-        nodes = 0;
 
         for (int i = 0; i < 5; ++i)
         {
@@ -297,7 +296,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (canGav(b.allPieces))
     {
         int usable;
-        int gavScore = gavWDL(b, &usable) * (PLUS_MATE - 110 + height);
+        int gavScore = gavWDL(b, &usable) * (PLUS_MATE - 110 - height);
         if (usable)
         {
             #ifdef DEBUG
@@ -347,7 +346,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     const int ev = eval(&b);
     const int nZg = noZugz(b);
-    const int isSafe = !isInC && !nZg && height >= 2;
+    const int isSafe = !isInC && !nZg;
 
     if (isSafe)
     {

@@ -403,7 +403,7 @@ static int pst(const Board* board, const int phase, const int color)
 
         while (bb)
         {
-            const int index = color? LSB_INDEX(bb) : 63 - LSB_INDEX(bb);
+            const int index = color? LSB_INDEX(bb) : 63 ^ LSB_INDEX(bb);
             opening += pst[0][piece][index];
             endgame += pst[1][piece][index];
             REMOVE_LSB(bb);
