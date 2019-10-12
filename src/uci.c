@@ -148,7 +148,7 @@ static void best_time(Board b, char* beg, Repetition* rep)
             callDepth = atoi(beg);
         } else if (strncmp(beg, "movetime", 8) == 0) {
             beg += 9;
-            movetime = atoi(beg);
+            movetime = (clock_t)atoi(beg);
         }
 
         ++beg;
@@ -165,7 +165,18 @@ static void best_time(Board b, char* beg, Repetition* rep)
         {
             clock_t remTime = b.turn? wtime : btime;
             clock_t increment = b.turn? winc : binc;
-            clock_t timeToMove = min(remTime >> 2, (remTime >> 6) + (clock_t)((double)increment * .95));
+            clock_t timeToMove;
+            if (movestogo || increment)
+            {
+                if (movestogo && movestogo < 5)
+                    timeToMove = min(remTime >> 1, remTime / (movestogo + 4) + (clock_t)((double)increment * .4));
+                else
+                    timeToMove = min(remTime >> 2, remTime / 27 + (clock_t)((double)increment * .95));
+            }
+            else
+            {
+                timeToMove = remTime / 41;
+            }
             calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
         }
         else

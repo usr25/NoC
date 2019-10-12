@@ -1,4 +1,6 @@
-#define NUM_ENTRIES 0x400000 //4_194_304
+//#define NUM_ENTRIES 0x200000 //2_097_152. Each entry is 56B
+//#define MOD_ENTRIES 0x1fffff //NUM_ENTRIES - 1, since it is a pow of 2, mod can be done using & MOD_ENTRIES
+#define NUM_ENTRIES 0x400000 //2_097_152. Each entry is 56B
 #define MOD_ENTRIES 0x3fffff //NUM_ENTRIES - 1, since it is a pow of 2, mod can be done using & MOD_ENTRIES
 
 #define COLOR_OFFSET 383 //The first (almost) half of the table is for the black pieces

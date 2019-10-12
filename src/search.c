@@ -150,6 +150,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             alpha = bestScore - delta;
             beta = bestScore + delta;
         }
+        nodes = 0;
 
         for (int i = 0; i < 5; ++i)
         {
@@ -215,6 +216,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     return best;
 }
 
+double percentage = 0;
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
@@ -240,6 +242,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
     for (int i = 0; i < numMoves; ++i)
     {
+        percentage = i / (double) numMoves;
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(hash, &b, list[i], h);
         if (insuffMat(&b) || isThreeRep(&rep, newHash))
@@ -287,7 +290,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     const int pv = beta - alpha > 1;
     nodes++;
-    const int index = prevHash & MOD_ENTRIES;
+    const int index = prevHash % NUM_ENTRIES;
     assert(index >= 0 && index < NUM_ENTRIES);
 
     if (canGav(b.allPieces))
@@ -303,7 +306,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
     }
 
-    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT))
+    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT /*&& percentage < .8f*/))
     {
         exitFlag = 1;
         return 0;
@@ -332,8 +335,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     break;
                 case EXACT:
                     val = table[index].val;
-                    if (val > PLUS_MATE) val -= 10;
-                    return val;
+                    if (val < PLUS_MATE - 100)
+                        return val;
             }
             if (alpha >= beta)
                 return table[index].val;
