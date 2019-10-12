@@ -168,8 +168,8 @@ static void best_time(Board b, char* beg, Repetition* rep)
             clock_t timeToMove;
             if (movestogo || increment)
             {
-                if (movestogo && movestogo < 5)
-                    timeToMove = min(remTime >> 1, remTime / (movestogo + 4) + (clock_t)((double)increment * .4));
+                if (movestogo && movestogo < 8)
+                    timeToMove = min(remTime >> 1, remTime / (movestogo + 12) + (clock_t)((double)increment * .4));
                 else
                     timeToMove = min(remTime >> 2, remTime / 27 + (clock_t)((double)increment * .95));
             }
@@ -287,7 +287,7 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
 {
     char mv[6] = "";
     moveToText(m, mv);
-    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", m.score, depth, duration, nodes, 100 * nodes / (duration + 1), mv);
+    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", m.score, depth, duration, nodes, 100000 * nodes / (duration + 1), mv);
     fflush(stdout);
 }
 static void help_(void)
