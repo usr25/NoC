@@ -759,13 +759,13 @@ static int movesCheck(Board* b, Move* list, const int color, const uint64_t forb
             if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
             {
                 m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
-                
+
                 if (moveIsValidSliding(b, m, h)) *p++ = m;
             }
             else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
             {
                 m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
-                
+
                 if (moveIsValidSliding(b, m, h)) *p++ = m;
             }
         }
@@ -1067,24 +1067,29 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
     int from, to;
     uint64_t temp, tempMoves, tempCaptures;
 
-    tempCaptures = getKingMoves(k) & ~forbidden & b->color[opp];
-    while (tempCaptures)
+    History h;
+    Move m;
+
+    from = LSB_INDEX(b->piece[color][KING]);
+    tempMoves = getKingMoves(from) & b->color[color | 2] & ~forbidden;
+    while(tempMoves)
     {
-        to = LSB_INDEX(tempCaptures);
-        *p++ = (Move) {.piece = KING, .from = k, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-        REMOVE_LSB(tempCaptures);
+        to = LSB_INDEX(tempMoves);
+        *p++ = (Move) {.piece = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+        REMOVE_LSB(tempMoves);
     }
 
+    //If is more than one attacker the only option is to move the king
     if (att.num == 1)
     {
         //Promoting pawns
-        temp = b->piece[b->turn][PAWN] & pinnedMask & (b->turn? SEVENTH_RANK : SECOND_RANK);
+        temp = b->piece[color][PAWN] & pinnedMask & (color? SEVENTH_RANK : SECOND_RANK);
         while(temp)
         {
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
 
-            if (b->turn)
+            if (color)
             {
                 tempMoves = getWhitePawnMoves(from) & ~b->allPieces & interfere;
                 tempCaptures = getWhitePawnCaptures(from) & oppPieces & interfere;
@@ -1101,22 +1106,24 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
                 REMOVE_LSB(tempCaptures);
                 int capt = pieceAt(b, POW2[to], opp);
 
-                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt, .score = 850};
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt, .score = 650};
             }
             while (tempMoves)
             {
-                *p++ = (Move) {.piece = PAWN, .from = from, .to = LSB_INDEX(tempMoves), .promotion = QUEEN, .score = 800};
+                to = LSB_INDEX(tempMoves);
                 REMOVE_LSB(tempMoves);
+
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .score = 600};
             }
         }
 
-        temp = b->piece[b->turn][PAWN] & pinnedMask & (b->turn? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
+        temp = b->piece[color][PAWN] & pinnedMask & (color? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
         while(temp)
         {
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
 
-           if (b->turn)
+            if (color)
                 tempCaptures = getWhitePawnCaptures(from) & oppPieces & interfere;
             else
                 tempCaptures = getBlackPawnCaptures(from) & oppPieces & interfere;
@@ -1130,18 +1137,17 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
 
             if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
             {
-                Move m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * b->turn - 1) * 8, .enPass = b->enPass, .score = 101};
-                History h;
+                m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
+
                 if (moveIsValidSliding(b, m, h)) *p++ = m;
             }
             else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
             {
-                Move m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * b->turn - 1) * 8, .enPass = b->enPass, .score = 101};
-                History h;
+                m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
+
                 if (moveIsValidSliding(b, m, h)) *p++ = m;
             }
         }
-
 
         temp = b->piece[color][QUEEN] & pinnedMask;
         while(temp)
@@ -1149,15 +1155,22 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
 
-            tempCaptures = (posRookMoves(b, color, from) | posBishMoves(b, color, from)) & interfere & oppPieces;
+            tempMoves = posQueenMoves(b, color, from) & interfere;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+
             while (tempCaptures)
             {
                 to = LSB_INDEX(tempCaptures);
                 *p++ = (Move) {.piece = QUEEN, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
                 REMOVE_LSB(tempCaptures);
             }
+            while(tempMoves)
+            {
+                *p++ = (Move) {.piece = QUEEN, .from = from, .to = LSB_INDEX(tempMoves), .score = -200};
+                REMOVE_LSB(tempMoves);
+            }
         }
-
 
         temp = b->piece[color][ROOK] & pinnedMask;
         while(temp)
@@ -1165,15 +1178,22 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
 
-            tempCaptures = posRookMoves(b, color, from) & interfere & oppPieces;
+            tempMoves = posRookMoves(b, color, from) & interfere;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+
             while (tempCaptures)
             {
                 to = LSB_INDEX(tempCaptures);
                 *p++ = (Move) {.piece = ROOK, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
                 REMOVE_LSB(tempCaptures);
             }
+            while(tempMoves)
+            {
+                *p++ = (Move) {.piece = ROOK, .from = from, .to = LSB_INDEX(tempMoves), .score = -150};
+                REMOVE_LSB(tempMoves);
+            }
         }
-
 
         temp = b->piece[color][BISH] & pinnedMask;
         while(temp)
@@ -1181,15 +1201,22 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
 
-            tempCaptures = posBishMoves(b, color, from) & interfere & oppPieces;
+            tempMoves = posBishMoves(b, color, from) & interfere;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+
             while (tempCaptures)
             {
                 to = LSB_INDEX(tempCaptures);
                 *p++ = (Move) {.piece = BISH, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
                 REMOVE_LSB(tempCaptures);
             }
+            while(tempMoves)
+            {
+                *p++ = (Move) {.piece = BISH, .from = from, .to = LSB_INDEX(tempMoves), .score = -100};
+                REMOVE_LSB(tempMoves);
+            }
         }
-
 
         temp = b->piece[color][KNIGHT] & pinnedMask;
         while(temp)
@@ -1197,15 +1224,24 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
             from = LSB_INDEX(temp);
             REMOVE_LSB(temp);
 
-            tempCaptures = getKnightMoves(from) & interfere & oppPieces;
+            tempMoves = posKnightMoves(b, color, from) & interfere;
+            tempCaptures = tempMoves & oppPieces;
+            tempMoves ^= tempCaptures;
+
             while (tempCaptures)
             {
                 to = LSB_INDEX(tempCaptures);
                 *p++ = (Move) {.piece = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
                 REMOVE_LSB(tempCaptures);
             }
+            while(tempMoves)
+            {
+                *p++ = (Move) {.piece = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves), .score = -50};
+                REMOVE_LSB(tempMoves);
+            }
         }
     }
 
     return p - list;
+
 }

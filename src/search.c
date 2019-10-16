@@ -306,7 +306,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
     }
 
-    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT /*&& percentage < .8f*/))
+    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT && percentage < .8f))
     {
         exitFlag = 1;
         return 0;
