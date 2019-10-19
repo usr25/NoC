@@ -22,13 +22,15 @@ This is a highly specialized tool, I doubt it'll be of much help to anyone but m
 WARNING: All paths have to end with '/', I will change this later, if need be
 */
 
-const std::string values_dir("/home/j/Desktop/cppp/");
+const int TOTAL = 5;
+
+const std::string values_dir("-/");
 const std::string concurrency("1");
 const std::string cutechess("cutechess-cli");
 const std::string rounds("1");
 const std::string tc(".1+.01");
-const std::string dir("/home/j/Desktop/Engines/");
-const std::string tablebases("-");
+const std::string dir("-/");
+const std::string tablebases("- -tbpieces 5");
 const std::string extra_flags("-repeat -games 2 -recover");
 
 std::default_random_engine generator;
@@ -38,6 +40,7 @@ class Game
 {
     std::string cmd;
     std::string a, b;
+
 public:
     Game(std::string, std::string);
     void play();
@@ -45,7 +48,8 @@ public:
 
 //This is pretty basic, try somethin better like big values at the beggining
 int new_value(int v){
-    std::normal_distribution<float> dist((float)v, std::sqrt(std::abs((float)v)) / (2 + std::sqrt(iterations / 3)));
+    std::normal_distribution<float> dist((float)v, 
+        std::sqrt(std::abs((float)v)) / (2 + std::sqrt(iterations / 3)));
     return std::round(dist(generator));
 }
 
@@ -158,19 +162,20 @@ float analyze_results(std::string s){
     return num;
 }
 
-Game::Game (std::string _a, std::string _b){
+Game::Game (const std::string _a, const std::string _b){
     a = _a;
     b = _b;
 
     std::stringstream command_stream;
     command_stream  << cutechess
-                    << " -engine cmd=" << dir << a
-                    << " -engine cmd=" << dir << b
+                    << " -engine cmd=\'" << dir << a << " " << values_dir << "A.txt\'"
+                    << " -engine cmd=\'" << dir << b << " " << values_dir << "B.txt\'"
                     << " -each proto=uci tc=" << tc
                     << " -rounds " << rounds
                     //<< " -tb " << tablebases
+                    << " -concurrency " << concurrency
                     << " " << extra_flags
-                    << " | tail -10";
+                    << " | tail -20";
     cmd = command_stream.str();
 }
 
@@ -184,18 +189,19 @@ void Game::play(){
 
     std::cout << res << std::endl;
 
-    if (res > 100)
+    //If the elo diff is more than 50 the engine is considered superior and all values are unchanged
+    if (res > 50)
         gen_new_last(1);
-    else if (res < -100)
+    else if (res < -50)
         gen_new_last(0);
     else
-        gen_new_last((res / 200) + .5f);
+        gen_new_last((res / 100) + .5f);
 }
 
 int main(){
 
     Game g("sf5", "raven");
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < TOTAL; ++i)
     {
         gen_new_files();
         g.play();
