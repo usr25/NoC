@@ -4,17 +4,17 @@
  * eval > 0 -> It is good for white
  */
 
-int V_QUEEN = 950;
-int V_ROOK = 525;
-int V_BISH = 335;
-int V_KNIGHT = 320;
-int V_PAWN = 100;
+int V_QUEEN = 1102;
+int V_ROOK = 609;
+int V_BISH = 388;
+int V_KNIGHT = 371;
+int V_PAWN = 116;
 
-int V_PASSEDP = 100; //Value for a passed pawn right before promotion
+int V_PASSEDP = 116; //Value for a passed pawn right before promotion
 
 //All the variabels that begin with N_ are negative
-int CONNECTED_ROOKS = 25; //Bonus for having connected rooks
-int ROOK_OPEN_FILE = 10; //Bonus for a rook on an open file (No same color pawns)
+int CONNECTED_ROOKS = 29; //Bonus for having connected rooks
+int ROOK_OPEN_FILE = 12; //Bonus for a rook on an open file (No same color pawns)
 int SAFE_KING = 2; //Bonus for pawns surrounding the king
 
 //This ones aren't on use at the moment

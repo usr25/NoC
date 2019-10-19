@@ -142,11 +142,11 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 
     Move best = list[0], temp;
     int bestScore = 0;
-    int delta = 50;
+    int delta = 60;
     int alpha = MINS_INF, beta = PLUS_INF;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = 50;// + depth;
+        delta = 60;// + depth;
         //delta = max(25, delta * .8f);
         if (depth >= 6)
         {
@@ -399,7 +399,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     History h;
     Move mt = list[0];
     int expSort = 0;
-    if (depth >= 6 && mt.score < 250)
+    if (depth >= 6 && mt.score < 290)
     {
         /*
         makeMove(&b, mt, &h);

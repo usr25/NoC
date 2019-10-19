@@ -141,7 +141,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
 
         if (compMoves(&bestFromPos, &list[i])) //It was the best refutation in the same position
         {
-            list[i].score += 1000;
+            list[i].score += 1200;
         }
         else
         {
