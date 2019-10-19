@@ -27,7 +27,7 @@
 //Depth of the null move prunning
 #define R 3
 //Margin for null move pruning, it is assumed that passing the move gives away some advantage. Measured in centipawns
-#define MARGIN 11
+#define MARGIN 13
 //The centipawn loss it is willing to accept in order to avoid a 3fold repetition
 #define RISK 11
 
@@ -364,7 +364,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         */
         // Static pruning
-        if (!pv && depth <= 4 && ev - 100 * depth >= beta && ev < 8000)
+        if (!pv && depth <= 4 && ev - 116 * depth >= beta && ev < 9000)
             return ev;
 
         //if (!pv && depth <= 6 && ev - 180 * depth >= beta && ev < 7500)
@@ -422,7 +422,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if (canBreak && i > 4 && list[i].score < 100)
+        if (canBreak && i > 4 && list[i].score < 116)
             break;
         //if (expSort && compMoves(&mt, &list[i]))
         //  continue;
@@ -462,7 +462,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     }
                     if (!pv && list[i].piece == KING && list[i].capture < 1)
                         reduction++;
-                    if (!expSort && pv && list[i].score > 60 && list[i].capture > 0)
+                    if (!expSort && pv && list[i].score > 69 && list[i].capture > 0)
                         reduction--;
                     else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.turn][PAWN], 1 ^ b.turn))
                         reduction--;
