@@ -20,8 +20,9 @@
 #include "../include/mate.h"
 #include "../include/uci.h"
 #include "../include/io.h"
+#ifdef USE_TB
 #include "../include/gaviota.h"
-
+#endif
 
 //Depth of the null move prunning
 #define R 3
@@ -120,6 +121,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     if (numMoves == 1)
         return list[0];
 
+    #ifdef USE_TB
     //If there is little time, caching can give problems
     if (canGav(b.allPieces))
     {
@@ -131,6 +133,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             return tb;
         }
     }
+    #endif
 
     initCall();
 
@@ -293,6 +296,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int index = prevHash % NUM_ENTRIES;
     assert(index >= 0 && index < NUM_ENTRIES);
 
+    #ifdef USE_TB
     if (canGav(b.allPieces))
     {
         int usable;
@@ -305,6 +309,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             return b.turn? gavScore : -gavScore;
         }
     }
+    #endif
 
     if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT && percentage < .8f))
     {
@@ -597,6 +602,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
     sort(list, list+numMoves);
 }
 
+#ifdef USE_TB
 static Move tableLookUp(Board b, int* tbAv)
 {
     Move list[NMOVES];
@@ -653,6 +659,7 @@ static Move tableLookUp(Board b, int* tbAv)
 
     return bestM;
 }
+#endif
 
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash)
 {

@@ -73,7 +73,8 @@ void initGav(const char* path)
     if (NULL == paths) printf ("Error while updating the paths");
     paths = tbpaths_add (paths, "gav/gtb"); //This is the default for 3 piece
     if (NULL == paths) printf ("Error while updating the paths");
-    paths = tbpaths_add (paths, path);
+    if (path[0] != '\0')
+        paths = tbpaths_add (paths, path);
 
     initinfo = tb_init (verbosity, scheme, paths);
     tbcache_init(cache_size, wdl_fraction);
@@ -82,7 +83,7 @@ void initGav(const char* path)
     const int availability = tb_availability();
 
     if (!availability)
-        fprintf(stdout, "[-] No tablebases available, the engine will proceed without them. Ensure $cwd is ../Engine/ or pass the path to the tb as arguments Eg.: ./e /home/Chess/gtb");
+        fprintf(stdout, "[-] No tablebases available, the engine will proceed without them. Read the README for more info");
     else
         fprintf(stdout, "[+] Gaviota tablebases available (~ == incomplete): ");
 

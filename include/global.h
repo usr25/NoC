@@ -3,6 +3,7 @@
 #define ENGINE_AUTHOR "usr"
 #define ENGINE_NAME "NoC"
 
+#define USE_TB
 
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)

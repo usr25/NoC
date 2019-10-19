@@ -17,7 +17,9 @@
 #include "../include/hash.h"
 #include "../include/search.h"
 #include "../include/perft.h"
+#ifdef USE_TB
 #include "../include/gaviota.h"
+#endif
 
 #define PATH "/home/j/Desktop/Chess/Engine/positions.fen"
 
@@ -394,6 +396,7 @@ static void runTests(void)
     printf("[+] Hash: %d\n",            testHashing());
 }
 
+#ifdef USE_TB
 static int compWDL(char* fen, int expected)
 {
     int a;
@@ -457,6 +460,7 @@ static void testGav(void)
     printf("R WDL: %d\n", rookWDL);
     printf("Q WDL: %d\n", queenWDL);
 }
+#endif
 
 void chooseTest(const int mode)
 {
@@ -479,7 +483,11 @@ void chooseTest(const int mode)
             parseFensFromFileEva();
             break;
         case 5:
+            #ifdef USE_TB
             testGav();
+            #else
+            printf("[-] ERROR: USE_TB hasn't been defined, this test can't be performed\n");
+            #endif
             break;
         default:
             printf("Choose mode [0..5]\n");

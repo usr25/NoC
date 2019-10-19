@@ -19,18 +19,22 @@
 #include "../include/search.h"
 #include "../include/sort.h"
 #include "../include/perft.h"
+#ifdef USE_TB
 #include "../include/gaviota.h"
-
+#endif
 
 //TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove and implement syzygy
 int main(const int argc, char** const argv)
 {
+    printf("%s uci chess engine made by %s\n", ENGINE_NAME, ENGINE_AUTHOR);
     initMemo();
     initMagics();
+    #ifdef USE_TB
     if (argc > 1)
         initGav(argv[1]);
     else
         initGav("\0");
+    #endif
 
     //0, 1->53'9, 2->6'0s, 3->2:4, 4->1:7s, 5-> -
     //chooseTest(1);
