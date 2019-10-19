@@ -1,0 +1,1 @@
+void initTrain(const char* path);

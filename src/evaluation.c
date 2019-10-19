@@ -4,25 +4,35 @@
  * eval > 0 -> It is good for white
  */
 
-//All the constants that begin with N_ are negative
-#define CONNECTED_ROOKS 25 //Bonus for having connected rooks
-#define TWO_BISH 10 //Bonus for having the bishop pair
-#define ROOK_OPEN_FILE 10 //Bonus for a rook on an open file (No same color pawns)
-#define BISHOP_MOBILITY 1 //Bonus for squares available to the bishop
-#define N_DOUBLED_PAWNS (-36) //Penalization for doubled pawns (proportional to the pawns in line - 1)
-#define PAWN_CHAIN 20 //Bonus for making a pawn chain
-#define PAWN_PROTECTION 15 //Bonus for Bish / Knight protected by pawn
-#define ATTACKED_BY_PAWN 10 //Bonus if a pawn can attack a piece
-#define ATTACKED_BY_PAWN_LATER 6 //Bonus if a pawn can attack a piece after moving once
-#define E_ADVANCED_KING 2 //Endgame, bonus for advanced king
-#define E_ADVANCED_PAWN 6 //Endgame, bonus for advanced pawns
-#define N_PIECE_SLOW_DEV (-10) //Penalization for keeping the pieces in the back-rank
-#define STABLE_KING 25 //Bonus for king in e1/8 or castled
-#define PASSED_PAWN 20 //Bonus for passed pawns
-#define N_ISOLATED_PAWN (-10) //Penalization for isolated pawns
-#define N_TARGET_PAWN (-7) //Penalization for a pawn that cant be protected by another pawn
-#define CLEAN_PAWN 20 //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
-#define SAFE_KING 2 //Bonus for pawns surrounding the king
+int V_QUEEN = 950;
+int V_ROOK = 525;
+int V_BISH = 335;
+int V_KNIGHT = 320;
+int V_PAWN = 100;
+
+int V_PASSEDP = 100; //Value for a passed pawn right before promotion
+
+//All the variabels that begin with N_ are negative
+int CONNECTED_ROOKS = 25; //Bonus for having connected rooks
+int ROOK_OPEN_FILE = 10; //Bonus for a rook on an open file (No same color pawns)
+int SAFE_KING = 2; //Bonus for pawns surrounding the king
+
+//This ones aren't on use at the moment
+int TWO_BISH = 10; //Bonus for having the bishop pair
+int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
+int N_DOUBLED_PAWNS = -36; //Penalization for doubled pawns (proportional to the pawns in line - 1)
+int PAWN_CHAIN =  20; //Bonus for making a pawn chain
+int PAWN_PROTECTION = 15; //Bonus for Bish / Knight protected by pawn
+int ATTACKED_BY_PAWN = 10; //Bonus if a pawn can attack a piece
+int ATTACKED_BY_PAWN_LATER = 6; //Bonus if a pawn can attack a piece after moving once
+int E_ADVANCED_KING = 2; //Endgame, bonus for advanced king
+int E_ADVANCED_PAWN = 6; //Endgame, bonus for advanced pawns
+int N_PIECE_SLOW_DEV = -10; //Penalization for keeping the pieces in the back-rank
+int STABLE_KING = 25; //Bonus for king in e1/8 or castled
+int PASSED_PAWN = 20; //Bonus for passed pawns
+int N_ISOLATED_PAWN = -10; //Penalization for isolated pawns
+int N_TARGET_PAWN = -7; //Penalization for a pawn that cant be protected by another pawn
+int CLEAN_PAWN = 20; //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
 
 #define SP_MARGIN 50
 
@@ -39,6 +49,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+
 
 static int phase(void);
 static void assignPC(const Board* b);
@@ -68,6 +79,19 @@ static int wRook, bRook;
 static int wBish, bBish;
 static int wKnight, bKnight;
 
+static int passedPawnValues[8];
+
+void initEval(void)
+{
+    passedPawnValues[0] = 0;
+    passedPawnValues[1] = 0;
+    passedPawnValues[2] = 5;
+    passedPawnValues[3] = 20;
+    passedPawnValues[4] = 40;
+    passedPawnValues[5] = 3 * V_PASSEDP / 5;
+    passedPawnValues[6] = V_PASSEDP;
+    passedPawnValues[7] = 0;
+}
 
 int eval(const Board* b)
 {
@@ -139,9 +163,9 @@ static inline void assignPC(const Board* b)
 
 inline int evalWithOffset(const Board* b, const int color)
 {
-    int hPiece = VBISH + SP_MARGIN;
-    if (b->piece[color][QUEEN]) hPiece = VQUEEN;
-    else if (b->piece[color][ROOK]) hPiece = VROOK;
+    int hPiece = V_BISH + SP_MARGIN;
+    if (b->piece[color][QUEEN]) hPiece = V_QUEEN;
+    else if (b->piece[color][ROOK]) hPiece = V_ROOK;
 
     return hPiece + eval(b);
 }
@@ -173,14 +197,13 @@ static inline int taperedEval(const int ph, const int beg, const int end)
 
 static inline int material(void)
 {
-    return   VQUEEN     *(wQueen    - bQueen)
-            +VROOK      *(wRook     - bRook)
-            +VBISH      *(wBish     - bBish)
-            +VKNIGHT    *(wKnight   - bKnight)
-            +VPAWN      *(wPawn     - bPawn);
+    return   V_QUEEN     *(wQueen    - bQueen)
+            +V_ROOK      *(wRook     - bRook)
+            +V_BISH      *(wBish     - bBish)
+            +V_KNIGHT    *(wKnight   - bKnight)
+            +V_PAWN      *(wPawn     - bPawn);
 }
 
-static const int passedPawnValues[8] = {0, 0, 5, 20, 40, 60, 100, 0};
 static int passedPawns(const uint64_t wp, const uint64_t bp)
 {
     int lsb = 0, accPawn = 0;

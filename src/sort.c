@@ -10,6 +10,7 @@
 #include "../include/boardmoves.h"
 #include "../include/sort.h"
 #include "../include/magic.h"
+#include "../include/evaluation.h"
 
 #define NUM_KM 2
 
@@ -18,12 +19,22 @@ static inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr);
 
 static const Move NOMOVE = (Move) {.from = -1, .to = -1};
-const int pVal[6] = {2000, VQUEEN, VROOK, VBISH, VKNIGHT, VPAWN};
+int pVal[6];
 Move killerMoves[99][NUM_KM];
 
 inline int compMoves(const Move* m1, const Move* m2)
 {
     return m1->from == m2->from && m1->to == m2->to;
+}
+
+void initSort(void)
+{
+    pVal[0] = 2000;
+    pVal[1] = V_QUEEN;
+    pVal[2] = V_ROOK;
+    pVal[3] = V_BISH;
+    pVal[4] = V_KNIGHT;
+    pVal[5] = V_PAWN;
 }
 
 void initKM(void)

@@ -1,3 +1,4 @@
+void initSort(void);
 void initKM(void);
 void addKM(const Move m, const int depth);
 __attribute__((hot)) void assignScores(Board* b, Move* list, const int numMoves, const Move bestFromPos, const int depth);

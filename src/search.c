@@ -357,7 +357,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     {
         // Razoring
         /*
-        if (depth == 1 && ev + VROOK + 101 <= alpha && isSafe){
+        if (depth == 1 && ev + V_ROOK + 101 <= alpha && isSafe){
             int razScore = qsearch(b, alpha, beta);
             if (razScore >= beta)
                 return razScore;
@@ -532,7 +532,7 @@ static int qsearch(Board b, int alpha, const int beta)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + VQUEEN <= alpha)
+    else if (score + V_QUEEN <= alpha)
         return alpha;
 
     Move list[NMOVES];
@@ -694,11 +694,11 @@ static inline const int marginDepth(const int depth)
     switch (depth)
     {
         case 1:
-            return VBISH;
+            return V_BISH;
         case 2:
-            return VROOK;
+            return V_ROOK;
         case 3:
-            return VQUEEN;
+            return V_QUEEN;
     }
 
     return 0;

@@ -7,7 +7,7 @@ IDIR=include
 GDIR=gav
 LICHESS=~/Desktop/lichess/lichess-bot-master/engines/
 
-CFLAGS= -finline-functions -std=c11 -O3 -flto
+CFLAGS= -finline-functions -O3 -flto
 
 DEPS=$(IDIR)/*
 
