@@ -1,6 +1,7 @@
 *.o
 *.d
 *.fen
+*.out
 /obj
 main
 optimized

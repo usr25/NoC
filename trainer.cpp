@@ -9,7 +9,7 @@
 #include <vector>
 #include <random>
 #include <math.h>
-
+#include "unistd.h"
 /*
 Use:
 This is a highly specialized tool, I doubt it'll be of much help to anyone but me
@@ -22,19 +22,22 @@ This is a highly specialized tool, I doubt it'll be of much help to anyone but m
 WARNING: All paths have to end with '/', I will change this later, if need be
 */
 
-const int TOTAL = 5;
+int ITER = 5;
+std::string rounds("1");
 
-const std::string values_dir("-/");
+std::string tablebases("-/");
+std::string values_dir("-/");
+std::string engines_dir("-/");
+
 const std::string concurrency("1");
 const std::string cutechess("cutechess-cli");
-const std::string rounds("1");
 const std::string tc(".1+.01");
-const std::string dir("-/");
-const std::string tablebases("- -tbpieces 5");
-const std::string extra_flags("-repeat -games 2 -recover");
+const std::string extra_flags("-repeat -games 2 -recover -tbpieces 5");
 
 std::default_random_engine generator;
 int iterations = 0;
+
+const std::string help_msg("trainer [OPTIONS]\n  -i: Total number of iterations\n  -r: Rounds per iterations, the games are double the rounds\n  -e: Dir where the engines are placed\n  -v: Dir where the values are placed\n  -t: Dir where the tb are placed\nExample: $trainer -t 20 -r 600\n\nWARNING: Ensure the dir names end with \'/\'. Call the engine \'Train\'");
 
 class Game
 {
@@ -168,20 +171,21 @@ Game::Game (const std::string _a, const std::string _b){
 
     std::stringstream command_stream;
     command_stream  << cutechess
-                    << " -engine cmd=\'" << dir << a << " " << values_dir << "A.txt\'"
-                    << " -engine cmd=\'" << dir << b << " " << values_dir << "B.txt\'"
+                    << " -engine cmd=\'" << engines_dir << a << " " << values_dir << "A.txt\'"
+                    << " -engine cmd=\'" << engines_dir << b << " " << values_dir << "B.txt\'"
                     << " -each proto=uci tc=" << tc
                     << " -rounds " << rounds
-                    //<< " -tb " << tablebases
+                    << " -tb " << tablebases
                     << " -concurrency " << concurrency
                     << " " << extra_flags
                     << " | tail -20";
     cmd = command_stream.str();
+
+    std::cout << cmd << std::endl;
 }
 
 
 void Game::play(){
-    std::cout << cmd << std::endl;
 
     std::vector<std::string> v;
     std::string result = run(cmd);;
@@ -198,11 +202,44 @@ void Game::play(){
         gen_new_last((res / 100) + .5f);
 }
 
-int main(){
+int main(const int argc, char** argv){
 
-    Game g("sf5", "raven");
-    for (int i = 0; i < TOTAL; ++i)
+    int c;
+    while((c = getopt(argc, argv, "hi:r:v:e:t:")) != -1)
     {
+        switch(c)
+        {
+            case 'h':
+            std::cout << help_msg << std::endl;
+            return 0;
+
+            case 'i':
+            ITER = std::atoi(optarg);
+            break;
+
+            case 'r':
+            rounds = optarg;
+            break;
+
+            case 'v':
+            values_dir = optarg;
+            break;
+
+            case 'e':
+            engines_dir = optarg;
+            break;
+
+            case 't':
+            tablebases = optarg;
+            break;
+        }
+    }
+
+
+    Game g("Train", "Train");
+    for (int i = 0; i < ITER; ++i)
+    {
+        std::cout << "Iter: " << i << "/" << ITER << std::endl;
         gen_new_files();
         g.play();
     }
