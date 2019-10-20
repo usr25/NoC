@@ -29,7 +29,7 @@ inline int compMoves(const Move* m1, const Move* m2)
 
 void initSort(void)
 {
-    pVal[0] = 2000;
+    pVal[0] = 2320;
     pVal[1] = V_QUEEN;
     pVal[2] = V_ROOK;
     pVal[3] = V_BISH;
@@ -156,9 +156,9 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             }
             */
             if (compMoves(&killerMoves[depth][0], &list[i]))
-                list[i].score += 50;
+                list[i].score += 58;
             else if (compMoves(&killerMoves[depth][1], &list[i]))
-                list[i].score += 51;
+                list[i].score += 59;
         }
         /*
         if (list[i].score < 300)
@@ -179,9 +179,9 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
         if(list[i].capture > 0)
         {
             if (list[i].piece == PAWN)
-                list[i].score = pVal[list[i].capture] - 20;
+                list[i].score = pVal[list[i].capture] - 23;
             else
-                list[i].score = 60 + seeCapture(*b, list[i]);//captureScore(&list[i]);//Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
+                list[i].score = 69 + seeCapture(*b, list[i]);//captureScore(&list[i]);//Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
         }
     }
 }

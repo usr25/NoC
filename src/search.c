@@ -311,7 +311,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
     #endif
 
-    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT && percentage < .8f))
+    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT && percentage < .9f))
     {
         exitFlag = 1;
         return 0;
@@ -456,7 +456,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     if (i > 3 && list[i].capture < 1) //Add isInC and pv later
                     {
                         reduction++;
-                        if (i > 10)
+                        if (i > 6 && !pv)
                             reduction++;
                         if (!expSort && list[i].score < 0)
                             reduction++;
@@ -547,8 +547,7 @@ static int qsearch(Board b, int alpha, const int beta)
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if ((list[i].score + score + 125 <= alpha) || list[i].score < 60)
-        //if (list[i].score < 60)
+        if ((list[i].score + score + 145 <= alpha) || list[i].score < 69)
             break;
 
         makeMove(&b, list[i], &h);
@@ -668,7 +667,6 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
     const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, (depth < 6)? depth - R : depth / 4 + 1, 1, 1, changeTurn(prevHash), &_rep);
-    //const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, (depth < 7)? 2 : depth / 4 + 1, 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
 
     return val >= betaMargin;
