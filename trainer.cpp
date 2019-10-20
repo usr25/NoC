@@ -191,8 +191,6 @@ void Game::play(){
     std::string result = run(cmd);;
     float res = analyze_results(result);
 
-    std::cout << res << std::endl;
-
     //If the elo diff is more than 50 the engine is considered superior and all values are unchanged
     if (res > 50)
         gen_new_last(1);

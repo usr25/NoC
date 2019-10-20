@@ -413,7 +413,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         undoMove(&b, mt, &h);
         */
-        expensiveSort(b, list, numMoves, alpha, beta, pv? depth - 4 : depth / 4, newHeight, prevHash, rep);
+        int targD = min(pv? depth - 4 : depth / 4, 6);
+        expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
         expSort = 1;
     }
 
