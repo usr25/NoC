@@ -229,7 +229,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 {
     assert(depth > 0);
     assert(numMoves > 0);
-    assert(rep->index >= 0 && rep->index < 128);
+    assert(rep.index >= 0 && rep.index < 128);
     if (rookVSKing(b))
     {
         Move rookM = rookMate(b);

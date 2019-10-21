@@ -17,16 +17,16 @@ SRC:=$(wildcard $(SDIR)/*)
 
 _OBJ:=$(foreach wrd, $(SRC), $(subst .c,.o,$(wrd)))
 OBJ:=$(foreach wrd, $(_OBJ), $(subst $(SDIR),$(ODIR),$(wrd)))
-OBJD:=$(filter-out gaviota.c, $(foreach wrd, $(OBJ), $(subst .o,O.o,$(wrd))))
+OBJD:=$(filter-out $(ODIR)/gaviotaO.o, $(foreach wrd, $(OBJ), $(subst .o,O.o,$(wrd))))
+OBJA:=$(filter-out $(ODIR)/gaviotaA.o, $(foreach wrd, $(OBJ), $(subst .o,A.o,$(wrd))))
+OBJT:=$(filter-out $(ODIR)/gaviotaT.o, $(foreach wrd, $(OBJ), $(subst .o,T.o,$(wrd))))
 OBJR:=$(foreach wrd, $(OBJ), $(subst .o,R.o,$(wrd)))
-OBJA:=$(filter-out gaviota.c, $(foreach wrd, $(OBJ), $(subst .o,A.o,$(wrd))))
-OBJT:=$(filter-out gaviota.c, $(foreach wrd, $(OBJ), $(subst .o,T.o,$(wrd))))
 
 GAVLIB=-L$(GDIR) -lgtb -lpthread -lm
 
 
 $(ODIR)/%A.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -DUSE_TB
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(ODIR)/%T.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) -DTRAIN
@@ -42,16 +42,16 @@ $(ODIR)/%R.o: $(SDIR)/%.c $(DEPS)
 #GTB will only be used in release
 
 release: $(OBJR)
-	$(CC) -o $@ $^ $(CFLAGS) -DNDEBUG -DUSE_TB $(LIBS) $(GAVLIB)
+	$(CC) -o $@ $^ $(CFLAGS) -DNDEBUG -DUSE_TB $(GAVLIB)
 
 debug: $(OBJD)
-	$(CC) -o $@ $^ $(CFLAGS) -DDEBUG $(LIBS) $(GAVLIB)
+	$(CC) -o $@ $^ $(CFLAGS) -DDEBUG -DNUSE_TB
 
 assert: $(OBJA)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS) $(GAVLIB)
+	$(CC) -o $@ $^ $(CFLAGS) -DNUSE_TB
 
 train: $(OBJT)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS) -DTRAIN -DNUSE_TB -DNDEBUG
+	$(CC) -o $@ $^ $(CFLAGS) -DTRAIN -DNUSE_TB -DNDEBUG
 
 lichess:
 	make release
