@@ -22,15 +22,19 @@ This is a highly specialized tool, I doubt it'll be of much help to anyone but m
 
 WARNING: All paths have to end with '/', I will change this later, if need be
 */
+bool ONE = false;
+int ITER = 4;
 
-int ITER = 5;
+int iterations = 0;
+int var_count = 6;
+int curr_var = 0;
+
 std::string rounds("1");
 
 std::string tablebases("-/");
 std::string values_dir("-/");
 std::string engines_dir("-/");
 
-bool one = false;
 
 const std::string concurrency("1");
 const std::string cutechess("cutechess-cli");
@@ -38,9 +42,8 @@ const std::string tc(".1+.01");
 const std::string extra_flags("-repeat -games 2 -recover -tbpieces 5");
 
 std::default_random_engine generator;
-int iterations = 0;
 
-const std::string help_msg("trainer [OPTIONS]\n\n  -o: Tune the variables one by one, do this with new engines\n  -i: Total number of iterations\n  -r: Rounds per iterations, the games are double the rounds\n  -e: Dir where the engines are placed\n  -v: Dir where the values are placed\n  -t: Dir where the tb are placed\nExample: $trainer -t 20 -r 600\n\nWARNING: Ensure the dir names end with \'/\'. Call the engine \'train\'");
+const std::string help_msg("trainer [OPTIONS]\n\n  -o: Tune the variables ONE by ONE, do this with new engines\n  -c: Number of variables to tune with -o option\n  -i: Total number of iterations\n  -r: Rounds per iterations, the games are double the rounds\n  -e: Dir where the engines are placed\n  -v: Dir where the values are placed\n  -t: Dir where the tb are placed\nExample: $trainer -t 20 -r 600\n\nWARNING: Ensure the dir names end with \'/\'. Call the engine \'train\'");
 
 class Game
 {
@@ -55,7 +58,7 @@ public:
 //This is pretty basic, try somethin better like big values at the beggining
 int new_value(int v){
     float var = std::sqrt(std::abs((float)v)) / (2 + std::sqrt(iterations / 3));
-    std::normal_distribution<float> dist((float)v, std::max(var, 0.4f));
+    std::normal_distribution<float> dist((float)v, std::max(var, 0.55f));
     return std::round(dist(generator));
 }
 
@@ -119,10 +122,47 @@ void gen_new_files(){
     b.close();
 }
 
+void gen_new_files_one(){
+    std::string line;
+    std::ifstream last(values_dir + "last.txt");
+    std::vector<int> vals;
+    vals.clear();
+    if (last.is_open()){
+        while(getline(last, line)){
+            std::string::size_type pos = line.find('#');
+            std::string ns;
+            if (pos != std::string::npos)
+                ns = line.substr(0, pos);
+            else
+                ns = line;
+            if (ns.length() > 0)
+                vals.push_back(std::stoi(ns));
+        }
+        last.close();
+    }
+
+    std::ofstream a(values_dir + "A.txt");
+    std::ofstream b(values_dir + "B.txt");
+    if (!a.is_open() || !b.is_open())
+        std::runtime_error("Couldn't open A or B");
+
+    for (int i = 0; i < vals.size(); ++i){
+        if (i == curr_var){
+            int testVal = std::abs(new_value(vals[i]) - vals[i]);
+            a << vals[i] + testVal << std::endl;
+            b << vals[i] - testVal << std::endl;
+        }else{
+            a << vals[i] << std::endl;
+            b << vals[i] << std::endl;
+        }
+    }
+    a.close();
+    b.close();
+}
+
 void gen_new_last(float interp){
 
     //1 means A played better, 0 means B, 0.5 is a draw
-    iterations++;
 
     std::vector<int> v;
     std::ofstream last(values_dir + "last.txt");
@@ -203,7 +243,7 @@ void Game::play(){
 int main(const int argc, char** argv){
 
     int c;
-    while((c = getopt(argc, argv, "ohi:r:v:e:t:")) != -1)
+    while((c = getopt(argc, argv, "ohi:r:v:e:t:c:")) != -1)
     {
         switch(c)
         {
@@ -211,9 +251,9 @@ int main(const int argc, char** argv){
             std::cout << help_msg << std::endl;
             return 0;
 
-            //TODO: increment the values one by one
+            //TODO: increment the values ONE by ONE
             case 'o':
-            one = true;
+            ONE = true;
             break;
 
             case 'i':
@@ -232,6 +272,10 @@ int main(const int argc, char** argv){
             engines_dir = optarg;
             break;
 
+            case 'c':
+            var_count = std::atoi(optarg);
+            break;
+
             case 't':
             tablebases = optarg;
             break;
@@ -240,11 +284,24 @@ int main(const int argc, char** argv){
 
 
     Game g("train", "train");
-    for (int i = 0; i < ITER; ++i)
+    for (iterations = 0; iterations < ITER; ++iterations)
     {
-        std::cout << "Iter: " << i << "/" << ITER << std::endl;
-        gen_new_files();
-        g.play();
+        std::cout << "Iter: " << iterations << "/" << ITER << std::endl;
+        curr_var = 0;
+        if (!ONE)
+        {
+            gen_new_files();
+            g.play();
+        }
+        else
+        {
+            for (curr_var = 0; curr_var < var_count; ++curr_var)
+            {
+                gen_new_files_one();
+                g.play();
+                std::cout << "  Var: " << curr_var << "/" << var_count << std::endl;
+            }
+        }
     }
 
     return 0;
