@@ -10,6 +10,7 @@
 #include <random>
 #include <math.h>
 #include "unistd.h"
+
 /*
 Use:
 This is a highly specialized tool, I doubt it'll be of much help to anyone but me
@@ -29,6 +30,8 @@ std::string tablebases("-/");
 std::string values_dir("-/");
 std::string engines_dir("-/");
 
+bool one = false;
+
 const std::string concurrency("1");
 const std::string cutechess("cutechess-cli");
 const std::string tc(".1+.01");
@@ -37,7 +40,7 @@ const std::string extra_flags("-repeat -games 2 -recover -tbpieces 5");
 std::default_random_engine generator;
 int iterations = 0;
 
-const std::string help_msg("trainer [OPTIONS]\n  -i: Total number of iterations\n  -r: Rounds per iterations, the games are double the rounds\n  -e: Dir where the engines are placed\n  -v: Dir where the values are placed\n  -t: Dir where the tb are placed\nExample: $trainer -t 20 -r 600\n\nWARNING: Ensure the dir names end with \'/\'. Call the engine \'Train\'");
+const std::string help_msg("trainer [OPTIONS]\n\n  -o: Tune the variables one by one, do this with new engines\n  -i: Total number of iterations\n  -r: Rounds per iterations, the games are double the rounds\n  -e: Dir where the engines are placed\n  -v: Dir where the values are placed\n  -t: Dir where the tb are placed\nExample: $trainer -t 20 -r 600\n\nWARNING: Ensure the dir names end with \'/\'. Call the engine \'train\'");
 
 class Game
 {
@@ -51,8 +54,8 @@ public:
 
 //This is pretty basic, try somethin better like big values at the beggining
 int new_value(int v){
-    std::normal_distribution<float> dist((float)v, 
-        std::sqrt(std::abs((float)v)) / (2 + std::sqrt(iterations / 3)));
+    float var = std::sqrt(std::abs((float)v)) / (2 + std::sqrt(iterations / 3));
+    std::normal_distribution<float> dist((float)v, std::max(var, 0.4f));
     return std::round(dist(generator));
 }
 
@@ -60,12 +63,11 @@ std::string exec(const char* cmd) {
     std::array<char, 128> buffer;
     std::string result;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) {
+    if (!pipe)
         throw std::runtime_error("popen() failed!");
-    }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
         result += buffer.data();
-    }
 
     return result;
 }
@@ -88,8 +90,7 @@ void gen_new_files(){
     std::ifstream last(values_dir + "last.txt");
     std::vector<int> vals;
     vals.clear();
-    if (last.is_open())
-    {
+    if (last.is_open()){
         while(getline(last, line)){
             std::string::size_type pos = line.find('#');
             std::string ns;
@@ -109,8 +110,7 @@ void gen_new_files(){
     if (!a.is_open() || !b.is_open())
         std::runtime_error("Couldn't open A or B");
 
-    for (std::vector<int>::iterator i = vals.begin(); i != vals.end(); ++i)
-    {
+    for (std::vector<int>::iterator i = vals.begin(); i != vals.end(); ++i){
         int v = *i;
         a << new_value(v) << std::endl;
         b << new_value(v) << std::endl;
@@ -203,13 +203,18 @@ void Game::play(){
 int main(const int argc, char** argv){
 
     int c;
-    while((c = getopt(argc, argv, "hi:r:v:e:t:")) != -1)
+    while((c = getopt(argc, argv, "ohi:r:v:e:t:")) != -1)
     {
         switch(c)
         {
             case 'h':
             std::cout << help_msg << std::endl;
             return 0;
+
+            //TODO: increment the values one by one
+            case 'o':
+            one = true;
+            break;
 
             case 'i':
             ITER = std::atoi(optarg);
@@ -234,7 +239,7 @@ int main(const int argc, char** argv){
     }
 
 
-    Game g("Train", "Train");
+    Game g("train", "train");
     for (int i = 0; i < ITER; ++i)
     {
         std::cout << "Iter: " << i << "/" << ITER << std::endl;

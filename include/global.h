@@ -3,7 +3,7 @@
 #define ENGINE_AUTHOR "usr"
 #define ENGINE_NAME "NoC"
 
-#define USE_TB
+//#define USE_TB
 //#define TRAIN
 
 #define REMOVE_LSB(bb) bb &= bb - 1
@@ -44,13 +44,7 @@
 #define ODD_TILES   0xaa55aa55aa55aa55ULL
 #define EDGE        0xff818181818181ffULL
 #define EDGE_RANKS  0xff000000000000ffULL
-/*
-#define VQUEEN 950
-#define VROOK 525
-#define VBISH 335
-#define VKNIGHT 320
-#define VPAWN 100
-*/
+
 #define PLUS_MATE   999999
 #define MINS_MATE  -999999
 #define PLUS_INF   9999999

@@ -19,6 +19,7 @@ int SAFE_KING = 2; //Bonus for pawns surrounding the king
 
 //This ones aren't on use at the moment
 int TWO_BISH = 10; //Bonus for having the bishop pair
+int KNIGHT_PAWNS = 12; //Bonus for the knights when there are a lot of pawns
 int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
 int N_DOUBLED_PAWNS = -36; //Penalization for doubled pawns (proportional to the pawns in line - 1)
 int PAWN_CHAIN =  20; //Bonus for making a pawn chain
@@ -62,7 +63,7 @@ static int pawns(const Board* b);
 
 static int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp);
 static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
-static int twoBishops(void);
+static int minorPieces(void);
 static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
 static int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp);
 
@@ -110,6 +111,8 @@ int eval(const Board* b)
     evaluation += pieceActivity(b);
 
     evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
+
+    //evaluation += minorPieces(b);
 
     //evaluation += pawns(b);
 
@@ -326,7 +329,7 @@ static inline int endgameAnalysis(const Board* b)
 
 static inline int pieceActivity(const Board* b)
 {
-    int score = twoBishops();
+    int score = minorPieces();
 
     score += connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN]);
     score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[WHITE][PAWN], b->piece[BLACK][ROOK], b->piece[BLACK][PAWN]);
@@ -393,9 +396,9 @@ static inline int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uin
 
     return ROOK_OPEN_FILE * (w - b);
 }
-inline int twoBishops(void)
+inline int minorPieces(void)
 {
-    return TWO_BISH * ((wBish > 1) - (bBish > 1));
+    return TWO_BISH * ((wBish > 1) - (bBish > 1)) + (wPawn + bPawn > 10)? KNIGHT_PAWNS * (wKnight - bKnight) : 0;
 }
 
 static int pst(const Board* board, const int phase, const int color)

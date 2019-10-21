@@ -30,7 +30,12 @@
 //TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove and implement syzygy
 int main(const int argc, char** const argv)
 {
-    printf("%s uci chess engine made by %s\n", ENGINE_NAME, ENGINE_AUTHOR);
+    #ifdef NDEBUG
+    printf("%s (RELEASE) uci chess engine made by %s\n", ENGINE_NAME, ENGINE_AUTHOR);
+    #else
+    printf("%s (DEBUG) uci chess engine made by %s\n", ENGINE_NAME, ENGINE_AUTHOR);
+    #endif
+
     initMemo();
     initMagics();
 

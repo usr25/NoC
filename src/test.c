@@ -318,8 +318,8 @@ static void slowEval(void)
     black &= compMove("2R5/k7/2R5/7q/8/6P1/5PP1/6K1 b -", "h5d1", depth, 4);
 
     //Need depth >= 7
-    //white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
-    //black &= compMove("r1bqk2r/pp3ppp/2n2n2/3pp1B1/1b6/1BNP4/PPP1NPPP/R2QK2R b KQkq -", "d5d4", depth, 4);
+    white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
+    black &= compMove("r1bqk2r/pp3ppp/2n2n2/3pp1B1/1b6/1BNP4/PPP1NPPP/R2QK2R b KQkq -", "d5d4", depth, 4);
 
     depth = 10;
 

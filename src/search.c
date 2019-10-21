@@ -42,6 +42,11 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
 static inline const int marginDepth(const int depth);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
 
+
+static const inline int mate(int height)
+{
+    return PLUS_MATE + 100 - height;
+}
 /* Dertermine the type of position
  */
 static inline int rookVSKing(const Board b)
@@ -223,6 +228,8 @@ static int isInNullMove = 0; //TODO: Use a global variable to detect when the en
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
+    assert(numMoves > 0);
+    assert(rep->index >= 0 && rep->index < 128);
     if (rookVSKing(b))
     {
         Move rookM = rookMate(b);
@@ -286,7 +293,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 }
 static int pvSearch(Board b, int alpha, int beta, int depth, const int height, const int null, const uint64_t prevHash, Repetition* rep)
 {
-    assert(rep->index >= 0);
+    assert(rep->index >= 0 && rep->index < 128);
     assert(height > 0);
     assert(beta >= alpha);
     assert(b.fifty >= 0);
@@ -300,7 +307,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (canGav(b.allPieces))
     {
         int usable;
-        int gavScore = gavWDL(b, &usable) * (PLUS_MATE - 110 - height);
+        int gavScore = gavWDL(b, &usable) * (mate(height) - 20);
         if (usable)
         {
             #ifdef DEBUG
@@ -386,7 +393,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
     if (!numMoves)
-        return isInC * (MINS_MATE - 100 + height);
+        return isInC * -mate(height);
 
     const int newHeight = height + 1;
     uint64_t newHash;
@@ -677,7 +684,7 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
     {
         return insuffMat(b);
     }
-    else
+    else if (rep->index > 3)
     {
         #ifdef DEBUG
         if (isRepetition(rep, newHash)) repe++;
