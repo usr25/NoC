@@ -30,6 +30,8 @@ uint64_t pawnLanes[8];
 uint64_t wPassedPawn[64];
 uint64_t bPassedPawn[64];
 
+uint64_t king2[64];
+
 #define getKingMoves(i) kingMoves[i]
 #define getKnightMoves(i) knightMoves[i]
 
@@ -68,3 +70,5 @@ uint64_t bPassedPawn[64];
 #define getPawnLanes(i) pawnLanes[i]
 #define getWPassedPawn(i) wPassedPawn[i]
 #define getBPassedPawn(i) bPassedPawn[i]
+
+#define getKing2(i) king2[i]

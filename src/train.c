@@ -4,6 +4,9 @@
 #include "../include/global.h"
 #include "../include/train.h"
 #include "../include/board.h"
+#include "../include/moves.h"
+#include "../include/hash.h"
+#include "../include/search.h"
 #include "../include/evaluation.h"
 
 const int isNumeric(char c)

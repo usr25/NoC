@@ -329,6 +329,22 @@ const void genBPassedPawn(void)
     }
 }
 
+const void genKing2(void)
+{
+    for (int i = 0; i < 64; ++i)
+    {
+        uint64_t ks = kingMoves[i];
+        while(ks)
+        {
+            int index = LSB_INDEX(ks);
+            king2[i] |= kingMoves[index];
+            REMOVE_LSB(ks);
+        }
+        king2[i] &= ~kingMoves[i];
+        king2[i] ^= 1ULL << i;
+    }
+}
+
 const void initMemo(void)
 {
     initializePOW2();
@@ -360,4 +376,5 @@ const void initMemo(void)
     genPawnLanes();
     genWPassedPawn();
     genBPassedPawn();
+    genKing2();
 }

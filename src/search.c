@@ -432,6 +432,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     {
         if (canBreak && i > 4 && list[i].score < 116)
             break;
+        //if (depth == 1 && i > 3 && list[i].capture < 1)
+        //    break;
         //if (expSort && compMoves(&mt, &list[i]))
         //  continue;
 

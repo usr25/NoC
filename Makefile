@@ -9,7 +9,7 @@ GDIR=gav
 TRAINER=trainer.cpp
 LICHESS=~/Desktop/lichess/lichess-bot-master/engines/
 
-CFLAGS= -finline-functions -O3 -flto
+CFLAGS= -O3 -flto
 
 DEPS=$(IDIR)/*
 

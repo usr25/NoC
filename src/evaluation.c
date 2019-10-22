@@ -18,7 +18,9 @@ int ROOK_OPEN_FILE = 12; //Bonus for a rook on an open file (No same color pawns
 int SAFE_KING = 2; //Bonus for pawns surrounding the king
 
 //This ones aren't on use at the moment
-int TWO_BISH = 10; //Bonus for having the bishop pair
+int TWO_BISH = 16; //Bonus for having the bishop pair
+int N_CLOSE_TO_KING = -10; //Penalization for having enemy pieces close to our king
+int N_KING_OPEN_FILE = -10; //Penalization for having the king on a file with no same color pawns
 int KNIGHT_PAWNS = 12; //Bonus for the knights when there are a lot of pawns
 int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
 int N_DOUBLED_PAWNS = -36; //Penalization for doubled pawns (proportional to the pawns in line - 1)
@@ -60,12 +62,12 @@ static int pieceActivity(const Board* b);
 static int endgameAnalysis(const Board* b);
 static int pieceDevelopment(const Board* b);
 static int pawns(const Board* b);
+static int kingSafety(const Board* b);
 
 static int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp);
 static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
 static int minorPieces(void);
 static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
-static int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp);
 
 static int passedPawns(const uint64_t wp, const uint64_t bp);
 
@@ -109,6 +111,8 @@ int eval(const Board* b)
     evaluation += pst(b, ph, WHITE) - pst(b, ph, BLACK);
 
     evaluation += pieceActivity(b);
+
+    evaluation += kingSafety(b);
 
     evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
 
@@ -164,15 +168,6 @@ static inline void assignPC(const Board* b)
     wKnight = POPCOUNT(b->piece[WHITE][KNIGHT]), bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
 }
 
-inline int evalWithOffset(const Board* b, const int color)
-{
-    int hPiece = V_BISH + SP_MARGIN;
-    if (b->piece[color][QUEEN]) hPiece = V_QUEEN;
-    else if (b->piece[color][ROOK]) hPiece = V_ROOK;
-
-    return hPiece + eval(b);
-}
-
 static int phase(void)
 {
     const int knPh = 1;
@@ -205,6 +200,34 @@ static inline int material(void)
             +V_BISH      *(wBish     - bBish)
             +V_KNIGHT    *(wKnight   - bKnight)
             +V_PAWN      *(wPawn     - bPawn);
+}
+
+static inline int pieceActivity(const Board* b)
+{
+    int score = minorPieces();
+
+    score += connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN]);
+    score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[WHITE][PAWN], b->piece[BLACK][ROOK], b->piece[BLACK][PAWN]);
+    //score += minorPieces();
+
+    return score;
+}
+
+static inline int kingSafety(const Board* b)
+{
+    const int wk = LSB_INDEX(b->piece[WHITE][KING]);
+    const int bk = LSB_INDEX(b->piece[BLACK][KING]);
+    const uint64_t wkMoves = getKingMoves(wk);
+    const uint64_t bkMoves = getKingMoves(bk);
+    const uint64_t wPawns = b->piece[WHITE][PAWN];
+    const uint64_t bPawns = b->piece[BLACK][PAWN];
+
+    int score = SAFE_KING * (POPCOUNT(wkMoves & wPawns) - POPCOUNT(bkMoves & bPawns));
+    //score += N_KING_OPEN_FILE * (((getUpMoves(wk) & b->piece[WHITE][PAWN]) == 0) - ((getDownMoves(bk) & b->piece[BLACK][PAWN]) == 0));
+    //score += 2 * N_CLOSE_TO_KING * (POPCOUNT(wkMoves & (bPawns ^ b->color[BLACK])) - POPCOUNT(bkMoves & (wPawns ^ b->color[WHITE])));
+    //score += N_CLOSE_TO_KING * (POPCOUNT(getKing2(wk) & (bPawns ^ b->color[BLACK])) - POPCOUNT(getKing2(bk) & (wPawns ^ b->color[WHITE])));
+
+    return score;
 }
 
 static int passedPawns(const uint64_t wp, const uint64_t bp)
@@ -313,42 +336,11 @@ static inline int pawns(const Board* b)
     return final;
 }
 
-static inline int endgameAnalysis(const Board* b)
-{
-    const int wAvg = b->piece[WHITE][PAWN] ? 
-    (LSB_INDEX(b->piece[WHITE][PAWN]) + MSB_INDEX(b->piece[WHITE][PAWN])) >> 1 
-    : 0;
-    const int bAvg = b->piece[BLACK][PAWN] ? 
-    (LSB_INDEX(b->piece[BLACK][PAWN]) + MSB_INDEX(b->piece[BLACK][PAWN])) >> 1 
-    : 63;
-
-    return 
-        E_ADVANCED_KING * ((LSB_INDEX(b->piece[WHITE][KING]) >> 3) - ((63 - LSB_INDEX(b->piece[BLACK][KING])) >> 3))
-        +E_ADVANCED_PAWN * ((wAvg >> 3) - ((63 - bAvg) >> 3));
-}
-
-static inline int pieceActivity(const Board* b)
-{
-    int score = minorPieces();
-
-    score += connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN]);
-    score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[WHITE][PAWN], b->piece[BLACK][ROOK], b->piece[BLACK][PAWN]);
-    score += safeKing(b->piece[WHITE][KING], b->piece[BLACK][KING], b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
-    //score += bishopMobility(b->piece[WHITE][BISH], b->piece[BLACK][BISH], b->allPieces);
-
-    return score;
-}
 
 static inline int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all)
 {
     return BISHOP_MOBILITY * ((POPCOUNT(getBishMagicMoves(MSB_INDEX(wh), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(wh), all))) 
                              -(POPCOUNT(getBishMagicMoves(MSB_INDEX(bl), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(bl), all))));
-}
-
-static inline int safeKing(const uint64_t wk, const uint64_t bk, const uint64_t wp, const uint64_t bp)
-{
-    return SAFE_KING *  (POPCOUNT(getKingMoves(LSB_INDEX(wk)) & wp)
-                        -POPCOUNT(getKingMoves(LSB_INDEX(bk)) & bp));
 }
 
 static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all)
