@@ -151,7 +151,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     int alpha = MINS_INF, beta = PLUS_INF;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = 60;// + depth;
+        delta = 100;// + depth;
         //delta = max(25, delta * .8f);
         if (depth >= 6)
         {
@@ -430,10 +430,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if (canBreak && i > 4 && list[i].score < 116)
+        if (canBreak && i > 4 && list[i].score < 90 && (i > 3 + depth || (i > 3 && !pv)))
             break;
-        //if (depth == 1 && i > 3 && list[i].capture < 1)
-        //    break;
         //if (expSort && compMoves(&mt, &list[i]))
         //  continue;
 
@@ -692,7 +690,7 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
         if (isRepetition(rep, newHash)) repe++;
         #endif
 
-        return isRepetition(rep, newHash) || isThreeRep(rep, newHash);
+        return rep->index > 101 || isRepetition(rep, newHash) || isThreeRep(rep, newHash);
     }
 
     return 0;
