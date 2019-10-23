@@ -108,7 +108,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     nodes = 0;
     assert(timeToMove >= 0);
     assert(targetDepth >= 0);
-    assert(rep.index >= 0);
+    assert(rep.index >= 0 && rep.index <= 128);
     /* All the time management */
     calledTiming = (targetDepth == 0)? 1 : 0;
     targetDepth  = (targetDepth == 0)? 99 : targetDepth;
@@ -122,7 +122,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
 
-    //It there is only one possible move, return it
+    //If there is only one possible move, return it
     if (numMoves == 1)
         return list[0];
 
@@ -130,7 +130,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     //If there is little time, caching can give problems
     if (canGav(b.allPieces))
     {
-        int tbAv; //This is to ensure that the engine still works without tb
+        int tbAv;
         Move tb = tableLookUp(b, &tbAv);
         if (tbAv)
         {
@@ -186,19 +186,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             else
                 break;
         }
-        /*
-        if (calledTiming && elapsed > timeToMove)
-        {
-            for (int i = 0; i < numMoves - 1; ++i)
-            {
-                if (compMoves(&temp, &list[i]))
-                {
-                    if (list[i+1].score != 0)
-                        best = temp;
-                    break;
-                }
-            }
-        }*/
         if (calledTiming && elapsed > timeToMove)
             break;
 
@@ -230,20 +217,6 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     assert(depth > 0);
     assert(numMoves > 0);
     assert(rep.index >= 0 && rep.index < 128);
-    if (rookVSKing(b))
-    {
-        Move rookM = rookMate(b);
-        for (int i = 0; i < numMoves; ++i)
-        {
-            if (compMoves(&list[i], &rookM) && list[i].piece == rookM.piece)
-            {
-                list[i].score = PLUS_MATE + 10;
-                return rookM;
-            }
-            //else
-                //printf("ROOK MATE FAIL");
-        }
-    }
 
     History h;
     Move currBest = list[0];
@@ -253,6 +226,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     for (int i = 0; i < numMoves; ++i)
     {
         percentage = i / (double) numMoves;
+        assert(percentage >= 0 && percentage <= 1.1);
         makeMove(&b, list[i], &h);
         newHash = makeMoveHash(hash, &b, list[i], h);
         if (insuffMat(&b) || isThreeRep(&rep, newHash))
@@ -578,8 +552,8 @@ static int qsearch(Board b, int alpha, const int beta)
  */
 static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
 {
-    assert(depth > 0);
-    //assert(beta >= alpha);
+    assert(depth > 0 && depth < 10);
+    assert(beta >= alpha);
 
     uint64_t newHash;
     int val;

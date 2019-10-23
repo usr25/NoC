@@ -163,23 +163,20 @@ static void best_time(Board b, char* beg, Repetition* rep)
         clock_t calcTime = 0;
         if (!movetime)
         {
-            clock_t remTime = b.turn? wtime : btime;
-            clock_t increment = b.turn? winc : binc;
+            clock_t remTime   = b.turn? wtime : btime;
+            clock_t increment = b.turn? winc  : binc;
             clock_t timeToMove;
-            if (movestogo || increment)
-            {
-                if (movestogo && movestogo < 8)
-                    timeToMove = min(remTime >> 1, remTime / (movestogo + 12) + (clock_t)((double)increment * .4));
-                else
-                    timeToMove = min(remTime >> 2, remTime / 27 + (clock_t)((double)increment * .95));
-            }
+
+            if (movestogo)
+                timeToMove = min(remTime / 5, remTime / (movestogo + 6) + (clock_t)((double)increment * .4));
+            else if (increment)
+                timeToMove = min(remTime / 5, remTime / 23 + (clock_t)((double)increment * .95));
             else
-            {
                 timeToMove = remTime / 41;
-            }
+
             calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
         }
-        else
+        else //The time is fixed
             calcTime = (movetime * CLOCKS_PER_SEC) / 1000;
 
         best = bestTime(b, calcTime, *rep, 0);
@@ -249,6 +246,7 @@ static Board gen_def(char* beg, Repetition* rep)
     Board b = defaultBoard();
     uint64_t startHash = hashPosition(&b);
 
+    rep->index = 0;
     rep->hashTable[rep->index++] = startHash;
 
     if (strncmp(beg, "moves", 5) == 0)
@@ -266,6 +264,7 @@ static Board gen_(char* beg, Repetition* rep)
     Board b = genFromFen(beg, &counter);
     uint64_t startHash = hashPosition(&b);
 
+    rep->index = 0;
     rep->hashTable[rep->index++] = startHash;
 
     beg += counter + 1;
@@ -315,5 +314,6 @@ static void help_(void)
     fprintf(stdout, "perft 6\n");
     fprintf(stdout, "go depth 7\n");
     fprintf(stdout, "-====----------------====-\n");
+
     fflush (stdout);
 }

@@ -39,6 +39,8 @@ std::string engines_dir("-/");
 const std::string concurrency("1");
 const std::string cutechess("cutechess-cli");
 const std::string tc(".1+.01");
+const std::string resign("-resign movecount=10 score=700");
+const std::string sprt("-sprt elo0=5 elo1=5 alpha=0.05 beta=0.05");
 const std::string extra_flags("-repeat -games 2 -recover -tbpieces 5");
 
 std::default_random_engine generator;
@@ -217,6 +219,8 @@ Game::Game (const std::string _a, const std::string _b){
                     << " -rounds " << rounds
                     << " -tb " << tablebases
                     << " -concurrency " << concurrency
+                    << " " << resign
+                    //<< " " << sprt
                     << " " << extra_flags
                     << " | tail -20";
     cmd = command_stream.str();
@@ -231,13 +235,13 @@ void Game::play(){
     std::string result = run(cmd);;
     float res = analyze_results(result);
 
-    //If the elo diff is more than 50 the engine is considered superior and all values are unchanged
-    if (res > 50)
+    //If the elo diff is more than 30 the engine is considered superior and all values are unchanged
+    if (res > 30)
         gen_new_last(1);
-    else if (res < -50)
+    else if (res < -30)
         gen_new_last(0);
     else
-        gen_new_last((res / 100) + .5f);
+        gen_new_last((res / 60) + .5f);
 }
 
 int main(const int argc, char** argv){
@@ -251,7 +255,6 @@ int main(const int argc, char** argv){
             std::cout << help_msg << std::endl;
             return 0;
 
-            //TODO: increment the values ONE by ONE
             case 'o':
             ONE = true;
             break;
