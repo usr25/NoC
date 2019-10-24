@@ -20,6 +20,8 @@ typedef struct
     int value;
 } ReadO;
 
+/* Parses all the lines in the file to easily assign the values to the variables
+ */
 ReadO getNext(FILE* fp)
 {
     char* line = NULL;
@@ -62,9 +64,15 @@ void initTrain(const char* path)
     if ((r = getNext(fp)).successful) V_BISH = r.value;
     if ((r = getNext(fp)).successful) V_KNIGHT = r.value;
     if ((r = getNext(fp)).successful) V_PASSEDP = r.value;
+
     if ((r = getNext(fp)).successful) CONNECTED_ROOKS = r.value;
     if ((r = getNext(fp)).successful) ROOK_OPEN_FILE = r.value;
     if ((r = getNext(fp)).successful) SAFE_KING = r.value;
+
+    if ((r = getNext(fp)).successful) TWO_BISH = r.value;
+    if ((r = getNext(fp)).successful) KNIGHT_PAWNS = r.value;
+    if ((r = getNext(fp)).successful) N_KING_OPEN_FILE = r.value;
+    if ((r = getNext(fp)).successful) N_CLOSE_TO_KING = r.value;
 
     fclose(fp);
     if (line)

@@ -16,12 +16,12 @@ int V_PASSEDP = 116; //Value for a passed pawn right before promotion
 int CONNECTED_ROOKS = 29; //Bonus for having connected rooks
 int ROOK_OPEN_FILE = 12; //Bonus for a rook on an open file (No same color pawns)
 int SAFE_KING = 2; //Bonus for pawns surrounding the king
+int TWO_BISH = 16; //Bonus for having the bishop pair
+int KNIGHT_PAWNS = 12; //Bonus for the knights when there are a lot of pawns
+int N_KING_OPEN_FILE = -10; //Penalization for having the king on a file with no same color pawns
+int N_CLOSE_TO_KING = -10; //Penalization for having enemy pieces close to our king
 
 //This ones aren't on use at the moment
-int TWO_BISH = 16; //Bonus for having the bishop pair
-int N_CLOSE_TO_KING = -10; //Penalization for having enemy pieces close to our king
-int N_KING_OPEN_FILE = -10; //Penalization for having the king on a file with no same color pawns
-int KNIGHT_PAWNS = 12; //Bonus for the knights when there are a lot of pawns
 int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
 int N_DOUBLED_PAWNS = -36; //Penalization for doubled pawns (proportional to the pawns in line - 1)
 int PAWN_CHAIN =  20; //Bonus for making a pawn chain
@@ -34,13 +34,10 @@ int N_PIECE_SLOW_DEV = -10; //Penalization for keeping the pieces in the back-ra
 int STABLE_KING = 25; //Bonus for king in e1/8 or castled
 int PASSED_PAWN = 20; //Bonus for passed pawns
 int N_ISOLATED_PAWN = -10; //Penalization for isolated pawns
-int N_TARGET_PAWN = -7; //Penalization for a pawn that cant be protected by another pawn
-int CLEAN_PAWN = 20; //Bonus for a pawn that doesnt have any pieces in front, only if it is on the opp half
+int N_TARGET_PAWN = -7; //Penalization for a pawn that can't be protected by another pawn
+int CLEAN_PAWN = 20; //Bonus for a (passed?) pawn that doesn't have any pieces in the sqr ahead, only if it is on the opp half
 
-#define SP_MARGIN 50
 
-//TODO: Turn the defines into varibles for easier autotuning
-//TODO: Bonus for passed pawns depending on where they are on the board passPArr[6] = {1, 5, 15, 75, 125, 225}
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -115,8 +112,6 @@ int eval(const Board* b)
     evaluation += kingSafety(b);
 
     evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
-
-    //evaluation += minorPieces(b);
 
     //evaluation += pawns(b);
 
@@ -208,7 +203,6 @@ static inline int pieceActivity(const Board* b)
 
     score += connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN]);
     score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[WHITE][PAWN], b->piece[BLACK][ROOK], b->piece[BLACK][PAWN]);
-    //score += minorPieces();
 
     return score;
 }
@@ -429,11 +423,4 @@ static int pst(const Board* board, const int phase, const int color)
     }
 
     return taperedEval(phase, opening, endgame);
-}
-
-int testEval(char* beg)
-{
-    int a;
-    Board b = genFromFen(beg, &a);
-    return eval(&b);
 }

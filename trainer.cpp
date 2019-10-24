@@ -32,8 +32,7 @@ int curr_var = 0;
 std::string rounds("1");
 
 std::string tablebases("-/");
-std::string values_dir("-/");
-std::string engines_dir("-/");
+std::string dir("-/");
 
 
 const std::string concurrency("1");
@@ -45,7 +44,7 @@ const std::string extra_flags("-repeat -games 2 -recover -tbpieces 5");
 
 std::default_random_engine generator;
 
-const std::string help_msg("trainer [OPTIONS]\n\n  -o: Tune the variables ONE by ONE, do this with new engines\n  -c: Number of variables to tune with -o option\n  -i: Total number of iterations\n  -r: Rounds per iterations, the games are double the rounds\n  -e: Dir where the engines are placed\n  -v: Dir where the values are placed\n  -t: Dir where the tb are placed\nExample: $trainer -t 20 -r 600\n\nWARNING: Ensure the dir names end with \'/\'. Call the engine \'train\'");
+const std::string help_msg("trainer [OPTIONS]\n\n  -o: Tune the variables ONE by ONE, do this with new engines to find a better starting point\n  -c: Number of variables to tune with -o option\n  -i: Total number of iterations\n  -r: Rounds per iteration, the number of games is double the rounds\n  -d: Dir where the engines and value files are placed\n  -t: Dir where the tb are placed\nExample: $trainer -o -c 20 -r 700\n\nWARNING: Ensure the dir names end with \'/\'. Call the engine \'train\'");
 
 class Game
 {
@@ -57,13 +56,17 @@ public:
     void play();
 };
 
-//This is pretty basic, try somethin better like big values at the beggining
+/* This is pretty basic but functional enough, it simulates annealing generating big values at the beggining
+ * and smaller ones towards the latter iterations
+ */
 int new_value(int v){
-    float var = std::sqrt(std::abs((float)v)) / (2 + std::sqrt(iterations / 3));
+    float var = std::sqrt(std::abs((float)v)) / (1.5 + std::sqrt(iterations / 3));
     std::normal_distribution<float> dist((float)v, std::max(var, 0.55f));
     return std::round(dist(generator));
 }
 
+/* Call to cutechess
+ */
 std::string exec(const char* cmd) {
     std::array<char, 128> buffer;
     std::string result;
@@ -77,6 +80,8 @@ std::string exec(const char* cmd) {
     return result;
 }
 
+/* Runs the command and parses the output to get the line which mentions the elo difference
+ */
 std::string run(std::string cmd){
     std::string out = exec(cmd.c_str());
     std::stringstream stream(out);
@@ -90,9 +95,11 @@ std::string run(std::string cmd){
     }
 }
 
+/* Generates the new value files to evaluate (A, B)
+ */
 void gen_new_files(){
     std::string line;
-    std::ifstream last(values_dir + "last.txt");
+    std::ifstream last(dir + "last.txt");
     std::vector<int> vals;
     vals.clear();
     if (last.is_open()){
@@ -110,8 +117,8 @@ void gen_new_files(){
         last.close();
     }
 
-    std::ofstream a(values_dir + "A.txt");
-    std::ofstream b(values_dir + "B.txt");
+    std::ofstream a(dir + "A.txt");
+    std::ofstream b(dir + "B.txt");
     if (!a.is_open() || !b.is_open())
         std::runtime_error("Couldn't open A or B");
 
@@ -124,9 +131,11 @@ void gen_new_files(){
     b.close();
 }
 
+/* Generates the new files but on ONE variable mode
+ */
 void gen_new_files_one(){
     std::string line;
-    std::ifstream last(values_dir + "last.txt");
+    std::ifstream last(dir + "last.txt");
     std::vector<int> vals;
     vals.clear();
     if (last.is_open()){
@@ -143,14 +152,15 @@ void gen_new_files_one(){
         last.close();
     }
 
-    std::ofstream a(values_dir + "A.txt");
-    std::ofstream b(values_dir + "B.txt");
+    std::ofstream a(dir + "A.txt");
+    std::ofstream b(dir + "B.txt");
     if (!a.is_open() || !b.is_open())
         std::runtime_error("Couldn't open A or B");
 
     for (int i = 0; i < vals.size(); ++i){
         if (i == curr_var){
             int testVal = std::abs(new_value(vals[i]) - vals[i]);
+            testVal = std::max(1, testVal);
             a << vals[i] + testVal << std::endl;
             b << vals[i] - testVal << std::endl;
         }else{
@@ -162,14 +172,15 @@ void gen_new_files_one(){
     b.close();
 }
 
+/* Merges A.txt and B.txt into last.txt based on the result
+ */
 void gen_new_last(float interp){
 
     //1 means A played better, 0 means B, 0.5 is a draw
-
     std::vector<int> v;
-    std::ofstream last(values_dir + "last.txt");
-    std::ifstream a(values_dir + "A.txt");
-    std::ifstream b(values_dir + "B.txt");
+    std::ofstream last(dir + "last.txt");
+    std::ifstream a(dir + "A.txt");
+    std::ifstream b(dir + "B.txt");
 
     if (!last.is_open() || ! a.is_open() || !b.is_open())
         std::runtime_error("Couldn't open a file");
@@ -186,7 +197,10 @@ void gen_new_last(float interp){
     b.close();
 }
 
+/* Parses the string with the information on the elo diff and returns the difference
+ */
 float analyze_results(std::string s){
+
     std::cout << s << std::endl;
     std::string ns = s.erase(0, 16);
     std::string::size_type pos = ns.find('+');
@@ -207,14 +221,16 @@ float analyze_results(std::string s){
     return num;
 }
 
+/* Make a new Game object
+ */
 Game::Game (const std::string _a, const std::string _b){
     a = _a;
     b = _b;
 
     std::stringstream command_stream;
     command_stream  << cutechess
-                    << " -engine cmd=\'" << engines_dir << a << " " << values_dir << "A.txt\'"
-                    << " -engine cmd=\'" << engines_dir << b << " " << values_dir << "B.txt\'"
+                    << " -engine cmd=\'" << dir << a << " " << dir << "A.txt\'"
+                    << " -engine cmd=\'" << dir << b << " " << dir << "B.txt\'"
                     << " -each proto=uci tc=" << tc
                     << " -rounds " << rounds
                     << " -tb " << tablebases
@@ -236,56 +252,20 @@ void Game::play(){
     float res = analyze_results(result);
 
     //If the elo diff is more than 30 the engine is considered superior and all values are unchanged
-    if (res > 30)
+    if (res >= 25)
         gen_new_last(1);
-    else if (res < -30)
+    else if (res <= -25)
         gen_new_last(0);
     else
-        gen_new_last((res / 60) + .5f);
+        gen_new_last((res / 50) + .5f);
+    //This interpolation method may cause problems with small numbers due to the rounding (the value won't be changed unless the diff is too big)
+    //Another possible interpolation is sqrt(abs(x)), since it pushes values away from 0
+    //The cubic root also seems like a good option, but it grows too fast near 0
 }
 
-int main(const int argc, char** argv){
-
-    int c;
-    while((c = getopt(argc, argv, "ohi:r:v:e:t:c:")) != -1)
-    {
-        switch(c)
-        {
-            case 'h':
-            std::cout << help_msg << std::endl;
-            return 0;
-
-            case 'o':
-            ONE = true;
-            break;
-
-            case 'i':
-            ITER = std::atoi(optarg);
-            break;
-
-            case 'r':
-            rounds = optarg;
-            break;
-
-            case 'v':
-            values_dir = optarg;
-            break;
-
-            case 'e':
-            engines_dir = optarg;
-            break;
-
-            case 'c':
-            var_count = std::atoi(optarg);
-            break;
-
-            case 't':
-            tablebases = optarg;
-            break;
-        }
-    }
-
-
+/* Main loop
+ */
+void loop(){
     Game g("train", "train");
     for (iterations = 0; iterations < ITER; ++iterations)
     {
@@ -306,6 +286,46 @@ int main(const int argc, char** argv){
             }
         }
     }
+}
+
+int main(const int argc, char** argv){
+
+    int c;
+    while((c = getopt(argc, argv, "ohi:r:d:t:c:")) != -1)
+    {
+        switch(c)
+        {
+            case 'h':
+            std::cout << help_msg << std::endl;
+            return 0;
+
+            case 'o':
+            ONE = true;
+            break;
+
+            case 'i':
+            ITER = std::atoi(optarg);
+            break;
+
+            case 'r':
+            rounds = optarg;
+            break;
+
+            case 'd':
+            dir = optarg;
+            break;
+
+            case 'c':
+            var_count = std::atoi(optarg);
+            break;
+
+            case 't':
+            tablebases = optarg;
+            break;
+        }
+    }
+
+    loop();
 
     return 0;
 }
