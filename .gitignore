@@ -1,11 +1,13 @@
 *.o
 *.d
 *.fen
+*.pgn
 *.out
+*.csv
+_*
 /obj
 usr
 DEV
-_*
 [Nn][Oo][Cc]
 [Mm]ain*
 [Rr]elease*

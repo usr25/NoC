@@ -1,1 +1,2 @@
-void initTrain(const char* path);
+void readValues(const char* path);
+void txlTrain(void);

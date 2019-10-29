@@ -34,7 +34,6 @@
 
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
 __attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, const int height, int null, const uint64_t prevHash, Repetition* rep);
-__attribute__((hot)) static int qsearch(Board b, int alpha, const int beta);
 
 static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep);
 static Move tableLookUp(Board b, int* tbAv);
@@ -501,7 +500,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     return best;
 }
 
-static int qsearch(Board b, int alpha, const int beta)
+int qsearch(Board b, int alpha, const int beta)
 {
     assert(beta >= alpha);
     #ifdef DEBUG
@@ -528,7 +527,7 @@ static int qsearch(Board b, int alpha, const int beta)
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if ((list[i].score + score + 145 <= alpha) || list[i].score < 69)
+        if (i > 2 && list[i].score < 10 && score + 145 <= alpha)
             break;
 
         makeMove(&b, list[i], &h);
@@ -545,6 +544,7 @@ static int qsearch(Board b, int alpha, const int beta)
 
         undoMove(&b, list[i], &h);
     }
+
     return alpha;
 }
 
