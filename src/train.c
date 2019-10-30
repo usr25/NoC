@@ -12,7 +12,7 @@
 
 #define NUM_VARS 12
 #define NUM_POS 1000 //To count the number of positions run $ wc -l /../fen.csv
-
+#define LIMIT 1200 //To ensure that no value gets too high
 
 typedef struct
 {
@@ -61,9 +61,6 @@ void readValues(const char* path)
     sprintf(saveFile, "%s/opt.txt", path);
 
     FILE* fp;
-    char* line = NULL;
-    size_t len = 0;
-    ssize_t read;
 
     fp = fopen(valFile, "r");
     if (fp == NULL)
@@ -83,8 +80,6 @@ void readValues(const char* path)
     setArray(vals);
 
     fclose(fp);
-    if (line)
-        free(line);
 }
 
 void txlTrain(void)
@@ -109,6 +104,8 @@ static ReadInt getNext(FILE* fp)
             r.value = atoi(line);
         }
     }
+
+    if (line) free(line);
 
     return r;
 }
@@ -144,12 +141,11 @@ static void saveArray(const int* arr)
         printf("[-] Error opening \'%s\' as w\n", saveFile);
         exit(EXIT_FAILURE);
     }
-    char numAsStr[6];
+    char numAsStr[7];
     for (int i = 0; i < NUM_VARS; ++i)
     {
-        sprintf(numAsStr, "%d", arr[i]);
+        sprintf(numAsStr, "%d\n", arr[i]);
         fputs(numAsStr, fp);
-        fputc('\n', fp);
     }
     fclose(fp);
 }
@@ -212,6 +208,7 @@ static void loadFensIntoMem(void)
     }
 
     fclose(fp);
+    if (line) free(line);
 }
 
 static double error(const int* arr)
@@ -248,7 +245,7 @@ static void optimize(void)
     double bestVal = error(vals);
     int improved = 1, iter = 0;
 
-    printf("Initial Error: %.10f\n", bestVal);
+    printf("Init E: %.12f\n", bestVal);
 
 
     while(improved)
@@ -257,6 +254,7 @@ static void optimize(void)
         improved = 0;
         for (int var = 0; var < NUM_VARS; ++var)
         {
+            if (vals[var] >= LIMIT || vals[var] <= -LIMIT) continue;
             vals[var]++;
             double newVal = error(vals);
             if (newVal < bestVal)
@@ -278,9 +276,11 @@ static void optimize(void)
             }
         }
 
-        if ((iter & 15) == 0) //Output the error and save the vals every 16 iters
+        //Output the error and save the vals at a constant rate,
+        //maybe change this as to depend on the error diff
+        if (iter % 11 == 0)
         {
-            printf("E: %.10f\n", bestVal);
+            printf("E: %.12f\n", bestVal);
             saveArray(vals);
         }
     }
