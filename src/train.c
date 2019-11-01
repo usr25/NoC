@@ -14,7 +14,7 @@
 #define NUM_THR 2 //Number of threads
 #define NUM_VARS 12
 #define NUM_POS 1000 //To count the number of positions run $ wc -l /../fen.csv
-#define LIMIT 1200 //To ensure that no value gets too high
+#define VAR_LIMIT 1200 //To ensure that no value gets too high
 
 typedef struct
 {
@@ -35,6 +35,8 @@ char fenFile[200];  //File with the fens and results
 char saveFile[200]; //File where the optimum values will be placed
 char valFile[200];  //File that contains the initial values
 
+const int limit = NUM_POS / NUM_THR;
+
 FenResult positions[NUM_POS]; //Array that holds the fens+results in memory, this is much faster than reading from the hard drive
 
 static ReadInt getNext(FILE* fp);
@@ -51,7 +53,7 @@ static const int isNumeric(char c)
 
 static const double sigmoid(const double v)
 {
-    return 1.0 / (1.0 + exp(-v * 0.0069077)); //This factor is ln(10) * 1.2 / 400
+    return 1.0 / (1.0 + exp(-v * 0.00518078)); //This factor is ln(10) * .85 / 400
 }
 
 /* Reads all the info from path and parses the values that will be used
@@ -230,10 +232,10 @@ static void* mthError(void* var)
 
     double localAcc = 0;
     Board b;
-    for (int i = 0; i < NUM_POS / NUM_THR; ++i)
+    for (int i = 0; i < limit; ++i)
     {
         b = genFromFen(positions[NUM_THR*i+threadOffset].fen, &_ignore);
-        qv = qsearch(b, MINS_INF, PLUS_INF);
+        qv = qsearch(b, MINS_INF, PLUS_INF, 7);
         adjustedQV = b.turn? qv : -qv;
         error = positions[NUM_THR*i+threadOffset].result - sigmoid(adjustedQV);
         localAcc += error * error;
@@ -282,36 +284,40 @@ static void optimize(void)
         improved = 0;
         for (int var = 0; var < NUM_VARS; ++var)
         {
-            if (vals[var] >= LIMIT || vals[var] <= -LIMIT) continue;
+            if (vals[var] >= VAR_LIMIT || vals[var] <= -VAR_LIMIT) continue;
+
+            int best = vals[var];
             vals[var]++;
             double newVal = error();
 
-            if (newVal < bestVal)
+            while (newVal < bestVal)
             {
                 improved = 1;
+                best = vals[var];
                 bestVal = newVal;
+                vals[var]++;
+                newVal = error();
             }
-            else
+            if(!improved)
             {
                 vals[var] -= 2;
                 newVal = error();
-                if (newVal < bestVal)
+                while(newVal < bestVal)
                 {
                     improved = 1;
                     bestVal = newVal;
+                    best = vals[var];
+                    vals[var]--;
+                    newVal = error();
                 }
-                else //Reset the variable if nothing improves
-                    vals[var]++;
             }
+
+            vals[var] = best;
         }
 
-        //Output the error and save the vals at a constant rate,
-        //maybe change this as to depend on the error diff
-        if (iter % 3 == 0)
-        {
-            printf("E: %.12f\n", bestVal);
-            saveArray(vals);
-        }
+        //Output the error and save the vals
+        printf("E: %.12f\n", bestVal);
+        saveArray(vals);
     }
 
     saveArray(vals);

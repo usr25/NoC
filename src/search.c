@@ -302,7 +302,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (isInC)
         depth++;
     else if (depth == 0)
-        return qsearch(b, alpha, beta);
+        return qsearch(b, alpha, beta, -1);
 
     int val;
     Move bestM = NO_MOVE;
@@ -500,7 +500,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     return best;
 }
 
-int qsearch(Board b, int alpha, const int beta)
+int qsearch(Board b, int alpha, const int beta, const int d)
 {
     assert(beta >= alpha);
     #ifdef DEBUG
@@ -514,6 +514,9 @@ int qsearch(Board b, int alpha, const int beta)
     else if (score > alpha)
         alpha = score;
     else if (score + V_QUEEN <= alpha)
+        return alpha;
+
+    if (d == 0)
         return alpha;
 
     Move list[NMOVES];
@@ -535,7 +538,7 @@ int qsearch(Board b, int alpha, const int beta)
         if (insuffMat(&b)) //No need to check for 3 fold rep
             val = 0;
         else
-            val = -qsearch(b, -beta, -alpha);
+            val = -qsearch(b, -beta, -alpha, d - 1 /*+ (list[i].capture < 3)*/);
 
         if (val >= beta)
             return beta;

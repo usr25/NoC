@@ -69,8 +69,6 @@ static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t a
 static int passedPawns(const uint64_t wp, const uint64_t bp);
 
 static int pst(const Board* board, const int phase, const int color);
-//TO implement:
-static int knightCoordination(void); //Two knights side by side are better
 
 /* TODO: Make the pawns bitboards as global to avoid passing too many arguments */
 static int wPawn, bPawn;
@@ -114,8 +112,6 @@ int eval(const Board* b)
     evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
 
     //evaluation += pawns(b);
-
-    //evaluation += pieceDevelopment(b);
 
     assert(evaluation < PLUS_MATE && evaluation > MINS_MATE);
     return b->turn? evaluation : -evaluation;
@@ -219,7 +215,7 @@ static inline int kingSafety(const Board* b)
     int score = SAFE_KING * (POPCOUNT(wkMoves & wPawns) - POPCOUNT(bkMoves & bPawns));
     //score += N_KING_OPEN_FILE * (((getUpMoves(wk) & b->piece[WHITE][PAWN]) == 0) - ((getDownMoves(bk) & b->piece[BLACK][PAWN]) == 0));
     //score += 2 * N_CLOSE_TO_KING * (POPCOUNT(wkMoves & (bPawns ^ b->color[BLACK])) - POPCOUNT(bkMoves & (wPawns ^ b->color[WHITE])));
-    //score += N_CLOSE_TO_KING * (POPCOUNT(getKing2(wk) & (bPawns ^ b->color[BLACK])) - POPCOUNT(getKing2(bk) & (wPawns ^ b->color[WHITE])));
+    //score += N_CLOSE_TO_KING * (POPCOUNT(getKing2(wk) & b->color[BLACK]) - POPCOUNT(getKing2(bk) & b->color[WHITE]));
 
     return score;
 }
@@ -228,8 +224,8 @@ static int passedPawns(const uint64_t wp, const uint64_t bp)
 {
     int lsb = 0, accPawn = 0;
     uint64_t tempW = wp & 0xffffffff00000000, tempB = bp & 0xffffffff;
-    uint64_t wAtt = ((wp << 9) & 0xfefefefefefefefe) | ((wp << 7) & 0x7f7f7f7f7f7f7f7f);
-    uint64_t bAtt = ((bp >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bp >> 7) & 0xfefefefefefefefe);
+    const uint64_t wAtt = ((wp << 9) & 0xfefefefefefefefe) | ((wp << 7) & 0x7f7f7f7f7f7f7f7f);
+    const uint64_t bAtt = ((bp >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bp >> 7) & 0xfefefefefefefefe);
     int isProtected;
     while(tempW)
     {
@@ -253,15 +249,6 @@ static int passedPawns(const uint64_t wp, const uint64_t bp)
     }
 
     return accPawn;
-}
-
-//TODO?: Discriminate so that it is not necessary to develop both sides as to castle faster
-//TODO: Disable piece_slow_dev if all the pieces have already moved or if it is the middlegame
-static inline int pieceDevelopment(const Board* b)
-{
-    return 
-         N_PIECE_SLOW_DEV * (POPCOUNT(0x66ULL & b->color[WHITE]) - POPCOUNT(0x6600000000000000ULL & b->color[BLACK]))
-        +STABLE_KING * (((0x6b & b->piece[WHITE][KING]) != 0) - ((0x6b00000000000000 & b->piece[BLACK][KING]) != 0));
 }
 
 inline uint64_t shiftSideways(const uint64_t bb)
@@ -323,18 +310,11 @@ static inline int pawns(const Board* b)
     int final = PAWN_CHAIN * (POPCOUNT(wPawnBB & attW) - POPCOUNT(bPawnBB & attB));
     final += PAWN_PROTECTION * (POPCOUNT(attW & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
     final += N_DOUBLED_PAWNS * (POPCOUNT(wPawnBB & (wPawnBB * 0x10100)) - POPCOUNT(bPawn & (bPawnBB >> 8 | bPawnBB >> 16)));
-    //final += ATTACKED_BY_PAWN * (POPCOUNT(attW & b->color[BLACK]) - POPCOUNT(attB & b->color[WHITE]));
-    //final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b->color[BLACK]) - POPCOUNT((attB >> 8) & b->color[WHITE]));
+    final += ATTACKED_BY_PAWN * (POPCOUNT(attW & b->color[BLACK]) - POPCOUNT(attB & b->color[WHITE]));
+    final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b->color[BLACK]) - POPCOUNT((attB >> 8) & b->color[WHITE]));
     final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB);// + N_TARGET_PAWN * (targW - targB);
 
     return final;
-}
-
-
-static inline int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all)
-{
-    return BISHOP_MOBILITY * ((POPCOUNT(getBishMagicMoves(MSB_INDEX(wh), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(wh), all))) 
-                             -(POPCOUNT(getBishMagicMoves(MSB_INDEX(bl), all)) + POPCOUNT(getBishMagicMoves(LSB_INDEX(bl), all))));
 }
 
 static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all)
@@ -384,7 +364,7 @@ static inline int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uin
 }
 inline int minorPieces(void)
 {
-    return TWO_BISH * ((wBish > 1) - (bBish > 1)) + (wPawn + bPawn > 10)? KNIGHT_PAWNS * (wKnight - bKnight) : 0;
+    return TWO_BISH * ((wBish > 1) - (bBish > 1)) + ((wPawn + bPawn > 10)? KNIGHT_PAWNS * (wKnight - bKnight) : 0);
 }
 
 static int pst(const Board* board, const int phase, const int color)
@@ -409,7 +389,7 @@ static int pst(const Board* board, const int phase, const int color)
 
     int opening = 0, endgame = 0;
 
-    for (int piece = PAWN; piece >= KING; piece--)
+    for (int piece = PAWN; piece >= KING; --piece)
     {
         uint64_t bb = board->piece[color][piece];
 
