@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <pthread.h>
 
 #include "../include/global.h"
 #include "../include/train.h"
@@ -10,6 +11,7 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 
+#define NUM_THR 2 //Number of threads
 #define NUM_VARS 12
 #define NUM_POS 1000 //To count the number of positions run $ wc -l /../fen.csv
 #define LIMIT 1200 //To ensure that no value gets too high
@@ -40,7 +42,7 @@ static void setArray(const int* arr);
 static void saveArray(const int* arr);
 static void optimize(void);
 static void loadFensIntoMem(void);
-static double error(const int* arr);
+static double error(void);
 
 static const int isNumeric(char c)
 {
@@ -211,29 +213,56 @@ static void loadFensIntoMem(void)
     if (line) free(line);
 }
 
-static double error(const int* arr)
-{
-    setArray(arr);
-    int _a;
-    int qv, adjustedQV, index;
-    double error;
-    double acc[3] = {}; //Instead of having one acc we have 3 to avoid possible precision errors
-    Board b;
+int assign;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+double acc[NUM_THR] = {};
 
-    for (int i = 0; i < NUM_POS / 3; ++i)
+static void* mthError(void* var)
+{
+    pthread_mutex_lock(&mutex);
+    int threadOffset = assign;
+    assign++;
+    pthread_mutex_unlock(&mutex);
+
+    int _ignore;
+    int qv, adjustedQV;
+    double error;
+
+    double localAcc = 0;
+    Board b;
+    for (int i = 0; i < NUM_POS / NUM_THR; ++i)
     {
-        for (int j = 0; j < 3; ++j)
-        {
-            index = 3 * i + j;
-            b = genFromFen(positions[index].fen, &_a);
-            qv = qsearch(b, MINS_INF, PLUS_INF);
-            adjustedQV = b.turn? qv : -qv;
-            error = positions[index].result - sigmoid(adjustedQV);
-            acc[j] += error * error;
-        }
+        b = genFromFen(positions[NUM_THR*i+threadOffset].fen, &_ignore);
+        qv = qsearch(b, MINS_INF, PLUS_INF);
+        adjustedQV = b.turn? qv : -qv;
+        error = positions[NUM_THR*i+threadOffset].result - sigmoid(adjustedQV);
+        localAcc += error * error;
     }
 
-    return (acc[0] + acc[1] + acc[2]) / NUM_POS;
+    acc[threadOffset] = localAcc;
+}
+
+static double error(void)
+{
+    //Set up the mth vars
+    assign = 0;
+
+    setArray(vals);
+    pthread_t thread_id[NUM_THR];
+
+    //Launch the threads
+    for (int i = 0; i < NUM_THR; ++i)
+        pthread_create(&thread_id[i], NULL, mthError, NULL);
+    //Wait for them to end
+    for (int i = 0; i < NUM_THR; ++i)
+        pthread_join(thread_id[i], NULL);
+
+    //Collect the results
+    double res = 0;
+    for (int i = 0; i < NUM_THR; ++i)
+        res += acc[i];
+
+    return res / NUM_POS;
 }
 
 /* This finds a local minimum
@@ -242,11 +271,10 @@ static double error(const int* arr)
  */
 static void optimize(void)
 {
-    double bestVal = error(vals);
+    double bestVal = error();
     int improved = 1, iter = 0;
 
     printf("Init E: %.12f\n", bestVal);
-
 
     while(improved)
     {
@@ -256,7 +284,8 @@ static void optimize(void)
         {
             if (vals[var] >= LIMIT || vals[var] <= -LIMIT) continue;
             vals[var]++;
-            double newVal = error(vals);
+            double newVal = error();
+
             if (newVal < bestVal)
             {
                 improved = 1;
@@ -265,7 +294,7 @@ static void optimize(void)
             else
             {
                 vals[var] -= 2;
-                newVal = error(vals);
+                newVal = error();
                 if (newVal < bestVal)
                 {
                     improved = 1;
@@ -278,7 +307,7 @@ static void optimize(void)
 
         //Output the error and save the vals at a constant rate,
         //maybe change this as to depend on the error diff
-        if (iter % 11 == 0)
+        if (iter % 3 == 0)
         {
             printf("E: %.12f\n", bestVal);
             saveArray(vals);
@@ -286,5 +315,5 @@ static void optimize(void)
     }
 
     saveArray(vals);
-    printf("Optimum E: %.10f\n", error(vals));
+    printf("Optimum E: %.12f\n", error());
 }

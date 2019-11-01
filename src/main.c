@@ -31,6 +31,7 @@
 int main(const int argc, char** const argv)
 {
     #ifdef NDEBUG
+    printf("    _   __      ______\n   / | / /___  / ____/\n  /  |/ / __ \\/ /     \n / /|  / /_/ / /___   \n/_/ |_/\\____/\\____/  \n\n");
     printf("%s (RELEASE) uci chess engine made by %s\n", ENGINE_NAME, ENGINE_AUTHOR);
     #else
     printf("%s (DEBUG) uci chess engine made by %s\n", ENGINE_NAME, ENGINE_AUTHOR);

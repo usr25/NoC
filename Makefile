@@ -9,7 +9,7 @@ GDIR=gav
 TRAINER=trainer.cpp
 LICHESS=~/Desktop/lichess/lichess-bot-master/engines/
 
-CFLAGS= -O3 -flto -lm
+CFLAGS= -O3 -flto -lm -lpthread
 
 DEPS=$(IDIR)/*
 
@@ -51,7 +51,7 @@ assert: $(OBJA)
 	$(CC) -o $@ $^ $(CFLAGS) -DNUSE_TB
 
 train: $(OBJT)
-	$(CC) -o $@ $^ $(CFLAGS) -DTRAIN -DNUSE_TB -DNDEBUG
+	$(CC) -o $@ $^ $(CFLAGS) -DTRAIN -DNUSE_TB -DNDEBUG -lpthread
 
 lichess:
 	make release
