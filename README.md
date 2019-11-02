@@ -1,10 +1,10 @@
-# NoC 0.1
+# NoC
 
 An attempt at making a chess engine from scratch. Under active development. I haven't decided on a name, for the time being it is **NoC**.
 
 ### Warnings: 
 
-The TT size is currently a compile time constant set to 120MB, to change it go to hash.h and change the first and second defines. I'll change it later
+The TT size is currently a compile time constant set to 120MB, to change it go to hash.h and change the first define. I'll change that later, maybe.
 
 ### Use
 
@@ -27,6 +27,8 @@ The tablebases are currently used to give a fast mate in endgames, and in the se
 Chess engine written in C. Currently used in lichess.org as 'usr25'. From the testing I've done it should be around 2100 elo.
 
 No guarantees are made about the engine. All the testing matches were done using cutechess.
+
+The version corresponds to the month and year fo release. 11.19 == Nov 19, unless there is a big change there will be one version max per month
 
 ### Thanks
 

@@ -4,22 +4,22 @@
  * eval > 0 -> It is good for white
  */
 
-int V_QUEEN = 1102;
+int V_QUEEN = 1267;
 int V_ROOK = 609;
-int V_BISH = 388;
-int V_KNIGHT = 371;
+int V_BISH = 385;
+int V_KNIGHT = 372;
 int V_PAWN = 116;
 
-int V_PASSEDP = 116; //Value for a passed pawn right before promotion
+int V_PASSEDP = 115; //Value for a passed pawn right before promotion
 
 //All the variabels that begin with N_ are negative
-int CONNECTED_ROOKS = 29; //Bonus for having connected rooks
-int ROOK_OPEN_FILE = 12; //Bonus for a rook on an open file (No same color pawns)
-int SAFE_KING = 2; //Bonus for pawns surrounding the king
-int TWO_BISH = 16; //Bonus for having the bishop pair
-int KNIGHT_PAWNS = 12; //Bonus for the knights when there are a lot of pawns
-int N_KING_OPEN_FILE = -10; //Penalization for having the king on a file with no same color pawns
-int N_CLOSE_TO_KING = -10; //Penalization for having enemy pieces close to our king
+int CONNECTED_ROOKS = 17; //Bonus for having connected rooks
+int ROOK_OPEN_FILE = 13; //Bonus for a rook on an open file (No same color pawns)
+int SAFE_KING = 26; //Bonus for pawns surrounding the king
+int TWO_BISH = 52; //Bonus for having the bishop pair
+int KNIGHT_PAWNS = 38; //Bonus for the knights when there are a lot of pawns
+int N_KING_OPEN_FILE = -15; //Penalization for having the king on a file with no same color pawns
+int N_CLOSE_TO_KING = -1; //Penalization for having enemy pieces close to our king
 
 //This ones aren't on use at the moment
 int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
@@ -56,12 +56,13 @@ static void assignPC(const Board* b);
 
 static int material(void);
 static int pieceActivity(const Board* b);
+static int piecesAttacked(const Board* b);
 static int endgameAnalysis(const Board* b);
 static int pieceDevelopment(const Board* b);
 static int pawns(const Board* b);
 static int kingSafety(const Board* b);
 
-static int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp);
+static int rookOnOpenFile(const uint64_t wr, const uint64_t br);
 static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
 static int minorPieces(void);
 static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
@@ -76,6 +77,9 @@ static int wQueen, bQueen;
 static int wRook, bRook;
 static int wBish, bBish;
 static int wKnight, bKnight;
+
+static uint64_t wPawnBB, bPawnBB;
+static uint64_t wPawnBBAtt, bPawnBBAtt;
 
 static int passedPawnValues[8];
 
@@ -157,6 +161,10 @@ static inline void assignPC(const Board* b)
     wRook = POPCOUNT(b->piece[WHITE][ROOK]), bRook = POPCOUNT(b->piece[BLACK][ROOK]);
     wBish = POPCOUNT(b->piece[WHITE][BISH]), bBish = POPCOUNT(b->piece[BLACK][BISH]);
     wKnight = POPCOUNT(b->piece[WHITE][KNIGHT]), bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
+
+    wPawnBB = b->piece[WHITE][PAWN], bPawnBB = b->piece[BLACK][PAWN];
+    wPawnBBAtt = ((wPawnBB << 9) & 0xfefefefefefefefe) | ((wPawnBB << 7) & 0x7f7f7f7f7f7f7f7f);
+    bPawnBBAtt = ((bPawnBB >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bPawnBB >> 7) & 0xfefefefefefefefe);
 }
 
 static int phase(void)
@@ -198,7 +206,8 @@ static inline int pieceActivity(const Board* b)
     int score = minorPieces();
 
     score += connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN]);
-    score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[WHITE][PAWN], b->piece[BLACK][ROOK], b->piece[BLACK][PAWN]);
+    score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK]);
+    //score += piecesAttacked(b);
 
     return score;
 }
@@ -209,12 +218,10 @@ static inline int kingSafety(const Board* b)
     const int bk = LSB_INDEX(b->piece[BLACK][KING]);
     const uint64_t wkMoves = getKingMoves(wk);
     const uint64_t bkMoves = getKingMoves(bk);
-    const uint64_t wPawns = b->piece[WHITE][PAWN];
-    const uint64_t bPawns = b->piece[BLACK][PAWN];
 
-    int score = SAFE_KING * (POPCOUNT(wkMoves & wPawns) - POPCOUNT(bkMoves & bPawns));
-    //score += N_KING_OPEN_FILE * (((getUpMoves(wk) & b->piece[WHITE][PAWN]) == 0) - ((getDownMoves(bk) & b->piece[BLACK][PAWN]) == 0));
-    //score += 2 * N_CLOSE_TO_KING * (POPCOUNT(wkMoves & (bPawns ^ b->color[BLACK])) - POPCOUNT(bkMoves & (wPawns ^ b->color[WHITE])));
+    int score = SAFE_KING * (POPCOUNT(wkMoves & wPawnBB) - POPCOUNT(bkMoves & bPawnBB));
+    //score += N_KING_OPEN_FILE * (((getUpMoves(wk) & wPawnBB) == 0) - ((getDownMoves(bk) & bPawnBB) == 0));
+    //score += 2 * N_CLOSE_TO_KING * (POPCOUNT(wkMoves & (bPawnBB ^ b->color[BLACK])) - POPCOUNT(bkMoves & (wPawnBB ^ b->color[WHITE])));
     //score += N_CLOSE_TO_KING * (POPCOUNT(getKing2(wk) & b->color[BLACK]) - POPCOUNT(getKing2(bk) & b->color[WHITE]));
 
     return score;
@@ -224,16 +231,15 @@ static int passedPawns(const uint64_t wp, const uint64_t bp)
 {
     int lsb = 0, accPawn = 0;
     uint64_t tempW = wp & 0xffffffff00000000, tempB = bp & 0xffffffff;
-    const uint64_t wAtt = ((wp << 9) & 0xfefefefefefefefe) | ((wp << 7) & 0x7f7f7f7f7f7f7f7f);
-    const uint64_t bAtt = ((bp >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bp >> 7) & 0xfefefefefefefefe);
-    int isProtected;
+    int isProtected, rank;
     while(tempW)
     {
         lsb = LSB_INDEX(tempW);
         if ((getWPassedPawn(lsb) & bp) == 0)
         {
-            isProtected = (wAtt & (1ULL << lsb)) != 0;
-            accPawn += passedPawnValues[lsb >> 3] + (isProtected? 12 + (lsb >> 3) : 0);
+            isProtected = (wPawnBBAtt & (1ULL << lsb)) != 0;
+            rank = lsb >> 3;
+            accPawn += passedPawnValues[rank] + (isProtected? 12 + rank : 0);
         }
         REMOVE_LSB(tempW);
     }
@@ -242,8 +248,9 @@ static int passedPawns(const uint64_t wp, const uint64_t bp)
         lsb = LSB_INDEX(tempB);
         if ((getBPassedPawn(lsb) & wp) == 0)
         {
-            isProtected = (bAtt & (1ULL << lsb)) != 0;
-            accPawn -= passedPawnValues[7 ^ (lsb >> 3)] + (isProtected? 12 + (7 ^ (lsb >> 3)) : 0);
+            isProtected = (bPawnBBAtt & (1ULL << lsb)) != 0;
+            rank = 7 ^ (lsb >> 3);
+            accPawn -= passedPawnValues[rank] + (isProtected? 12 + rank : 0);
         }
         REMOVE_LSB(tempB);
     }
@@ -268,14 +275,6 @@ inline uint64_t shiftDownwards(const uint64_t bb)
 
 static inline int pawns(const Board* b)
 {
-    uint64_t wPawnBB = b->piece[WHITE][PAWN];
-    uint64_t bPawnBB = b->piece[BLACK][PAWN];
-    uint64_t attW = ((wPawnBB << 9) & 0xfefefefefefefefe) | ((wPawnBB << 7) & 0x7f7f7f7f7f7f7f7f);
-    uint64_t attB = ((bPawnBB >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bPawnBB >> 7) & 0xfefefefefefefefe);
-
-    uint64_t wPawnsRays = (wPawnBB << 8) | (wPawnBB << 16) | (wPawnBB << 24) | (wPawnBB << 32) | (wPawnBB << 40);
-    uint64_t bPawnsRays = (bPawnBB >> 8) | (bPawnBB >> 16) | (bPawnBB >> 24) | (bPawnBB >> 32) | (bPawnBB >> 40); 
-
     int isolW = 0, isolB = 0, passW = 0, passB = 0;//, targW = 0, targB = 0, cleanW = 0, cleanB = 0;
     int lsb;
     uint64_t tempW = wPawn, tempB = bPawn;
@@ -302,16 +301,11 @@ static inline int pawns(const Board* b)
         REMOVE_LSB(tempB);
     }
 
-    uint64_t sidesW = shiftSideways(wPawnBB), sidesB = shiftSideways(bPawnBB);
-
-    passW = POPCOUNT(wPawnBB) - POPCOUNT(shiftDownwards(bPawnBB | sidesB) & wPawnBB);
-    passB = POPCOUNT(bPawnBB) - POPCOUNT(shiftUpwards(wPawnBB | sidesW) & bPawnBB);
-
-    int final = PAWN_CHAIN * (POPCOUNT(wPawnBB & attW) - POPCOUNT(bPawnBB & attB));
-    final += PAWN_PROTECTION * (POPCOUNT(attW & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(attB & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
+    int final = PAWN_CHAIN * (POPCOUNT(wPawnBB & wPawnBBAtt) - POPCOUNT(bPawnBB & bPawnBBAtt));
+    final += PAWN_PROTECTION * (POPCOUNT(wPawnBBAtt & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(bPawnBBAtt & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
     final += N_DOUBLED_PAWNS * (POPCOUNT(wPawnBB & (wPawnBB * 0x10100)) - POPCOUNT(bPawn & (bPawnBB >> 8 | bPawnBB >> 16)));
-    final += ATTACKED_BY_PAWN * (POPCOUNT(attW & b->color[BLACK]) - POPCOUNT(attB & b->color[WHITE]));
-    final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((attW << 8) & b->color[BLACK]) - POPCOUNT((attB >> 8) & b->color[WHITE]));
+    final += ATTACKED_BY_PAWN * (POPCOUNT(wPawnBBAtt & b->color[BLACK]) - POPCOUNT(bPawnBBAtt & b->color[WHITE]));
+    final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((wPawnBBAtt << 8) & b->color[BLACK]) - POPCOUNT((bPawnBBAtt >> 8) & b->color[WHITE]));
     final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB);// + N_TARGET_PAWN * (targW - targB);
 
     return final;
@@ -321,11 +315,11 @@ static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uin
 {
     /* TODO: Use the magics since they should be faster */
     //res += (getRookMagicMoves(LSB_INDEX(wh), all) & wh) == wh;
-    int res = 0;
+    int res = 0, hi, lo;
 
-    if (wh & (wh - 1))
+    if (wh & (wh - 1)) //There are 2 rooks
     {
-        int hi = MSB_INDEX(wh), lo = LSB_INDEX(wh);
+        hi = MSB_INDEX(wh), lo = LSB_INDEX(wh);
         if ((hi >> 3) == (lo >> 3)) //Same row
         {
             res += LSB_INDEX(getLeftMoves(lo) & all) == hi;
@@ -337,7 +331,7 @@ static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uin
     }
     if (bl & (bl - 1))
     {
-        int hi = MSB_INDEX(bl), lo = LSB_INDEX(bl);
+        hi = MSB_INDEX(bl), lo = LSB_INDEX(bl);
         if ((hi >> 3) == (lo >> 3)) //Same row
         {
             res -= LSB_INDEX(getLeftMoves(lo) & all) == hi;
@@ -350,17 +344,23 @@ static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uin
 
     return CONNECTED_ROOKS * res;
 }
-static inline int rookOnOpenFile(const uint64_t wr, const uint64_t wp, const uint64_t br, const uint64_t bp)
+static inline int rookOnOpenFile(const uint64_t wr, const uint64_t br)
 {
-    int w = 0, b = 0;
+    int r = 0;
     if (wr)
-        w =  ((getVert(MSB_INDEX(wr) & 7) & wp) == 0)
-            +((getVert(LSB_INDEX(wr) & 7) & wp) == 0);
+    {
+        r += (getVert(LSB_INDEX(wr) & 7) & wPawnBB) == 0;
+        if (wr & (wr - 1))
+            r += (getVert(MSB_INDEX(wr) & 7) & wPawnBB) == 0;
+    }
     if (br)
-        b =  ((getVert(MSB_INDEX(br) & 7) & bp) == 0)
-            +((getVert(LSB_INDEX(br) & 7) & bp) == 0);
+    {
+        r -= (getVert(LSB_INDEX(br) & 7) & bPawnBB) == 0;
+        if (br & (br - 1))
+            r -= (getVert(MSB_INDEX(br) & 7) & bPawnBB) == 0;
+    }
 
-    return ROOK_OPEN_FILE * (w - b);
+    return ROOK_OPEN_FILE * r;
 }
 inline int minorPieces(void)
 {
