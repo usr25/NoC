@@ -379,7 +379,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     History h;
     Move mt = list[0];
     int expSort = 0;
-    if (depth >= 6 && mt.score < 290)
+    if (depth >= 5 && mt.score < 290)
     {
         /*
         makeMove(&b, mt, &h);
@@ -430,8 +430,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     if (expSort && i > 3 && list[i].capture < 1)
                     {
                         reduction++;
-                        if (i > 6 && list[i].capture < 1)
+                        if (i > 6 && list[i].capture < 1){
                             reduction++;
+                            if (!pv)
+                                reduction += depth / 4;
+                        }
                     }
                     if (i > 3 && list[i].capture < 1) //Add isInC and pv later
                     {
@@ -650,10 +653,11 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
     b.turn ^= 1;
-    const int val = -pvSearch(b, -betaMargin, -betaMargin + 1, (depth < 6)? depth - R : depth / 4 + 1, 1, 1, changeTurn(prevHash), &_rep);
+    const int td = (depth < 6)? depth - R : depth / 4 + 1;
+    const int val = -pvSearch(b, -beta, -beta + 1, td, 1, 1, changeTurn(prevHash), &_rep);
     b.turn ^= 1;
 
-    return val >= betaMargin;
+    return val >= beta;
 }
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture)
 {

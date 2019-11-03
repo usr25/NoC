@@ -29,7 +29,7 @@ $(ODIR)/%A.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(ODIR)/%T.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -DTRAIN
+	$(CC) -c -o $@ $< $(CFLAGS) -DTRAIN -DNDEBUG -DNUSE_TB -lpthread
 
 $(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) -DDEBUG
