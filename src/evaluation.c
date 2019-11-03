@@ -10,7 +10,7 @@ int V_BISH = 385;
 int V_KNIGHT = 372;
 int V_PAWN = 116;
 
-int V_PASSEDP = 115; //Value for a passed pawn right before promotion
+int V_PASSEDP = 88; //Value for a passed pawn right before promotion
 
 //All the variabels that begin with N_ are negative
 int CONNECTED_ROOKS = 17; //Bonus for having connected rooks
@@ -87,9 +87,9 @@ void initEval(void)
 {
     passedPawnValues[0] = 0;
     passedPawnValues[1] = 0;
-    passedPawnValues[2] = 5;
-    passedPawnValues[3] = 20;
-    passedPawnValues[4] = 40;
+    passedPawnValues[2] = 3;
+    passedPawnValues[3] = 15;
+    passedPawnValues[4] = 35;
     passedPawnValues[5] = 3 * V_PASSEDP / 5;
     passedPawnValues[6] = V_PASSEDP;
     passedPawnValues[7] = 0;
@@ -317,7 +317,7 @@ static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uin
     //res += (getRookMagicMoves(LSB_INDEX(wh), all) & wh) == wh;
     int res = 0, hi, lo;
 
-    if (wh & (wh - 1)) //There are 2 rooks
+    if (wRook) //There are 2 rooks
     {
         hi = MSB_INDEX(wh), lo = LSB_INDEX(wh);
         if ((hi >> 3) == (lo >> 3)) //Same row
@@ -329,7 +329,7 @@ static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uin
             res += LSB_INDEX(getUpMoves(lo) & all) == hi;
         }
     }
-    if (bl & (bl - 1))
+    if (bRook > 1)
     {
         hi = MSB_INDEX(bl), lo = LSB_INDEX(bl);
         if ((hi >> 3) == (lo >> 3)) //Same row
@@ -350,13 +350,13 @@ static inline int rookOnOpenFile(const uint64_t wr, const uint64_t br)
     if (wr)
     {
         r += (getVert(LSB_INDEX(wr) & 7) & wPawnBB) == 0;
-        if (wr & (wr - 1))
+        if (wRook > 1)
             r += (getVert(MSB_INDEX(wr) & 7) & wPawnBB) == 0;
     }
     if (br)
     {
         r -= (getVert(LSB_INDEX(br) & 7) & bPawnBB) == 0;
-        if (br & (br - 1))
+        if (bRook > 1)
             r -= (getVert(MSB_INDEX(br) & 7) & bPawnBB) == 0;
     }
 
