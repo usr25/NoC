@@ -286,13 +286,13 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
 {
     char mv[6] = "";
     moveToText(m, mv);
-    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", 100 * m.score / V_PAWN, depth, duration, nodes, 100000 * nodes / (duration + 1), mv);
+    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", 100 * m.score / V_PAWN, depth, duration, nodes, 1000 * nodes / (duration + 1), mv);
     fflush(stdout);
 }
 static void help_(void)
 {
     fprintf(stdout, "-====----------------====-\n");
-    fprintf(stdout, "Chess Engine made by J; the commands are:\n");
+    fprintf(stdout, "Chess Engine made by Jorge; the commands are:\n");
     fprintf(stdout, "uci.............Print uci info\n");
     fprintf(stdout, "ucinewgame......Load starting position\n");
     fprintf(stdout, "isready.........To ensure the engine is ready to receive commands\n");

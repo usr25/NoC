@@ -220,7 +220,7 @@ static inline int kingSafety(const Board* b)
     const uint64_t bkMoves = getKingMoves(bk);
 
     int score = SAFE_KING * (POPCOUNT(wkMoves & wPawnBB) - POPCOUNT(bkMoves & bPawnBB));
-    //score += N_KING_OPEN_FILE * (((getUpMoves(wk) & wPawnBB) == 0) - ((getDownMoves(bk) & bPawnBB) == 0));
+    score += N_KING_OPEN_FILE * (((getUpMoves(wk) & wPawnBB) == 0) - ((getDownMoves(bk) & bPawnBB) == 0));
     //score += 2 * N_CLOSE_TO_KING * (POPCOUNT(wkMoves & (bPawnBB ^ b->color[BLACK])) - POPCOUNT(bkMoves & (wPawnBB ^ b->color[WHITE])));
     //score += N_CLOSE_TO_KING * (POPCOUNT(getKing2(wk) & b->color[BLACK]) - POPCOUNT(getKing2(bk) & b->color[WHITE]));
 

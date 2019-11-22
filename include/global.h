@@ -1,6 +1,6 @@
 #define ALL 0xffffffffffffffffULL //(~0ULL)
 
-#define ENGINE_AUTHOR "usr"
+#define ENGINE_AUTHOR "Jorge"
 #define ENGINE_NAME "NoC 11.19"
 
 //#define USE_TB

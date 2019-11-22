@@ -347,9 +347,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         if (!pv && depth <= 4 && ev - 116 * depth >= beta && ev < 9000)
             return ev;
 
-        //if (!pv && depth <= 6 && ev - 180 * depth >= beta && ev < 7500)
-        //    return ev;
-
         // Null move pruning
         if (!null && depth > R)
         {
@@ -382,6 +379,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (depth >= 5 && mt.score < 290)
     {
         /*
+        //This is to always check the first move after sorting
         makeMove(&b, mt, &h);
         newHash = makeMoveHash(prevHash, &b, mt, h);
         best = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);

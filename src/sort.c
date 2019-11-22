@@ -12,8 +12,6 @@
 #include "../include/magic.h"
 #include "../include/evaluation.h"
 
-#define NUM_KM 2
-
 static int smallestAttackerSqr(const Board* b, const int sqr, const int col);
 static inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr);
@@ -123,77 +121,64 @@ static int smallestAttackerSqr(const Board* b, const int sqr, const int col)
 //TODO: Set a flag to use SEE depending on the depth or sthng
 inline void assignScores(Board* b, Move* list, const int numMoves, const Move bestFromPos, const int depth)
 {
-    for (int i = 0; i < numMoves; ++i)
+    Move* end = list + numMoves;
+    for (Move* curr = list; curr != end; ++curr)
     {
-        if (list[i].promotion > 0) //Promotions have their score assigned
+        if (curr->promotion > 0) //Promotions have their score assigned
             continue;
-        if(list[i].capture > 0) //There has been a capture
+        if(curr->capture > 0) //There has been a capture
         {
-            int subst = (list[i].piece < ROOK)? pVal[ROOK] / 7 : pVal[list[i].piece] / 10;
-            list[i].score = pVal[list[i].capture] - subst;
+            int subst = (curr->piece < ROOK)? pVal[ROOK] / 7 : pVal[curr->piece] / 10;
+            curr->score = pVal[curr->capture] - subst;
             /*
-            if (list[i].piece == PAWN)
-                list[i].score = pVal[list[i].capture] - 20;
+            if (curr->piece == PAWN)
+                curr->score = pVal[curr->capture] - 20;
             else
-                list[i].score = 60 + seeCapture(*b, list[i]);
+                curr->score = 60 + seeCapture(*b, *curr);
             */
         }
 
-        if (compMoves(&bestFromPos, &list[i])) //It was the best refutation in the same position
+        if (compMoves(&bestFromPos, curr)) //It was the best refutation in the same position
         {
-            list[i].score += 1200;
+            curr->score += 1200;
         }
         else
         {
-            /*
-            for (int j = 0; j < NUM_KM; ++j)
-            {
-                if (compMoves(&killerMoves[depth][j], &list[i]))
-                {
-                    list[i].score += 50 + j;
-                    break;
-                }
-            }
-            */
-            if (compMoves(&killerMoves[depth][0], &list[i]))
-                list[i].score += 58;
-            else if (compMoves(&killerMoves[depth][1], &list[i]))
-                list[i].score += 59;
+            if (compMoves(&killerMoves[depth][0], curr))
+                curr->score += 58;
+            else if (compMoves(&killerMoves[depth][1], curr))
+                curr->score += 59;
         }
         /*
-        if (list[i].score < 300)
+        if (curr->score < 300)
         {
-            int gvC = givesCheck(b, list[i]);
+            int gvC = givesCheck(b, *curr);
             if (gvC)
-                list[i].score += 50 * gvC * gvC; //Double check is more than 2 times better than a normal check, at least thats the idea
+                curr->score += 50 * gvC * gvC; //Double check is more than 2 times better than a normal check, at least thats the idea
         }
         */
     }
 }
 inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
 {
-    for (int i = 0; i < numMoves; ++i)
+    Move* end = list + numMoves;
+    for (Move* curr = list; curr != end; ++curr)
     {
-        if (list[i].promotion > 0)
+        if (curr->promotion > 0)
             continue;
-        if(list[i].capture > 0)
+        if(curr->capture > 0)
         {
-            if (list[i].piece == PAWN)
-                list[i].score = pVal[list[i].capture] - 23;
+            //TODO: Add bonus if it captures the last piece to move
+            //TODO: That could be improved using bbs of the last pieces moved
+            if (curr->piece == PAWN)
+                curr->score = pVal[curr->capture] - 23;
             else
-                list[i].score = 69 + seeCapture(*b, list[i]);//captureScore(&list[i]);//Bonus if it captures the piece that moved last time, it reduces the qsearch nodes about 30%
+                curr->score = 69 + seeCapture(*b, *curr);
         }
     }
 }
 inline void addKM(const Move m, const int depth)
 {
-    //Keep this commented out until we stop using NUM_KM == 2
-    /*
-    for (int i = 1; i < NUM_KM; ++i)
-        killerMoves[depth][i-1] = killerMoves[depth][i];
-
-    killerMoves[depth][NUM_KM-1] = m;
-    */
     killerMoves[depth][0] = killerMoves[depth][1];
     killerMoves[depth][1] = m;
 }
