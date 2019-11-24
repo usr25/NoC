@@ -236,7 +236,7 @@ static void* mthError(void* var)
     {
         b = genFromFen(positions[NUM_THR*i+threadOffset].fen, &_ignore);
         qv = qsearch(b, MINS_INF, PLUS_INF, 7);
-        adjustedQV = b.turn? qv : -qv;
+        adjustedQV = b.stm? qv : -qv;
         error = positions[NUM_THR*i+threadOffset].result - sigmoid(adjustedQV);
         localAcc += error * error;
     }

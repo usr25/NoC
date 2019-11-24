@@ -15,7 +15,7 @@ typedef struct
 
     uint64_t allPieces;
 
-    int turn;
+    int stm;
     int castleInfo;
     int enPass;
     int fifty;

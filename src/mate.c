@@ -76,7 +76,7 @@ static inline int makeWaitingMove(const int wrRow, const int wrCol, const int lk
  */
 Move rookMate(const Board b)
 {
-    const int color = b.turn;
+    const int color = b.stm;
 
     const int wkLSB = LSB_INDEX(b.piece[color][KING]);
     const int wrLSB = LSB_INDEX(b.piece[color][ROOK]);

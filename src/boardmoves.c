@@ -90,55 +90,55 @@ void makeMove(Board* b, const Move move, History* h)
 
     b->enPass = 0;
 
-    flipBits(b, fromBit, move.piece, b->turn);
+    flipBits(b, fromBit, move.piece, b->stm);
     switch(move.piece)
     {
         case PAWN:
-            if (move.to - move.from == (2 * b->turn - 1) * 16)
+            if (move.to - move.from == (2 * b->stm - 1) * 16)
                 b->enPass = move.to;
             if (move.enPass)
             {
-                flipBits(b, toBit, PAWN, b->turn);
-                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
+                flipBits(b, toBit, PAWN, b->stm);
+                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->stm);
             }
             else
             {
                 if (move.promotion)
-                    flipBits(b, toBit, move.promotion, b->turn);
+                    flipBits(b, toBit, move.promotion, b->stm);
                 else
-                    flipBits(b, toBit, PAWN, b->turn);
+                    flipBits(b, toBit, PAWN, b->stm);
             }
             b->fifty = 0;
         break;
 
         case ROOK:
             if ((fromBit | toBit) & 0x8100000000000081ULL) //to reduce the number of calls
-                b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
-            flipBits(b, toBit, ROOK, b->turn);
+                b->castleInfo &= rookMoved(b->stm, move.from) & rookMoved(b->stm, move.to);
+            flipBits(b, toBit, ROOK, b->stm);
             b->fifty++;
         break;
 
         case KING:
             if (move.castle)
-                flipCastle(b, move, b->turn);
+                flipCastle(b, move, b->stm);
             else
-                flipBits(b, toBit, KING, b->turn);
+                flipBits(b, toBit, KING, b->stm);
 
-            b->castleInfo &= kingMoved(b->turn);
+            b->castleInfo &= kingMoved(b->stm);
             b->fifty++;
         break;
 
         default:
-            flipBits(b, toBit, move.piece, b->turn);
+            flipBits(b, toBit, move.piece, b->stm);
             b->fifty++;
         break;
     }
 
-    b->turn ^= 1;
+    b->stm ^= 1;
 
     if (move.capture > 0)
     {
-        flipBits(b, toBit, move.capture, b->turn);
+        flipBits(b, toBit, move.capture, b->stm);
         b->fifty = 0;
     }
 
@@ -157,55 +157,55 @@ void makePermaMove(Board* b, const Move move)
 
     b->enPass = 0;
 
-    flipBits(b, fromBit, move.piece, b->turn);
+    flipBits(b, fromBit, move.piece, b->stm);
     switch(move.piece)
     {
         case PAWN:
-            if (move.to - move.from == (2 * b->turn - 1) << 4)
+            if (move.to - move.from == (2 * b->stm - 1) << 4)
                 b->enPass = move.to;
             if (move.enPass)
             {
-                flipBits(b, toBit, PAWN, b->turn);
-                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
+                flipBits(b, toBit, PAWN, b->stm);
+                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->stm);
             }
             else
             {
                 if (move.promotion)
-                    flipBits(b, toBit, move.promotion, b->turn);
+                    flipBits(b, toBit, move.promotion, b->stm);
                 else
-                    flipBits(b, toBit, PAWN, b->turn);
+                    flipBits(b, toBit, PAWN, b->stm);
             }
             b->fifty = 0;
         break;
 
         case ROOK:
             if ((fromBit | toBit) & 0x8100000000000081ULL) //to reduce the number of calls
-                b->castleInfo &= rookMoved(b->turn, move.from) & rookMoved(b->turn, move.to);
-            flipBits(b, toBit, ROOK, b->turn);
+                b->castleInfo &= rookMoved(b->stm, move.from) & rookMoved(b->stm, move.to);
+            flipBits(b, toBit, ROOK, b->stm);
             b->fifty++;
         break;
 
         case KING:
             if (move.castle)
-                flipCastle(b, move, b->turn);
+                flipCastle(b, move, b->stm);
             else
-                flipBits(b, toBit, KING, b->turn);
+                flipBits(b, toBit, KING, b->stm);
 
-            b->castleInfo &= kingMoved(b->turn);
+            b->castleInfo &= kingMoved(b->stm);
             b->fifty++;
         break;
 
         default:
-            flipBits(b, toBit, move.piece, b->turn);
+            flipBits(b, toBit, move.piece, b->stm);
             b->fifty++;
         break;
     }
 
-    b->turn ^= 1;
+    b->stm ^= 1;
 
     if (move.capture > 0)
     {
-        flipBits(b, toBit, move.capture, b->turn);
+        flipBits(b, toBit, move.capture, b->stm);
         b->fifty = 0;
     }
 
@@ -224,37 +224,37 @@ void undoMove(Board* b, const Move move, History* h)
     b->fifty = h->fifty;
 
     if (move.capture > 0)
-        flipBits(b, toBit, move.capture, b->turn);
+        flipBits(b, toBit, move.capture, b->stm);
 
-    b->turn ^= 1;
+    b->stm ^= 1;
 
-    flipBits(b, fromBit, move.piece, b->turn);
+    flipBits(b, fromBit, move.piece, b->stm);
     switch(move.piece)
     {
         case PAWN:
             if (move.enPass)
             {
-                flipBits(b, toBit, PAWN, b->turn);
-                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->turn);
+                flipBits(b, toBit, PAWN, b->stm);
+                flipBits(b, POW2[move.enPass], PAWN, 1 ^ b->stm);
             }
             else
             {
                 if (move.promotion)
-                    flipBits(b, toBit, move.promotion, b->turn);
+                    flipBits(b, toBit, move.promotion, b->stm);
                 else
-                    flipBits(b, toBit, PAWN, b->turn);
+                    flipBits(b, toBit, PAWN, b->stm);
             }
         break;
 
         case KING:
             if (move.castle)
-                flipCastle(b, move, b->turn);
+                flipCastle(b, move, b->stm);
             else
-                flipBits(b, toBit, KING, b->turn);
+                flipBits(b, toBit, KING, b->stm);
         break;
 
         default:
-            flipBits(b, toBit, move.piece, b->turn);
+            flipBits(b, toBit, move.piece, b->stm);
         break;
     }
 }
@@ -266,17 +266,17 @@ void undoMove(Board* b, const Move move, History* h)
 int isValid(Board b, const Move m)
 {
     uint64_t toBB = POW2[m.to], fromBB = POW2[m.from];
-    if ((fromBB & b.color[b.turn]) == 0)
+    if ((fromBB & b.color[b.stm]) == 0)
         return 0;
-    if (pieceAt(&b, fromBB, b.turn) == NO_PIECE)
+    if (pieceAt(&b, fromBB, b.stm) == NO_PIECE)
         return 0;
-    if (m.capture > 0 && pieceAt(&b, toBB, 1 ^ b.turn) != m.capture)
+    if (m.capture > 0 && pieceAt(&b, toBB, 1 ^ b.stm) != m.capture)
         return 0;
     //Look at the move
     switch (m.piece)
     {
         case PAWN:
-            if ((toBB & posPawnMoves(&b, b.turn, m.from)) == 0)
+            if ((toBB & posPawnMoves(&b, b.stm, m.from)) == 0)
                 return 0;
             break;
         case KNIGHT:
@@ -306,5 +306,5 @@ int isValid(Board b, const Move m)
 
     //To avoid other errors, see if the king is in check
     makePermaMove(&b, m);
-    return !isInCheck(&b, 1 ^ b.turn);
+    return !isInCheck(&b, 1 ^ b.stm);
 }

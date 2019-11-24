@@ -61,6 +61,7 @@ static int endgameAnalysis(const Board* b);
 static int pieceDevelopment(const Board* b);
 static int pawns(const Board* b);
 static int kingSafety(const Board* b);
+static int pawnTension(const Board* b);
 
 static int rookOnOpenFile(const uint64_t wr, const uint64_t br);
 static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
@@ -118,7 +119,7 @@ int eval(const Board* b)
     //evaluation += pawns(b);
 
     assert(evaluation < PLUS_MATE && evaluation > MINS_MATE);
-    return b->turn? evaluation : -evaluation;
+    return b->stm? evaluation : -evaluation;
 }
 
 int insuffMat(const Board* b)
@@ -309,6 +310,17 @@ static inline int pawns(const Board* b)
     final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB);// + N_TARGET_PAWN * (targW - targB);
 
     return final;
+}
+
+static int pawnTension(const Board* b)
+{
+    const int wMinor = POPCOUNT(wPawnBBAtt & (b->piece[BLACK][KNIGHT] | b->piece[BLACK][BISH]));
+    const int bMinor = POPCOUNT(bPawnBBAtt & (b->piece[WHITE][KNIGHT] | b->piece[WHITE][BISH]));
+
+    const int wMajor = POPCOUNT(wPawnBBAtt & (b->piece[BLACK][ROOK] | b->piece[BLACK][QUEEN]));
+    const int bMajor = POPCOUNT(bPawnBBAtt & (b->piece[WHITE][ROOK] | b->piece[WHITE][QUEEN]));
+
+    return ATTACKED_BY_PAWN * (wMinor - bMinor) + 2 * ATTACKED_BY_PAWN * (wMajor - bMajor);
 }
 
 static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all)

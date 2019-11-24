@@ -245,7 +245,7 @@ inline uint64_t calcPos(const int color, const int piece, const int sqr)
 uint64_t hashPosition(const Board* b)
 {
     //Turn
-    uint64_t resultHash = b->turn * random[TURN_OFFSET];
+    uint64_t resultHash = b->stm * random[TURN_OFFSET];
     //EnPass
     if (b->enPass) resultHash ^= random[EPAS_OFFSET + (b->enPass & 7)];
     //Castling
@@ -282,7 +282,7 @@ inline int changeTurn(const uint64_t prev)
 uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
 {
     prev ^= random[TURN_OFFSET];
-    const int col = b->turn;
+    const int col = b->stm;
     const int opp = 1 ^ col;
 
     //Piece from

@@ -123,7 +123,7 @@ int gavScore(Board b, int* tbIsAv)
     *tbIsAv = tb_probe_hard (stm, epsquare, castling, ws, bs, wp, bp, &info, &pliestomate);
 
     int multiplier = 0;
-    if (b.turn)
+    if (b.stm)
     {
         if (info == tb_WMATE) multiplier = 1;
         else if (info == tb_BMATE) multiplier = -1;
@@ -172,7 +172,7 @@ int gavWDLSoft(Board b, int* tbIsAv)
 
 static void parseBoard(Board* b)
 {
-    stm = b->turn? tb_WHITE_TO_MOVE : tb_BLACK_TO_MOVE;
+    stm = b->stm? tb_WHITE_TO_MOVE : tb_BLACK_TO_MOVE;
     parseCastle(b);
     parseEpSqr(b);
     parsePieces(b);
@@ -191,7 +191,7 @@ static void parseCastle(const Board* b)
 static void parseEpSqr(const Board* b)
 {
     if (b->enPass > 8 && b->enPass < 56)
-        epsquare = getGavSqr(b->enPass - (b->turn? -8 : 8));
+        epsquare = getGavSqr(b->enPass - (b->stm? -8 : 8));
     else
         epsquare = tb_NOSQUARE;
 }

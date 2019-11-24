@@ -16,8 +16,11 @@ static int smallestAttackerSqr(const Board* b, const int sqr, const int col);
 static inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr);
 
+#define NUM_KM 2
+
 static const Move NOMOVE = (Move) {.from = -1, .to = -1};
 int pVal[6];
+int history[4096]; //TODO: make it 2x4096 to discriminate between stm
 Move killerMoves[99][NUM_KM];
 
 inline int compMoves(const Move* m1, const Move* m2)
@@ -28,11 +31,11 @@ inline int compMoves(const Move* m1, const Move* m2)
 void initSort(void)
 {
     pVal[0] = 2320;
-    pVal[1] = V_QUEEN;
-    pVal[2] = V_ROOK;
-    pVal[3] = V_BISH;
-    pVal[4] = V_KNIGHT;
-    pVal[5] = V_PAWN;
+    pVal[1] = 1267;
+    pVal[2] = 609;
+    pVal[3] = 385;
+    pVal[4] = 372;
+    pVal[5] = 116;
 }
 
 void initKM(void)
@@ -51,7 +54,7 @@ static inline int seeCapture(Board b, const Move m)
 }
 static int see(Board* b, const int sqr, const int pieceAtSqr)
 {
-    const int col = b->turn;
+    const int col = b->stm;
     const int from = smallestAttackerSqr(b, sqr, 1 ^ col);
 
     int value = 0;
@@ -137,6 +140,12 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
                 curr->score = 60 + seeCapture(*b, *curr);
             */
         }
+        else
+        {
+            int add = history[(curr->from << 6) + curr->to];
+            if (add > 15) add = 16;
+            curr->score += add;
+        }
 
         if (compMoves(&bestFromPos, curr)) //It was the best refutation in the same position
         {
@@ -181,6 +190,16 @@ inline void addKM(const Move m, const int depth)
 {
     killerMoves[depth][0] = killerMoves[depth][1];
     killerMoves[depth][1] = m;
+}
+inline void addHistory(const int from, const int to)
+{
+    history[(from << 6) + to]++;
+}
+void initHistory(void)
+{
+    int* end = history + 4096;
+    for (int* p = history; p != end; ++p)
+        *p = 0;
 }
 
 void sort(Move* start, Move* end)

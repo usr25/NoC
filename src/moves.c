@@ -303,8 +303,8 @@ inline int isInCheck(Board* b, const int kingsColor)
  */
 int givesCheck(const Board* b, const Move m)
 {
-    const int k = LSB_INDEX(b->piece[1 ^ b->turn][KING]);
-    const int col = b->turn;
+    const int k = LSB_INDEX(b->piece[1 ^ b->stm][KING]);
+    const int col = b->stm;
     const uint64_t toBB = 1ULL << m.to, fromBB = 1ULL << m.from;
 
     uint64_t ro = b->piece[col][ROOK] | b->piece[col][QUEEN];
@@ -318,7 +318,7 @@ int givesCheck(const Board* b, const Move m)
         break;
 
         case PAWN:
-            if (b->turn)
+            if (b->stm)
                 numChecks += (getBlackPawnCaptures(k) & toBB) != 0;
             else
                 numChecks += (getWhitePawnCaptures(k) & toBB) != 0;

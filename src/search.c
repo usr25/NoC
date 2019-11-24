@@ -50,11 +50,11 @@ static const inline int mate(int height)
  */
 static inline int rookVSKing(const Board b)
 {
-    return POPCOUNT(b.piece[b.turn][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.turn][ROOK]) == 2;
+    return POPCOUNT(b.piece[b.stm][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.stm][ROOK]) == 2;
 }
 static inline int noZugz(const Board b)
 {
-    return POPCOUNT(b.color[b.turn] ^ b.piece[b.turn][PAWN]) <= 2;
+    return POPCOUNT(b.color[b.stm] ^ b.piece[b.stm][PAWN]) <= 2;
 }
 static inline int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, const int color)
 {
@@ -98,6 +98,7 @@ void initCall(void)
     noMoveGen = 0;
     exitFlag = 0;
 
+    initHistory();
     initKM();
 }
 
@@ -116,7 +117,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     timeToMoveT = timeToMove;
     startT = start;
 
-    us = b.turn;
+    us = b.stm;
 
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
@@ -286,7 +287,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             #ifdef DEBUG
             queries++;
             #endif
-            return b.turn? gavScore : -gavScore;
+            return b.stm? gavScore : -gavScore;
         }
     }
     #endif
@@ -297,7 +298,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         return 0;
     }
 
-    const int isInC = isInCheck(&b, b.turn);
+    const int isInC = isInCheck(&b, b.stm);
 
     if (isInC)
         depth++;
@@ -397,7 +398,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
 
     const int canBreak = depth <= 3 && ev + marginDepth(depth) <= alpha && isSafe;
-    //const int fewMovesExt = b.turn != us && numMoves < 5;
+    //const int fewMovesExt = b.stm != us && numMoves < 5;
 
     for (int i = 0; i < numMoves; ++i)
     {
@@ -423,7 +424,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             else
             {
                 int reduction = 1;
-                if (depth > 1 && !isInCheck(&b, b.turn))
+                if (depth > 1 && !isInCheck(&b, b.stm))
                 {
                     if (expSort && i > 3 && list[i].capture < 1)
                     {
@@ -434,7 +435,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                                 reduction += depth / 4;
                         }
                     }
-                    if (i > 3 && list[i].capture < 1) //Add isInC and pv later
+                    if (i > 3 && list[i].capture < 1)
                     {
                         reduction++;
                         if (i > 6 && !pv)
@@ -446,7 +447,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                         reduction++;
                     if (!expSort && pv && list[i].score > 69 && list[i].capture > 0)
                         reduction--;
-                    else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.turn][PAWN], 1 ^ b.turn))
+                    else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.stm][PAWN], 1 ^ b.stm))
                         reduction--;
                     //else if (fewMovesExt)
                     //    reduction--;
@@ -473,6 +474,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                 if (alpha >= beta)
                 {
+                    addHistory(bestM.from, bestM.to);
                     #ifdef DEBUG
                     ++betaCutOff;
                     if (i == 0)
@@ -650,10 +652,10 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
 {
     const int betaMargin = beta - MARGIN;
     Repetition _rep = (Repetition) {.index = 0};
-    b.turn ^= 1;
+    b.stm ^= 1;
     const int td = (depth < 6)? depth - R : depth / 4 + 1;
     const int val = -pvSearch(b, -beta, -beta + 1, td, 1, 1, changeTurn(prevHash), &_rep);
-    b.turn ^= 1;
+    b.stm ^= 1;
 
     return val >= beta;
 }

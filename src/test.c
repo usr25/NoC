@@ -101,7 +101,7 @@ static int testHashing()
     enPass &= hashPosition(&white) == makeMoveHash(prev, &b, pawnW, h);
 
     b = defaultBoard();
-    b.turn = BLACK;
+    b.stm = BLACK;
     prev = hashPosition(&b);
     Move pawnB = (Move) {.piece = PAWN, .from = 48, .to = 32};
     makeMove(&b, pawnB, &h);
@@ -276,7 +276,7 @@ static void slowEval(void)
     b = defaultBoard();
     drawMove(bestTime(b, 0, (Repetition){}, depth));
     printf(" ");
-    b.turn ^= 1;
+    b.stm ^= 1;
     drawMove(bestTime(b, 0, (Repetition){}, depth));
     printf("\n");
 

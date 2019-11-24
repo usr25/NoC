@@ -163,8 +163,8 @@ static void best_time(Board b, char* beg, Repetition* rep)
         clock_t calcTime = 0;
         if (!movetime)
         {
-            clock_t remTime   = b.turn? wtime : btime;
-            clock_t increment = b.turn? winc  : binc;
+            clock_t remTime   = b.stm? wtime : btime;
+            clock_t increment = b.stm? winc  : binc;
             clock_t timeToMove;
 
             if (movestogo)
@@ -199,8 +199,8 @@ static int move_(Board* b, char* beg, Repetition* rep)
     to = getIndex(beg[2], beg[3]);
 
     Move m = (Move) {.from = from, .to = to, 
-        .piece = pieceAt(b, POW2[from], b->turn),
-        .capture = pieceAt(b, POW2[to], 1 ^ b->turn)};
+        .piece = pieceAt(b, POW2[from], b->stm),
+        .capture = pieceAt(b, POW2[to], 1 ^ b->stm)};
 
 
     if(m.piece == KING)
@@ -227,7 +227,7 @@ static int move_(Board* b, char* beg, Repetition* rep)
         }
         else if (b->enPass && abs(from - to) != 8)
         {
-            if ((b->turn && (to - b->enPass == 8)) || (!b->turn && (to - b->enPass == -8)))
+            if ((b->stm && (to - b->enPass == 8)) || (!b->stm && (to - b->enPass == -8)))
                 m.enPass = b->enPass;
         }
     }

@@ -76,7 +76,7 @@ Board genFromFen(char* const fen, int* counter)
 
     i++;
 
-    b.turn = fen[i] == 'w';
+    b.stm = fen[i] == 'w';
 
     i++;
 
@@ -104,7 +104,7 @@ Board genFromFen(char* const fen, int* counter)
     i++;
     if (fen[i] != '-')
     {
-        b.enPass = getIndex(fen[i], fen[i+1]) - (2 * b.turn - 1) * 8;
+        b.enPass = getIndex(fen[i], fen[i+1]) - (2 * b.stm - 1) * 8;
         i++;
     }
 
@@ -172,7 +172,7 @@ const Board defaultBoard()
 
     b.castleInfo =  0xf;
     b.allPieces = INITIAL_WPIECES | INITIAL_BPIECES;
-    b.turn = WHITE;
+    b.stm = WHITE;
 
     return b;
 }
@@ -192,7 +192,7 @@ int equal(const Board* a, const Board* b)
         }
     }
 
-    int other = a->turn == b->turn && a->enPass == b->enPass;
+    int other = a->stm == b->stm && a->enPass == b->enPass;
 
     return data && pieces && other;
 }
