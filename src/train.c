@@ -12,9 +12,9 @@
 #include "../include/evaluation.h"
 
 #define NUM_THR 2 //Number of threads
-#define NUM_VARS 12
+#define NUM_VARS 14
 #define NUM_POS 1000 //To count the number of positions run $ wc -l /../fen.csv
-#define VAR_LIMIT 1200 //To ensure that no value gets too high
+#define VAR_LIMIT 1400 //To ensure that no value gets too high
 
 typedef struct
 {
@@ -131,7 +131,10 @@ static void setArray(const int* arr)
     TWO_BISH        = arr[8];
     KNIGHT_PAWNS    = arr[9];
     N_KING_OPEN_FILE= arr[10];
-    N_CLOSE_TO_KING = arr[11];
+
+    PAWN_CHAIN = arr[11];
+    PAWN_PROTECTION = arr[12];
+    ATTACKED_BY_PAWN = arr[13];
 }
 
 /* Saves the array into memory, so in case it crashes no data is lost

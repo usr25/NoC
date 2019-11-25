@@ -4,29 +4,29 @@
  * eval > 0 -> It is good for white
  */
 
-int V_QUEEN = 1267;
-int V_ROOK = 609;
+int V_QUEEN = 1302;
+int V_ROOK = 622;
 int V_BISH = 385;
-int V_KNIGHT = 372;
+int V_KNIGHT = 365;
 int V_PAWN = 116;
 
 int V_PASSEDP = 88; //Value for a passed pawn right before promotion
 
 //All the variabels that begin with N_ are negative
-int CONNECTED_ROOKS = 17; //Bonus for having connected rooks
-int ROOK_OPEN_FILE = 13; //Bonus for a rook on an open file (No same color pawns)
-int SAFE_KING = 26; //Bonus for pawns surrounding the king
-int TWO_BISH = 52; //Bonus for having the bishop pair
-int KNIGHT_PAWNS = 38; //Bonus for the knights when there are a lot of pawns
-int N_KING_OPEN_FILE = -15; //Penalization for having the king on a file with no same color pawns
-int N_CLOSE_TO_KING = -1; //Penalization for having enemy pieces close to our king
+int CONNECTED_ROOKS = 23; //Bonus for having connected rooks
+int ROOK_OPEN_FILE = 22; //Bonus for a rook on an open file (No same color pawns)
+int SAFE_KING = 27; //Bonus for pawns surrounding the king
+int TWO_BISH = 55; //Bonus for having the bishop pair
+int KNIGHT_PAWNS = 37; //Bonus for the knights when there are a lot of pawns
+int N_KING_OPEN_FILE = -11; //Penalization for having the king on a file with no same color pawns
+int PAWN_CHAIN = 16; //Bonus for making a pawn chain
+int PAWN_PROTECTION = 24; //Bonus for Bish / Knight protected by pawn
+int ATTACKED_BY_PAWN = 69; //Bonus if a pawn can attack a piece
 
+int N_CLOSE_TO_KING = -1; //Penalization for having enemy pieces close to our king
 //This ones aren't on use at the moment
 int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
 int N_DOUBLED_PAWNS = -36; //Penalization for doubled pawns (proportional to the pawns in line - 1)
-int PAWN_CHAIN =  20; //Bonus for making a pawn chain
-int PAWN_PROTECTION = 15; //Bonus for Bish / Knight protected by pawn
-int ATTACKED_BY_PAWN = 10; //Bonus if a pawn can attack a piece
 int ATTACKED_BY_PAWN_LATER = 6; //Bonus if a pawn can attack a piece after moving once
 int E_ADVANCED_KING = 2; //Endgame, bonus for advanced king
 int E_ADVANCED_PAWN = 6; //Endgame, bonus for advanced pawns
@@ -116,7 +116,9 @@ int eval(const Board* b)
 
     evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
 
-    //evaluation += pawns(b);
+    evaluation += pawns(b);
+
+    evaluation += pawnTension(b);
 
     assert(evaluation < PLUS_MATE && evaluation > MINS_MATE);
     return b->stm? evaluation : -evaluation;
@@ -276,6 +278,7 @@ inline uint64_t shiftDownwards(const uint64_t bb)
 
 static inline int pawns(const Board* b)
 {
+    /*
     int isolW = 0, isolB = 0, passW = 0, passB = 0;//, targW = 0, targB = 0, cleanW = 0, cleanB = 0;
     int lsb;
     uint64_t tempW = wPawn, tempB = bPawn;
@@ -301,13 +304,14 @@ static inline int pawns(const Board* b)
 
         REMOVE_LSB(tempB);
     }
+    */
 
     int final = PAWN_CHAIN * (POPCOUNT(wPawnBB & wPawnBBAtt) - POPCOUNT(bPawnBB & bPawnBBAtt));
     final += PAWN_PROTECTION * (POPCOUNT(wPawnBBAtt & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(bPawnBBAtt & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
-    final += N_DOUBLED_PAWNS * (POPCOUNT(wPawnBB & (wPawnBB * 0x10100)) - POPCOUNT(bPawn & (bPawnBB >> 8 | bPawnBB >> 16)));
-    final += ATTACKED_BY_PAWN * (POPCOUNT(wPawnBBAtt & b->color[BLACK]) - POPCOUNT(bPawnBBAtt & b->color[WHITE]));
-    final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((wPawnBBAtt << 8) & b->color[BLACK]) - POPCOUNT((bPawnBBAtt >> 8) & b->color[WHITE]));
-    final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB);// + N_TARGET_PAWN * (targW - targB);
+    //final += N_DOUBLED_PAWNS * (POPCOUNT(wPawnBB & (wPawnBB * 0x10100)) - POPCOUNT(bPawn & (bPawnBB >> 8 | bPawnBB >> 16)));
+    //final += ATTACKED_BY_PAWN * (POPCOUNT(wPawnBBAtt & b->color[BLACK]) - POPCOUNT(bPawnBBAtt & b->color[WHITE]));
+    //final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((wPawnBBAtt << 8) & b->color[BLACK]) - POPCOUNT((bPawnBBAtt >> 8) & b->color[WHITE]));
+    //final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB);// + N_TARGET_PAWN * (targW - targB);
 
     return final;
 }
