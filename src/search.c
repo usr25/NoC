@@ -402,7 +402,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if (canBreak && i > 4 && list[i].score < 90 && (i > 3 + depth || (i > 3 && !pv)))
+        if (canBreak && list[i].score < 90 && (i > 3 + depth || (i > 3 && !pv)))
             break;
         //if (expSort && compMoves(&mt, &list[i]))
         //  continue;
@@ -426,6 +426,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 int reduction = 1;
                 if (depth > 1 && !isInCheck(&b, b.stm))
                 {
+                    /*
                     if (expSort && i > 3 && list[i].capture < 1)
                     {
                         reduction++;
@@ -442,6 +443,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                             reduction++;
                         if (!expSort && list[i].score < 0)
                             reduction++;
+                    }
+                    */
+                    if (i > 4 && list[i].capture < 1)
+                    {
+                        reduction +=1 + depth / (3 + pv);
                     }
                     if (!pv && list[i].piece == KING && list[i].capture < 1)
                         reduction++;

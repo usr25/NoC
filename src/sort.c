@@ -125,23 +125,32 @@ static int smallestAttackerSqr(const Board* b, const int sqr, const int col)
 inline void assignScores(Board* b, Move* list, const int numMoves, const Move bestFromPos, const int depth)
 {
     Move* end = list + numMoves;
+
+    uint64_t pawnAtt;
+    if (b->stm)
+        pawnAtt = ((b->piece[BLACK][PAWN] >> 9) & 0x7f7f7f7f7f7f7f7f) | ((b->piece[BLACK][PAWN] >> 7) & 0xfefefefefefefefe);
+    else
+        pawnAtt = ((b->piece[WHITE][PAWN] << 9) & 0xfefefefefefefefe) | ((b->piece[WHITE][PAWN] << 7) & 0x7f7f7f7f7f7f7f7f);
+
     for (Move* curr = list; curr != end; ++curr)
     {
         if (curr->promotion > 0) //Promotions have their score assigned
             continue;
         if(curr->capture > 0) //There has been a capture
         {
+            /*
             int subst = (curr->piece < ROOK)? pVal[ROOK] / 7 : pVal[curr->piece] / 10;
             curr->score = pVal[curr->capture] - subst;
-            /*
-            if (curr->piece == PAWN)
-                curr->score = pVal[curr->capture] - 20;
-            else
-                curr->score = 60 + seeCapture(*b, *curr);
             */
+            if (curr->piece == PAWN)
+                curr->score = pVal[curr->capture];
+            else
+                curr->score = 69 + seeCapture(*b, *curr);
         }
         else
         {
+            if (pawnAtt & (1ULL << curr->to))
+                curr->score -= 20; //TODO: Change this based on the moving piece values
             int add = history[(curr->from << 6) + curr->to];
             if (add > 15) add = 16;
             curr->score += add;
