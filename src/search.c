@@ -529,7 +529,8 @@ int qsearch(Board b, int alpha, const int beta, const int d)
         return alpha;
 
     Move list[NMOVES];
-    const int numMoves = legalMovesQuiesce(&b, list) >> 1;
+    const int nMvsAndChck = legalMovesQuiesce(&b, list);
+    const int numMoves = nMvsAndChck >> 1;
     History h;
 
     assignScoresQuiesce(&b, list, numMoves);
@@ -539,7 +540,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if (i > 2 && list[i].score < 10 && score + 145 <= alpha)
+        if (!(nMvsAndChck & 1) && i > 2 && list[i].score < 10 && score + 145 <= alpha)
             break;
 
         makeMove(&b, list[i], &h);

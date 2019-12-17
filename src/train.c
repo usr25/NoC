@@ -122,6 +122,7 @@ static void setArray(const int* arr)
     V_ROOK      = arr[1];
     V_BISH      = arr[2];
     V_KNIGHT    = arr[3];
+
     V_PASSEDP   = arr[4];
 
     CONNECTED_ROOKS = arr[5];
@@ -132,10 +133,10 @@ static void setArray(const int* arr)
     KNIGHT_PAWNS    = arr[9];
     N_KING_OPEN_FILE= arr[10];
 
-    PAWN_CHAIN = arr[11];
+    PAWN_CHAIN      = arr[11];
     PAWN_PROTECTION = arr[12];
-    ATTACKED_BY_PAWN = arr[13];
-    N_DOUBLED_PAWN = arr[14];
+    ATTACKED_BY_PAWN= arr[13];
+    N_DOUBLED_PAWNS = arr[14];
 }
 
 /* Saves the array into memory, so in case it crashes no data is lost
