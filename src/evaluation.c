@@ -12,6 +12,8 @@ int V_PAWN = 116;
 
 int V_PASSEDP = 70; //Value for a passed pawn right before promotion
 
+int TEMPO = 11; //Value for a passed pawn right before promotion
+
 //All the variabels that begin with N_ are negative
 int CONNECTED_ROOKS = 23; //Bonus for having connected rooks
 int ROOK_OPEN_FILE = 22; //Bonus for a rook on an open file (No same color pawns)
@@ -28,11 +30,8 @@ int N_CLOSE_TO_KING = -1; //Penalization for having enemy pieces close to our ki
 //This ones aren't on use at the moment
 int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
 int ATTACKED_BY_PAWN_LATER = 6; //Bonus if a pawn can attack a piece after moving once
-int E_ADVANCED_KING = 2; //Endgame, bonus for advanced king
-int E_ADVANCED_PAWN = 6; //Endgame, bonus for advanced pawns
 int N_PIECE_SLOW_DEV = -10; //Penalization for keeping the pieces in the back-rank
 int STABLE_KING = 25; //Bonus for king in e1/8 or castled
-int PASSED_PAWN = 20; //Bonus for passed pawns
 int N_ISOLATED_PAWN = -10; //Penalization for isolated pawns
 int N_TARGET_PAWN = -7; //Penalization for a pawn that can't be protected by another pawn
 int CLEAN_PAWN = 20; //Bonus for a (passed?) pawn that doesn't have any pieces in the sqr ahead, only if it is on the opp half
@@ -47,32 +46,30 @@ int CLEAN_PAWN = 20; //Bonus for a (passed?) pawn that doesn't have any pieces i
 #include "../include/io.h"
 #include "../include/evaluation.h"
 
-#include <stdio.h>
 #include <assert.h>
 
 
+//Initialization
 static int phase(void);
 static void assignPC(const Board* b);
 
+// Main functions
 static int material(void);
 static int pieceActivity(const Board* b);
-static int piecesAttacked(const Board* b);
-static int endgameAnalysis(const Board* b);
-static int pieceDevelopment(const Board* b);
+static int passedPawns(const uint64_t wp, const uint64_t bp);
+static int pst(const Board* board, const int phase, const int color);
 static int pawns(const Board* b);
 static int kingSafety(const Board* b);
 static int pawnTension(const Board* b);
 
+static int pieceDevelopment(const Board* b);
 static int rookOnOpenFile(const uint64_t wr, const uint64_t br);
 static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
 static int minorPieces(void);
 static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
 
-static int passedPawns(const uint64_t wp, const uint64_t bp);
 
-static int pst(const Board* board, const int phase, const int color);
-
-/* TODO: Make the pawns bitboards as global to avoid passing too many arguments */
+// TODO: Make the pawns bitboards as global to avoid passing too many arguments
 static int wPawn, bPawn;
 static int wQueen, bQueen;
 static int wRook, bRook;
@@ -121,7 +118,7 @@ int eval(const Board* b)
     evaluation += pawnTension(b);
 
     assert(evaluation < PLUS_MATE && evaluation > MINS_MATE);
-    return b->stm? evaluation : -evaluation;
+    return TEMPO + (b->stm? evaluation : -evaluation);
 }
 
 int insuffMat(const Board* b)
@@ -159,11 +156,11 @@ int insuffMat(const Board* b)
 
 static inline void assignPC(const Board* b)
 {
-    wPawn = POPCOUNT(b->piece[WHITE][PAWN]), bPawn = POPCOUNT(b->piece[BLACK][PAWN]);
-    wQueen = POPCOUNT(b->piece[WHITE][QUEEN]), bQueen = POPCOUNT(b->piece[BLACK][QUEEN]);
-    wRook = POPCOUNT(b->piece[WHITE][ROOK]), bRook = POPCOUNT(b->piece[BLACK][ROOK]);
-    wBish = POPCOUNT(b->piece[WHITE][BISH]), bBish = POPCOUNT(b->piece[BLACK][BISH]);
-    wKnight = POPCOUNT(b->piece[WHITE][KNIGHT]), bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
+    wPawn   = POPCOUNT(b->piece[WHITE][PAWN]),      bPawn   = POPCOUNT(b->piece[BLACK][PAWN]);
+    wQueen  = POPCOUNT(b->piece[WHITE][QUEEN]),     bQueen  = POPCOUNT(b->piece[BLACK][QUEEN]);
+    wRook   = POPCOUNT(b->piece[WHITE][ROOK]),      bRook   = POPCOUNT(b->piece[BLACK][ROOK]);
+    wBish   = POPCOUNT(b->piece[WHITE][BISH]),      bBish   = POPCOUNT(b->piece[BLACK][BISH]);
+    wKnight  = POPCOUNT(b->piece[WHITE][KNIGHT]),   bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
 
     wPawnBB = b->piece[WHITE][PAWN], bPawnBB = b->piece[BLACK][PAWN];
     wPawnBBAtt = ((wPawnBB << 9) & 0xfefefefefefefefe) | ((wPawnBB << 7) & 0x7f7f7f7f7f7f7f7f);
@@ -191,7 +188,7 @@ static int phase(void)
 
 static inline int taperedEval(const int ph, const int beg, const int end)
 {
-    return ((beg * (256 - ph)) + (end * ph)) / 256;
+    return ((beg * (255 ^ ph)) + (end * ph)) >> 8;
 }
 
 
@@ -210,7 +207,6 @@ static inline int pieceActivity(const Board* b)
 
     score += connectedRooks(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK], b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN]);
     score += rookOnOpenFile(b->piece[WHITE][ROOK], b->piece[BLACK][ROOK]);
-    //score += piecesAttacked(b);
 
     return score;
 }
@@ -309,7 +305,6 @@ static inline int pawns(const Board* b)
     int final = PAWN_CHAIN * (POPCOUNT(wPawnBB & wPawnBBAtt) - POPCOUNT(bPawnBB & bPawnBBAtt));
     final += PAWN_PROTECTION * (POPCOUNT(wPawnBBAtt & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(bPawnBBAtt & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
     final += N_DOUBLED_PAWNS * (POPCOUNT(wPawnBB & ((wPawnBB << 8) | (wPawnBB << 16))) - POPCOUNT(bPawn & ((bPawnBB >> 8) | (bPawnBB >> 16))));
-    //final += ATTACKED_BY_PAWN * (POPCOUNT(wPawnBBAtt & b->color[BLACK]) - POPCOUNT(bPawnBBAtt & b->color[WHITE]));
     //final += ATTACKED_BY_PAWN_LATER * (POPCOUNT((wPawnBBAtt << 8) & b->color[BLACK]) - POPCOUNT((bPawnBBAtt >> 8) & b->color[WHITE]));
     //final += N_ISOLATED_PAWN * (isolW - isolB) + PASSED_PAWN * (passW - passB);// + N_TARGET_PAWN * (targW - targB);
 

@@ -17,18 +17,16 @@ extern int ROOK_OPEN_FILE;
 extern int KNIGHT_PAWNS;
 extern int N_KING_OPEN_FILE;
 extern int N_CLOSE_TO_KING;
-
-extern int BISHOP_MOBILITY;
 extern int N_DOUBLED_PAWNS;
 extern int PAWN_CHAIN;
 extern int PAWN_PROTECTION;
 extern int ATTACKED_BY_PAWN;
+extern int TEMPO;
+
+extern int BISHOP_MOBILITY;
 extern int ATTACKED_BY_PAWN_LATER;
-extern int E_ADVANCED_KING;
-extern int E_ADVANCED_PAWN;
 extern int N_PIECE_SLOW_DEV;
 extern int STABLE_KING;
-extern int PASSED_PAWN;
 extern int N_ISOLATED_PAWN;
 extern int N_TARGET_PAWN;
 extern int CLEAN_PAWN;

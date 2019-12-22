@@ -161,7 +161,6 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 
         for (int i = 0; i < 5; ++i)
         {
-            //TODO: Try placing sort before this call
             temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
             sort(list, list+numMoves);
 
@@ -449,7 +448,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     {
                         reduction +=1 + depth / (3 + pv);
                     }
-                    if (!pv && list[i].piece == KING && list[i].capture < 1)
+                    if (!pv && list[i].piece == KING && list[i].capture < 1 && POPCOUNT(b.allPieces) > 15)
                         reduction++;
                     if (!expSort && pv && list[i].score > 69 && list[i].capture > 0)
                         reduction--;

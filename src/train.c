@@ -12,8 +12,8 @@
 #include "../include/evaluation.h"
 
 #define NUM_THR 2 //Number of threads
-#define NUM_VARS 15
-#define NUM_POS 1000 //To count the number of positions run $ wc -l /../fen.csv
+#define NUM_VARS 16
+#define NUM_POS 10000 //To count the number of positions run $ wc -l /../fen.csv
 #define VAR_LIMIT 1400 //To ensure that no value gets too high
 
 typedef struct
@@ -137,6 +137,8 @@ static void setArray(const int* arr)
     PAWN_PROTECTION = arr[12];
     ATTACKED_BY_PAWN= arr[13];
     N_DOUBLED_PAWNS = arr[14];
+
+    TEMPO = arr[15];
 }
 
 /* Saves the array into memory, so in case it crashes no data is lost
@@ -281,6 +283,7 @@ static void optimize(void)
     double bestVal = error();
     int improved = 1, iter = 0;
 
+    printf("Start training with %d threads, %d variables and %d positions\n", NUM_THR, NUM_VARS, NUM_POS);
     printf("Init E: %.12f\n", bestVal);
 
     while(improved)

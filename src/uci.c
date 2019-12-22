@@ -17,12 +17,14 @@
 #include "../include/io.h"
 #include "../include/evaluation.h"
 #include "../include/uci.h"
+#include "../include/mate.h"
 
 #define LEN 4096
 
 static void uci(void);
 static void isready(void);
 static void perft_(Board b, int depth);
+static void mate_(Board b, int depth);
 static void eval_(Board b);
 static void best_(Board b, char* beg, Repetition* rep);
 static void best_time(Board, char* beg, Repetition* rep);
@@ -51,6 +53,18 @@ void loop(void)
         if (strncmp(beg, "isready", 7) == 0)
             isready();
 
+        else if (strncmp(beg, "go", 2) == 0)
+            best_time(b, beg + 3, &rep);
+
+        else if (strncmp(beg, "position startpos", 17) == 0)
+            b = gen_def(beg + 18, &rep);
+
+        else if (strncmp(beg, "position fen", 12) == 0)
+            b = gen_(beg + 13, &rep);
+
+        else if(strncmp(beg, "position", 8) == 0)
+            b = gen_(beg + 9, &rep);
+
         else if (strncmp(beg, "ucinewgame", 10) == 0)
         {
             b = defaultBoard();
@@ -67,20 +81,11 @@ void loop(void)
         else if (strncmp(beg, "perft", 5) == 0)
             perft_(b, atoi(beg + 6));
 
-        else if (strncmp(beg, "position startpos", 17) == 0)
-            b = gen_def(beg + 18, &rep);
-
-        else if (strncmp(beg, "position fen", 12) == 0)
-            b = gen_(beg + 13, &rep);
-
-        else if(strncmp(beg, "position", 8) == 0)
-            b = gen_(beg + 9, &rep);
-
         else if (strncmp(beg, "eval", 4) == 0)
             eval_(b);
 
-        else if (strncmp(beg, "go", 2) == 0)
-            best_time(b, beg + 3, &rep);
+        else if (strncmp(beg, "mate", 4) == 0)
+            mate_(b, atoi(beg + 5));
 
         else if (strncmp(beg, "quit", 4) == 0)
             quit = 1;
@@ -111,6 +116,17 @@ static void perft_(Board b, int depth)
 {
     clock_t startTime = clock();
     fprintf(stdout, "Node count: %llu\n", perft(b, depth, 1));
+    fprintf(stdout, "Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
+    fflush (stdout);
+}
+static void mate_(Board b, int depth)
+{
+    clock_t startTime = clock();
+    char mv[6] = "";
+    Move m = findMate(b, depth);
+    moveToText(m, mv);
+
+    fprintf(stdout, "mate %s in %d\n", mv, m.score);
     fprintf(stdout, "Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
     fflush (stdout);
 }
@@ -303,6 +319,7 @@ static void help_(void)
     fprintf(stdout, "    moves.......List of moves to apply to the position\n");
     fprintf(stdout, "print...........Draw the position on the screen\n");
     fprintf(stdout, "perft #.........Count the number of legal positions at depth #\n");
+    fprintf(stdout, "mate #..........Determine the shortest mate within # plies\n");
     fprintf(stdout, "go\n");
     fprintf(stdout, "   depth #......Analyze at depth\n");
     fprintf(stdout, "   wtime #......Analyze until the time runs out\n");

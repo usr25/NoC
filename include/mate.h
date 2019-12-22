@@ -1,1 +1,1 @@
-Move rookMate(const Board b);
+Move findMate(Board b, int depth);
