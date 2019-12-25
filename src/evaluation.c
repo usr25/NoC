@@ -328,7 +328,7 @@ static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uin
     //res += (getRookMagicMoves(LSB_INDEX(wh), all) & wh) == wh;
     int res = 0, hi, lo;
 
-    if (wRook) //There are 2 rooks
+    if (wRook > 1) //There are 2 rooks
     {
         hi = MSB_INDEX(wh), lo = LSB_INDEX(wh);
         if ((hi >> 3) == (lo >> 3)) //Same row
@@ -378,6 +378,17 @@ inline int minorPieces(void)
     return TWO_BISH * ((wBish > 1) - (bBish > 1)) + ((wPawn + bPawn > 10)? KNIGHT_PAWNS * (wKnight - bKnight) : 0);
 }
 
+const int mirror[64] = {
+    56, 57, 58, 59, 60, 61, 62, 63,
+    48, 49, 50, 51, 52, 53, 54, 55,
+    40, 41, 42, 43, 44, 45, 46, 47,
+    32, 33, 34, 35, 36, 37, 38, 39,
+    24, 25, 26, 27, 28, 29, 30, 31,
+    16, 17, 18, 19, 20, 21, 22, 23,
+    8,  9,  10, 11, 12, 13, 14, 15,
+    0,  1,  2,  3,  4,  5,  6,  7
+};
+
 static int pst(const Board* board, const int phase, const int color)
 {
     static const int pst[2][6][64] = {
@@ -406,6 +417,8 @@ static int pst(const Board* board, const int phase, const int color)
 
         while (bb)
         {
+            //TODO: Try the mirror
+            //const int index = color? LSB_INDEX(bb) : mirror[LSB_INDEX(bb)];
             const int index = color? LSB_INDEX(bb) : 63 ^ LSB_INDEX(bb);
             opening += pst[0][piece][index];
             endgame += pst[1][piece][index];

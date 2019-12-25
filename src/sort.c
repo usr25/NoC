@@ -21,7 +21,7 @@ __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr
 static const Move NOMOVE = (Move) {.from = -1, .to = -1};
 int pVal[6];
 int history[4096]; //TODO: make it 2x4096 to discriminate between stm
-Move killerMoves[99][NUM_KM];
+Move killerMoves[MAX_PLY][NUM_KM];
 
 inline int compMoves(const Move* m1, const Move* m2)
 {
@@ -40,7 +40,7 @@ void initSort(void)
 
 void initKM(void)
 {
-    for (int i = 0; i < 99; ++i)
+    for (int i = 0; i < MAX_PLY; ++i)
     {
         for (int j = 0; j < NUM_KM; ++j)
             killerMoves[i][j] = NOMOVE;
@@ -150,7 +150,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         else
         {
             if (pawnAtt & (1ULL << curr->to))
-                curr->score -= 20; //TODO: Change this based on the moving piece values
+                curr->score -= 25 - 2*curr->piece; //TODO: Change this based on the moving piece values
             int add = history[(curr->from << 6) + curr->to];
             if (add > 15) add = 16;
             curr->score += add;
@@ -182,16 +182,14 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
     Move* end = list + numMoves;
     for (Move* curr = list; curr != end; ++curr)
     {
-        if (curr->promotion > 0)
-            continue;
         if(curr->capture > 0)
         {
             //TODO: Add bonus if it captures the last piece to move
             //TODO: That could be improved using bbs of the last pieces moved
             if (curr->piece == PAWN)
-                curr->score = pVal[curr->capture] - 23;
+                curr->score += pVal[curr->capture];
             else
-                curr->score = 69 + seeCapture(*b, *curr);
+                curr->score += 69 + seeCapture(*b, *curr);
         }
     }
 }

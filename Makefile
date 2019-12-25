@@ -54,8 +54,8 @@ train: $(OBJT)
 	$(CC) -o $@ $^ $(CFLAGS) -DTRAIN -DNUSE_TB -DNDEBUG -lpthread
 
 lichess:
-	make release
-	mv release $(LICHESS)
+	make all
+	mv $(NAME) $(LICHESS)
 
 trainer:
 	$(CPP) $(TRAINER) -O3 -o trainer
@@ -68,8 +68,4 @@ all:
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
-	rm -f debug
-	rm -f release
-	rm -f train
-	rm -f trainer
-	rm -f assert
+	rm -f debug release train trainer assert

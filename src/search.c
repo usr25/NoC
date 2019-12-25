@@ -103,6 +103,7 @@ void initCall(void)
 }
 
 static int us;
+static Move moveStack[MAX_PLY];
 Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
 {
     nodes = 0;
@@ -112,6 +113,10 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     /* All the time management */
     calledTiming = (targetDepth == 0)? 1 : 0;
     targetDepth  = (targetDepth == 0)? 99 : targetDepth;
+    if (targetDepth > MAX_PLY){
+        printf("[-] Target depth > MAX_PLY, changing value\n");
+        targetDepth = MAX_PLY;
+    }
     clock_t start = clock(), last, elapsed;
 
     timeToMoveT = timeToMove;
@@ -151,8 +156,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     int alpha = MINS_INF, beta = PLUS_INF;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
-        delta = 100;// + depth;
-        //delta = max(25, delta * .8f);
+        delta = 100;//max(100, (2*delta)/3);//100;// + depth;
         if (depth >= 6)
         {
             alpha = bestScore - delta;
@@ -192,7 +196,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         bestScore = best.score;
 
         infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
-        if ((calledTiming && (1.15f * (last - start) > timeToMove)) || best.score >= PLUS_MATE)
+        if ((calledTiming && (1.2f * (last - start) > timeToMove)) || best.score >= PLUS_MATE)
             break;
     }
 
@@ -331,9 +335,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     const int ev = eval(&b);
     const int nZg = noZugz(b);
-    const int isSafe = !isInC && !nZg;
 
-    if (isSafe)
+    if (!isInC)
     {
         // Razoring
         /*
@@ -344,11 +347,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         */
         // Static pruning
-        if (!pv && depth <= 4 && ev - 116 * depth >= beta && ev < 9000)
+        if (!pv && depth <= 4 && ev - 150 * depth >= beta && ev < 9000)
             return ev;
 
         // Null move pruning
-        if (!null && depth > R)
+        if (!null && !nZg && depth > R)
         {
             if (nullMove(b, depth, beta, prevHash))
             {
@@ -396,7 +399,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         expSort = 1;
     }
 
-    const int canBreak = depth <= 3 && ev + marginDepth(depth) <= alpha && isSafe;
+    const int canBreak = depth <= 3 && ev + marginDepth(depth) <= alpha && !isInC;
     //const int fewMovesExt = b.stm != us && numMoves < 5;
 
     for (int i = 0; i < numMoves; ++i)
@@ -411,7 +414,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
         if (isDraw(&b, rep, newHash, list[i].capture > 0))
         {
-            val = 0;
+            val = height < 5? 0 : -(newHash & 15); //TODO: Only do this on 3fold rep
         }
         else
         {
@@ -446,7 +449,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     */
                     if (i > 4 && list[i].capture < 1)
                     {
-                        reduction +=1 + depth / (3 + pv);
+                        reduction += 1 + depth / (3 + pv);
                     }
                     if (!pv && list[i].piece == KING && list[i].capture < 1 && POPCOUNT(b.allPieces) > 15)
                         reduction++;
@@ -482,12 +485,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     addHistory(bestM.from, bestM.to);
                     #ifdef DEBUG
                     ++betaCutOff;
-                    if (i == 0)
-                        ++betaCutOffHit;
+                    if (i == 0) ++betaCutOffHit;
                     #endif
 
-                    if (bestM.capture < 1)
-                        addKM(bestM, depth);
+                    if (bestM.capture < 1) addKM(bestM, depth);
+
                     break;
                 }
             }
@@ -671,7 +673,7 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
     {
         return insuffMat(b);
     }
-    else if (rep->index > 3)
+    else if (rep->index > 5)
     {
         #ifdef DEBUG
         if (isRepetition(rep, newHash)) repe++;

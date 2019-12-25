@@ -1,7 +1,7 @@
 #define ALL 0xffffffffffffffffULL //(~0ULL)
 
 #define ENGINE_AUTHOR "Jorge"
-#define ENGINE_NAME "NoC 11.19"
+#define ENGINE_NAME "NoC 12.19"
 
 //#define USE_TB
 //#define TRAIN
@@ -49,6 +49,8 @@
 #define MINS_MATE  -999999
 #define PLUS_INF   9999999
 #define MINS_INF  -9999999
+
+#define MAX_PLY 50
 
 #ifndef uint64_t
 #define uint64_t unsigned long long
