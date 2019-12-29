@@ -1,3 +1,8 @@
+/* mate.c
+ * Determines if there is a mate within 'depth' plies
+ * it uses alphabeta (negamax)
+ */
+
 #include "../include/global.h"
 #include "../include/memoization.h"
 #include "../include/board.h"

@@ -12,7 +12,7 @@
 static const char pieces[6] = {'k', 'q', 'r', 'b', 'n', 'p'};
 
 void drawPosition(const Board b, const int drawCoords){
-    uint64_t pos = POW2[63];
+    uint64_t pos = 1ULL << 63;
     int i, j;
     for (i = 0; i < 8; ++i)
     {
@@ -72,12 +72,10 @@ void drawBitboard(const uint64_t b)
 
 void drawMove(const Move m)
 {
-    char a = 'h' - (m.from % 8);
-    char a1 = '1' + (m.from / 8);
-    char b = 'h' - (m.to % 8);
-    char b1 = '1' + (m.to / 8);
+    char mv[6] = "";
+    moveToText(m, mv);
 
-    printf("%c%c%c%c", a, a1, b, b1);
+    printf("%s", mv);
 
     if (m.promotion)
         printf("=%c", pieces[m.promotion]);
@@ -154,7 +152,7 @@ void generateFen(const Board b, char* fen)
     }
 
     fen[counter++] = ' ';
-    fen[counter++] = (b.castleInfo & 1) ? 'w' : 'b';
+    fen[counter++] = b.stm? 'w' : 'b';
     fen[counter++] = ' ';
 
     if(b.castleInfo & 0b1111)

@@ -31,6 +31,7 @@ inline uint64_t posQueenMoves(Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & (getRookMagicMoves(lsb, b->allPieces) | getBishMagicMoves(lsb, b->allPieces));
 }
+
 /* All the possible pawn moves without including enPass
  */
 uint64_t posPawnMoves(Board* b, const int color, const int lsb)
@@ -51,12 +52,11 @@ uint64_t posPawnMoves(Board* b, const int color, const int lsb)
     }
 }
 
-/*
- * All the sliding pieces movements are calculated by checking if there is an
+/* All the sliding pieces movements are calculated by checking if there is an
  * intersection with the move direction in the board, if there is, remove all
  * the following tiles.
  * The piece blocking is included in the resulting bitboard
- * Eg.: Q - - r - -  => Q 1 1 r(1) 0 0
+ * Eg.: Q - - r - -  => 0 1 1 1 0 0
  */
 uint64_t straight(const int lsb, const uint64_t allPieces)
 {
@@ -110,11 +110,10 @@ static inline uint64_t pawnCaptures(const int lsb, const int color)
     return color ? getWhitePawnCaptures(lsb) : getBlackPawnCaptures(lsb);
 }
 
-/*
- * Determines if the king can castle
- * This function does assumes that the king isn't in check, since it should only be called from genCheckMoves
+/* Determines if the king can castle
+ * PRE: The king isn't in check
  */
-int canCastle(Board* b, const int color, const uint64_t forbidden)
+int canCastle(const Board* b, const int color, const uint64_t forbidden)
 {
     int canK, canQ;
 
@@ -136,23 +135,23 @@ int canCastle(Board* b, const int color, const uint64_t forbidden)
 //TODO: Give extra score to castling?
 inline Move castleKSide(const int color)
 {
-    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1};
+    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1, .score = 0};
 }
 inline Move castleQSide(const int color)
 { 
-    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2};
+    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2, .score = 0};
 }
 
 //Tiles controlled by the opp king / pawns / knights
-uint64_t controlledKingPawnKnight(Board* b, const int opp)
+uint64_t controlledKingPawnKnight(const Board* b, const int opp)
 {
     uint64_t temp;
     uint64_t res = getKingMoves(LSB_INDEX(b->piece[opp][KING]));
 
     if (opp)
-        res |= ((b->piece[WHITE][PAWN] << 9) & 0xfefefefefefefefe) | ((b->piece[WHITE][PAWN] << 7) & 0x7f7f7f7f7f7f7f7f);
+        res |= WHITE_PAWN_ATT(b->piece[WHITE][PAWN]);
     else
-        res |= ((b->piece[BLACK][PAWN] >> 9) & 0x7f7f7f7f7f7f7f7f) | ((b->piece[BLACK][PAWN] >> 7) & 0xfefefefefefefefe);
+        res |= BLACK_PAWN_ATT(b->piece[BLACK][PAWN]);
 
     temp = b->piece[opp][KNIGHT];
     while(temp)
@@ -164,7 +163,7 @@ uint64_t controlledKingPawnKnight(Board* b, const int opp)
     return res;
 }
 
-uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles)
+uint64_t allSlidingAttacks(const Board* b, const int color, const uint64_t obstacles)
 {
     uint64_t temp, res = 0ULL;
 
@@ -192,7 +191,7 @@ uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles)
 
 /* Any piece placed in one of this tiles will stop a check, either by capturing or by pinning itself
  */
-AttacksOnK getCheckTiles(Board* b, const int color)
+AttacksOnK getCheckTiles(const Board* b, const int color)
 {
     const int opp = 1 ^ color;
     const int lsb = LSB_INDEX(b->piece[color][KING]);
@@ -266,7 +265,7 @@ AttacksOnK getCheckTiles(Board* b, const int color)
     return (AttacksOnK) {.tiles = res, .num = num};
 }
 
-inline int slidingCheck(Board* b, const int kingsColor)
+inline int slidingCheck(const Board* b, const int kingsColor)
 {
     const int k = LSB_INDEX(b->piece[kingsColor][KING]);
 
@@ -279,7 +278,7 @@ inline int slidingCheck(Board* b, const int kingsColor)
     return 0;
 }
 
-inline int isInCheck(Board* b, const int kingsColor)
+inline int isInCheck(const Board* b, const int kingsColor)
 {
     const int k = LSB_INDEX(b->piece[kingsColor][KING]);
     const int opp = 1 ^ kingsColor;

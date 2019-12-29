@@ -1,5 +1,5 @@
 /* search.c
- * Performs the actual search to find the best move
+ * Performs the search to find the best move
  */
 
 #include <stdio.h>

@@ -1,5 +1,5 @@
 /* allmoves.c
- * Its job is to generate all possible moves for a given position and color
+ * It's job is to generate all possible moves for a given position and color.
  * legalMoves is the main function.
  */
 
@@ -19,7 +19,6 @@
 #define NOT_SEVENTH_RANK 0xff00ffffffffffff
 #define NOT_SECOND_RANK 0xffffffffffff00ff
 
-//TODO: Place negative scores on rook and bish promotions
 
 __attribute__((hot)) static int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
 __attribute__((hot)) static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
@@ -31,10 +30,10 @@ __attribute__((hot)) static int movesCheckQuiesce(Board* b, Move* list, const ui
  */
 int legalMoves(Board* b, Move* list)
 {
-    //Squares attacked by opp pieces, to detect checks and castling
+    //Squares attacked by opp pieces, to detect checks and determine castling rights
     uint64_t forbidden = allSlidingAttacks(b, 1 ^ b->stm, b->allPieces ^ b->piece[b->stm][KING]) | controlledKingPawnKnight(b, 1 ^ b->stm);
 
-    //All the pinned pieces for the side to move
+    //All the stm's pinned pieces
     uint64_t pinned = pinnedPieces(b, b->stm);
 
     if (forbidden & b->piece[b->stm][KING])
@@ -61,7 +60,7 @@ int legalMovesQuiesce(Board* b, Move* list)
         return movesQuiesce(b, list, forbidden, pinned) << 1;
 }
 
-/* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves
+/* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves.
  */
 static inline int moveIsValidSliding(Board* b, const Move m, History h)
 {
@@ -72,20 +71,20 @@ static inline int moveIsValidSliding(Board* b, const Move m, History h)
 }
 
 /* Returns a bitboard with a 1 for every pinned piece, works similarly to isInCheck
- *   1- Trace moves from the king as if it were a queen but separating each direction
- *   2- Only pay attention to the lines that the first intersection is with a piece of the king's color
- *   3- Retrace from that piece in the direction and detect if there is a Rook / Bish / Queen
+ *   1- Trace moves from the king as if it were a queen, but separating each direction
+ *   2- Only pay attention to the lines in which the first intersection is with a piece of the king's color
+ *   3- Retrace from that piece in the direction and detect if there is an enemy sliding piece which could give check
  */
 uint64_t pinnedPieces(Board* b, const int color)
 {
-    uint64_t res = 0;
-
     const int k = LSB_INDEX(b->piece[color][KING]);
     const int opp = 1 ^ color;
 
     const uint64_t stra = (b->piece[opp][QUEEN] | b->piece[opp][ROOK]) & getStraMoves(k);
     const uint64_t diag = (b->piece[opp][QUEEN] | b->piece[opp][BISH]) & getDiagMoves(k);
+
     uint64_t obst, retrace;
+    uint64_t pin = 0;
 
     if (stra && (obst = b->color[color] & getRookMagicMoves(k, b->allPieces)))
     {
@@ -98,25 +97,25 @@ uint64_t pinnedPieces(Board* b, const int color)
         {
             retrace = getUpMoves(LSB_INDEX(inteUp)) & b->allPieces;
             if (retrace & -retrace & stra)
-                res |= inteUp;
+                pin |= inteUp;
         }
         if (inteDown)
         {
             retrace = getDownMoves(LSB_INDEX(inteDown)) & b->allPieces;
             if (retrace && (POW2[MSB_INDEX(retrace)] & stra))
-                res |= inteDown;
+                pin |= inteDown;
         }
         if (inteRight)
         {
             retrace = getRightMoves(LSB_INDEX(inteRight)) & b->allPieces;
             if (retrace && (POW2[MSB_INDEX(retrace)] & stra))
-                res |= inteRight;
+                pin |= inteRight;
         }
         if (inteLeft)
         {
             retrace = getLeftMoves(LSB_INDEX(inteLeft)) & b->allPieces;
             if (retrace & -retrace & stra)
-                res |= inteLeft;
+                pin |= inteLeft;
         }
     }
     if (diag && (obst = b->color[color] & getBishMagicMoves(k, b->allPieces)))
@@ -130,32 +129,32 @@ uint64_t pinnedPieces(Board* b, const int color)
         {
             retrace = getUpRightMoves(LSB_INDEX(inteUpRight)) & b->allPieces;
             if (retrace & -retrace & diag)
-                res |= inteUpRight;
+                pin |= inteUpRight;
         }
         if (inteUpLeft)
         {
             retrace = getUpLeftMoves(LSB_INDEX(inteUpLeft)) & b->allPieces;
             if (retrace & -retrace & diag)
-                res |= inteUpLeft;
+                pin |= inteUpLeft;
         }
         if (inteDownRight)
         {
             retrace = getDownRightMoves(LSB_INDEX(inteDownRight)) & b->allPieces;
             if (retrace && (POW2[MSB_INDEX(retrace)] & diag))
-                res |= inteDownRight;
+                pin |= inteDownRight;
         }
         if (inteDownLeft)
         {
             retrace = getDownLeftMoves(LSB_INDEX(inteDownLeft)) & b->allPieces;
             if (retrace && (POW2[MSB_INDEX(retrace)] & diag))
-                res |= inteDownLeft;
+                pin |= inteDownLeft;
         }
     }
 
-    return res;
+    return pin;
 }
 
-/* Generates all legal moves if the king isnt in check nor is there a pinned piece
+/* Generates all legal moves if the king isn't in check or is there isn't any pinned piece
  * No move will leave the king in check except for enPassand, since the discoveries are harder to detect
  */
 static int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden)
@@ -171,7 +170,6 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
         *p++ = castleKSide(color);
     if (castle & 2)
         *p++ = castleQSide(color);
-
 
     //Promoting pawns
     temp = b->piece[color][PAWN] & (color? SEVENTH_RANK : SECOND_RANK);
@@ -241,7 +239,7 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
     }
 
 
-    //Pawns that arent going to promote
+    //Pawns which aren't going to promote
     temp = b->piece[color][PAWN] & (color? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
     while(temp)
     {
@@ -250,7 +248,7 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
 
         if (color)
         {
-            //Checks if there is a piece ahead, if so, the pawn cant move
+            //Checks if there is a piece ahead, if so, the pawn can't move
             tempMoves = ((256ULL << from) & b->allPieces)? 0 : getWhitePawnMoves(from) & ~b->allPieces;
             tempCaptures = getWhitePawnCaptures(from) & oppPieces;
         }
@@ -517,7 +515,7 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
 
         if (b->stm)
         {
-            //Checks if there is a piece ahead, so the pawn cant move
+            //Checks if there is a piece ahead, so the pawn can't move
             tempMoves = (256ULL << from) & b->allPieces ? 0 : getWhitePawnMoves(from) & ~b->allPieces;
             tempCaptures = getWhitePawnCaptures(from) & oppPieces;
         }
@@ -632,7 +630,7 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
 
-        if (!(pinned & POW2[from])) //Fun fact: A pinned knight cant move
+        if (!(pinned & POW2[from])) //Fun fact: A pinned knight can't move
         {
             tempMoves = posKnightMoves(b, color, from);
             tempCaptures = tempMoves & oppPieces;
@@ -656,8 +654,8 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
 }
 
 /* Generates all legal moves when the king is in check
- * Notice that when the king is in check no pinned piece can move and if the number of attackers
- * is greater than 1 the only option is to move the king
+ * Notice that when the king is in check no pinned piece can move 
+ * and that if the number of attackers is greater than 1 the only option is to move the king
  */
 static int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
@@ -682,7 +680,7 @@ static int movesCheck(Board* b, Move* list, const int color, const uint64_t forb
         REMOVE_LSB(tempMoves);
     }
 
-    //If is more than one attacker the only option is to move the king
+    //If there are multiple attackers the only option is to move the king
     if (att.num == 1)
     {
         //Promoting pawns
@@ -734,7 +732,7 @@ static int movesCheck(Board* b, Move* list, const int color, const uint64_t forb
 
            if (color)
             {
-                //Checks if there is a piece ahead, if so, the pawn cant move
+                //Checks if there is a piece ahead, if so, the pawn can't move
                 tempMoves = ((256ULL << from) & b->allPieces)? 0 : getWhitePawnMoves(from) & ~b->allPieces & interfere;
                 tempCaptures = getWhitePawnCaptures(from) & oppPieces & interfere;
             }
@@ -1079,10 +1077,8 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
         REMOVE_LSB(tempMoves);
     }
 
-    //If is more than one attacker the only option is to move the king
     if (att.num == 1)
     {
-        //Promoting pawns
         temp = b->piece[color][PAWN] & pinnedMask & (color? SEVENTH_RANK : SECOND_RANK);
         while(temp)
         {
@@ -1243,5 +1239,4 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
     }
 
     return p - list;
-
 }

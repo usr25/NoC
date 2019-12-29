@@ -163,8 +163,8 @@ static inline void assignPC(const Board* b)
     wKnight  = POPCOUNT(b->piece[WHITE][KNIGHT]),   bKnight = POPCOUNT(b->piece[BLACK][KNIGHT]);
 
     wPawnBB = b->piece[WHITE][PAWN], bPawnBB = b->piece[BLACK][PAWN];
-    wPawnBBAtt = ((wPawnBB << 9) & 0xfefefefefefefefe) | ((wPawnBB << 7) & 0x7f7f7f7f7f7f7f7f);
-    bPawnBBAtt = ((bPawnBB >> 9) & 0x7f7f7f7f7f7f7f7f) | ((bPawnBB >> 7) & 0xfefefefefefefefe);
+    wPawnBBAtt = WHITE_PAWN_ATT(wPawnBB);
+    bPawnBBAtt = BLACK_PAWN_ATT(bPawnBB);
 }
 
 static int phase(void)

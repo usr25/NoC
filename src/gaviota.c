@@ -8,25 +8,22 @@
 
 #include "../include/global.h"
 #include "../include/board.h"
+#include "../include/moves.h"
+#include "../include/boardmoves.h"
 #include "../include/gaviota.h"
 
 static int getGavSqr(int inBoard)
 {
-    int sqr = inBoard - inBoard % 8;
-    sqr += 7 - inBoard % 8;
+    int sqr = inBoard - (inBoard & 7);
+    sqr += 7 ^ (inBoard & 7); //Eq to 7 - (iB % 8)
     return sqr;
 }
 
 static int pieceAtGav(Board* const b, const uint64_t pos, const int color)
 {
-    if (pos & b->piece[color][PAWN])     return tb_PAWN;
-    else if (pos & b->piece[color][ROOK]) return tb_ROOK;
-    else if (pos & b->piece[color][BISH]) return tb_BISHOP;
-    else if (pos & b->piece[color][KNIGHT]) return tb_KNIGHT;
-    else if (pos & b->piece[color][QUEEN]) return tb_QUEEN;
-    else if (pos & b->piece[color][KING]) return tb_KING;
+    static const int toTB[] = {tb_NOPIECE, tb_KING, tb_QUEEN, tb_ROOK, tb_BISHOP, tb_KNIGHT, tb_PAWN};
 
-    return tb_NOPIECE;
+    return toTB[1+pieceAt(b, pos, color)];
 }
 
 static void dtmPrint (unsigned stm, int tb_available, unsigned info, unsigned pliestomate);

@@ -69,7 +69,8 @@ uint64_t perft(Board b, const int depth, const int divide)
     return tot;
 }
 
-/* This is an especial version of the perft to ensure update hash is working
+/* This is an especial version of the perft to ensure that the zobrist
+ * hash update works
  */
 int hashPerft(Board b, const int depth, const uint64_t prevHash)
 {
@@ -77,7 +78,6 @@ int hashPerft(Board b, const int depth, const uint64_t prevHash)
 
     Move moves[NMOVES];
     History h;
-    uint64_t tot = 1;
 
     const int numMoves = legalMoves(&b, moves) >> 1;
 
@@ -85,13 +85,12 @@ int hashPerft(Board b, const int depth, const uint64_t prevHash)
     {
         makeMove(&b, moves[i], &h);
         uint64_t newHash = makeMoveHash(prevHash, &b, moves[i], h);
-        if (newHash != hashPosition(&b))
-            return 0;
 
-        tot &= hashPerft(b, depth - 1, newHash);
+        if (newHash != hashPosition(&b) && !hashPerft(b, depth - 1, newHash))
+            return 0;
 
         undoMove(&b, moves[i], &h);
     }
 
-    return tot;
+    return 1;
 }

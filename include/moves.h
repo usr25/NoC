@@ -55,14 +55,14 @@ uint64_t posPawnMoves(Board* b, const int color, const int lsb);
 uint64_t diagonal(const int lsb, const uint64_t allPieces);
 uint64_t straight(const int lsb, const uint64_t allPieces);
 
-int canCastle(Board* b, const int color, const uint64_t forbidden);
+int canCastle(const Board* b, const int color, const uint64_t forbidden);
 Move castleKSide(const int color);
 Move castleQSide(const int color);
 
-uint64_t controlledKingPawnKnight(Board* b, const int inverse);
-uint64_t allSlidingAttacks(Board* b, const int color, const uint64_t obstacles);
-AttacksOnK getCheckTiles(Board* b, const int color);
+uint64_t controlledKingPawnKnight(const Board* b, const int inverse);
+uint64_t allSlidingAttacks(const Board* b, const int color, const uint64_t obstacles);
+AttacksOnK getCheckTiles(const Board* b, const int color);
 
-int isInCheck(Board* b, const int kingsColor);
-int slidingCheck(Board* b, const int kingsColor);
+int isInCheck(const Board* b, const int kingsColor);
+int slidingCheck(const Board* b, const int kingsColor);
 int givesCheck(const Board* b, const Move m);

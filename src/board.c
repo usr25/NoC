@@ -12,7 +12,7 @@
  White pawns
  White pieces
 */
-#include <stdio.h>
+
 #include <assert.h>
 #include "../include/global.h"
 #include "../include/board.h"
@@ -33,17 +33,17 @@
 #define INITIAL_BBISH 0x2400000000000000
 #define INITIAL_BKNIGHT 0x4200000000000000
 
-//Starting: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+//Starting fen: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
-int textToPiece(const char piece);
-int color(const char piece);
+const int textToPiece(char piece);
+const int color(const char piece);
 
 //TODO: 50 moves in the fen are ignored, the moves are set to 0
 Board genFromFen(char* const fen, int* counter)
 {
     Board b = (Board) {.enPass = 0, .castleInfo = 0};
     int i, num, shift, col, piece;
-    uint64_t pos = POW2[63];
+    uint64_t pos = 1ULL << 63;
 
     for (i = 0; pos != 0; ++i)
     {
@@ -74,11 +74,11 @@ Board genFromFen(char* const fen, int* counter)
     b.color[AV_BLACK] = ~b.color[BLACK];
     b.allPieces = b.color[WHITE] | b.color[BLACK];
 
-    i++;
+    ++i;
 
     b.stm = fen[i] == 'w';
 
-    i++;
+    ++i;
 
     int castleInfo = 0;
     while(fen[++i] != ' ' && fen[i] != '\0')
@@ -101,11 +101,11 @@ Board genFromFen(char* const fen, int* counter)
     }
     b.castleInfo = castleInfo;
 
-    i++;
+    ++i;
     if (fen[i] != '-')
     {
         b.enPass = getIndex(fen[i], fen[i+1]) - (2 * b.stm - 1) * 8;
-        i++;
+        ++i;
     }
 
     i+=2;
@@ -138,6 +138,7 @@ Board genFromFen(char* const fen, int* counter)
     assert((b.color[WHITE] & b.color[BLACK]) == 0);
     assert(((b.piece[WHITE][PAWN] | b.piece[BLACK][PAWN]) & 0xff000000000000ff) == 0);
 
+    //Just some sanity checks
     if (b.enPass < 8 || b.enPass >= 56)
         b.enPass = 0;
     if (b.castleInfo > 0xf)
@@ -150,7 +151,7 @@ Board genFromFen(char* const fen, int* counter)
 const Board defaultBoard()
 {
     Board b = (Board) {};
-    
+
     b.piece[BLACK][KING] = INITIAL_BKING;
     b.piece[BLACK][QUEEN] = INITIAL_BQUEEN;
     b.piece[BLACK][ROOK] = INITIAL_BROOK;
@@ -167,10 +168,10 @@ const Board defaultBoard()
 
     b.color[BLACK] = INITIAL_BPIECES;
     b.color[WHITE] = INITIAL_WPIECES;
-    b.color[AV_BLACK] = ~ INITIAL_BPIECES;
-    b.color[AV_WHITE] = ~ INITIAL_WPIECES;
+    b.color[AV_BLACK] = ~INITIAL_BPIECES;
+    b.color[AV_WHITE] = ~INITIAL_WPIECES;
 
-    b.castleInfo =  0xf;
+    b.castleInfo = 0xf;
     b.allPieces = INITIAL_WPIECES | INITIAL_BPIECES;
     b.stm = WHITE;
 
@@ -197,38 +198,35 @@ int equal(const Board* a, const Board* b)
     return data && pieces && other;
 }
 
-int textToPiece(const char piece)
+const int textToPiece(char piece)
 {
+    //Neat trick to turn lowercase to capital letter in ascii
+    piece = piece & ~0b100000;
     switch(piece)
     {
         case 'P':
-        case 'p':
             return PAWN;
         case 'K':
-        case 'k':
             return KING;
         case 'Q':
-        case 'q':
             return QUEEN;
         case 'R':
-        case 'r':
             return ROOK;
         case 'B':
-        case 'b':
             return BISH;
         case 'N':
-        case 'n':
             return KNIGHT;
 
         default:
             return NO_PIECE;
     }
 }
-int color(const char piece)
+
+const int color(const char piece)
 {
     return 'A' <= piece && piece <= 'Z';
 }
-int getIndex(const char row, const char col)
+const int getIndex(const char row, const char col)
 {
     return ((col - '1') << 3) + (7 + 'a' - row);
 }

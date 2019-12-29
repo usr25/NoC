@@ -211,10 +211,9 @@ uint64_t random[781] =
  */
 void initializeTable(void)
 {
-    Eval* ptr, *end;
-    ptr = table;
-    end = ptr + NUM_ENTRIES;
-    for (; ptr < end; ++ptr)
+    Eval* end;
+    end = table + NUM_ENTRIES;
+    for (Eval* ptr = table; ptr < end; ++ptr)
         ptr->key = 0;
 }
 
@@ -230,6 +229,7 @@ int isThreeRep(const Repetition* r, const uint64_t hash)
         if (r->hashTable[i] == hash)
             ++count;
     }
+
     return count > 1;
 }
 
@@ -256,7 +256,7 @@ uint64_t hashPosition(const Board* b)
     }
 
     uint64_t temp;
-    for (int i = 0; i <= 1; ++i)
+    for (int i = BLACK; i <= WHITE; ++i)
     {
         for (int j = KING; j <= PAWN; ++j)
         {

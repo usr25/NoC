@@ -1,3 +1,8 @@
+/* train.c
+ * Automatically tweaks the evaluation parametres to better fit a set of
+ * labled positions.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -11,8 +16,9 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 
-#define NUM_THR 2 //Number of threads
 #define NUM_VARS 16
+//TODO: Don't use constants (except for NUM_VARS?)
+#define NUM_THR 2 //Number of threads
 #define NUM_POS 10000 //To count the number of positions run $ wc -l /../fen.csv
 #define VAR_LIMIT 1400 //To ensure that no value gets too high
 

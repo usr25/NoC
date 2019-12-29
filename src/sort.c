@@ -1,3 +1,8 @@
+/* sort.c
+ * Assigns scores to the moves available from a position and sort the list
+ * This considerably improves the alphabeta's efficiency and LMR effectiveness
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -19,8 +24,8 @@ __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr
 #define NUM_KM 2
 
 static const Move NOMOVE = (Move) {.from = -1, .to = -1};
-int pVal[6];
-int history[4096]; //TODO: make it 2x4096 to discriminate between stm
+static int pVal[6];
+static int history[4096]; //TODO: make it 2x4096 to discriminate between stm
 Move killerMoves[MAX_PLY][NUM_KM];
 
 inline int compMoves(const Move* m1, const Move* m2)
@@ -30,6 +35,7 @@ inline int compMoves(const Move* m1, const Move* m2)
 
 void initSort(void)
 {
+    //This is so that evaluation tweaks don't affect the ordering
     pVal[0] = 2320;
     pVal[1] = 1267;
     pVal[2] = 609;
@@ -121,16 +127,16 @@ static int smallestAttackerSqr(const Board* b, const int sqr, const int col)
     return -1;
 }
 
-//TODO: Set a flag to use SEE depending on the depth or sthng
+//TODO: Set a flag to use SEE depending on the depth or sthng like that
 inline void assignScores(Board* b, Move* list, const int numMoves, const Move bestFromPos, const int depth)
 {
     Move* end = list + numMoves;
 
     uint64_t pawnAtt;
     if (b->stm)
-        pawnAtt = ((b->piece[BLACK][PAWN] >> 9) & 0x7f7f7f7f7f7f7f7f) | ((b->piece[BLACK][PAWN] >> 7) & 0xfefefefefefefefe);
+        pawnAtt = BLACK_PAWN_ATT(b->piece[BLACK][PAWN]);
     else
-        pawnAtt = ((b->piece[WHITE][PAWN] << 9) & 0xfefefefefefefefe) | ((b->piece[WHITE][PAWN] << 7) & 0x7f7f7f7f7f7f7f7f);
+        pawnAtt = WHITE_PAWN_ATT(b->piece[WHITE][PAWN]);
 
     for (Move* curr = list; curr != end; ++curr)
     {
@@ -139,9 +145,11 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         if(curr->capture > 0) //There has been a capture
         {
             /*
+            //Simple MVV-LVA
             int subst = (curr->piece < ROOK)? pVal[ROOK] / 7 : pVal[curr->piece] / 10;
             curr->score = pVal[curr->capture] - subst;
             */
+            //SEE
             if (curr->piece == PAWN)
                 curr->score = pVal[curr->capture];
             else
@@ -150,7 +158,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         else
         {
             if (pawnAtt & (1ULL << curr->to))
-                curr->score -= 25 - 2*curr->piece; //TODO: Change this based on the moving piece values
+                curr->score -= 25 - 2*curr->piece;
             int add = history[(curr->from << 6) + curr->to];
             if (add > 15) add = 16;
             curr->score += add;
@@ -209,6 +217,29 @@ void initHistory(void)
         *p = 0;
 }
 
+/* Moves the largest score to the beggining of the list
+ * [1 5 3 4 2] -> [5 1 4 3 2]
+ * it is equivalent to one bubble sort iteration
+ */
+void bestMoveFst(Move* start, Move* end)
+{
+    Move best = *(end - 1);
+    for (Move* p = end - 2; p >= start; --p)
+    {
+        if (best.score >= p->score){
+            *(p+1) = *p;
+        } else {
+            *(p+1) = best;
+            best = *p;
+        }
+    }
+
+    *start = best;
+}
+
+/* Efficient insertion sort implementation
+ * it is better than quicksort for smaller lists
+ */
 void sort(Move* start, Move* end)
 {
     Move* q, temp;

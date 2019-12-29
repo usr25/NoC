@@ -135,38 +135,6 @@ static int testHashingPerfts()
     printf("H Complete: %d\n", perftH("r3kn2/5p2/8/4P3/6p1/8/5P2/R3K2N w Qq -", 6));
 }
 
-static int testRookMate()
-{
-    int white = 1, black = 1;
-    int depth = 3;
-
-    white &= compMove("8/3R4/8/1k6/5K2/8/8/8 w - -", "d7c7", depth, 4);
-    white &= compMove("8/3R4/1k6/8/5K2/8/8/8 w - -", "d7d1", depth, 4);
-    white &= compMove("8/2R5/1k6/8/5K2/8/8/8 w - -", "c7c1", depth, 4);
-    white &= compMove("8/8/1k6/8/5K2/8/8/2R5 w - -", "f4e5", depth, 4);
-    white &= compMove("8/8/1k1K4/8/8/8/8/2R5 w - -", "c1b1", depth, 4);
-    white &= compMove("8/8/1k1K4/2R5/8/8/8/8 w - -", "c5c1", depth, 4);
-    white &= compMove("6R1/8/8/5K2/7k/8/8/8 w - -", "g8g7", depth, 4);
-    white &= compMove("8/8/8/5K2/7k/8/8/6R1 w - -", "g1g8", depth, 4);
-    white &= compMove("3R4/8/8/8/8/2k5/4K3/8 w - -", "d8d7", depth, 4);
-    white &= compMove("3R4/8/8/8/8/8/4K3/2k5 w - -", "d8c8", depth, 4);
-
-    black &= compMove("8/3r4/8/1K6/5k2/8/8/8 b - -", "d7c7", depth, 4);
-    black &= compMove("8/3r4/1K6/8/5k2/8/8/8 b - -", "d7d1", depth, 4);
-    black &= compMove("8/2r5/1K6/8/5k2/8/8/8 b - -", "c7c1", depth, 4);
-    black &= compMove("8/8/1K6/8/5k2/8/8/2r5 b - -", "f4e5", depth, 4);
-    black &= compMove("8/8/1K1k4/8/8/8/8/2r5 b - -", "c1b1", depth, 4);
-    black &= compMove("8/8/1K1k4/2r5/8/8/8/8 b - -", "c5c1", depth, 4);
-    black &= compMove("6r1/8/8/5k2/7K/8/8/8 b - -", "g8g7", depth, 4);
-    black &= compMove("8/8/8/5k2/7K/8/8/6r1 b - -", "g1g8", depth, 4);
-    black &= compMove("3r4/8/8/8/8/2K5/4k3/8 b - -", "d8d7", depth, 4);
-    black &= compMove("3r4/8/8/8/8/8/4k3/2K5 b - -", "d8c8", depth, 4);
-
-    printf("WARNING: This won't work if tablebases are implemented\n");
-
-    return white && black;
-}
-
 static void clear(char* str)
 {
     for (int i = 0; i < 256; ++i)
@@ -390,8 +358,7 @@ static void slowTests(void)
 
 static void runTests(void)
 {
-    //Rook mate
-    printf("[+] Rook Mate: %d\n",       testRookMate());
+    //TODO: Test the mate.c module
     //Hash
     printf("[+] Hash: %d\n",            testHashing());
 }

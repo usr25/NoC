@@ -1,5 +1,5 @@
 /* boardmoves.c
- * In charge of making changes to the actual board.
+ * In charge of making the changes to the board.
  * makeMove, undoMove are the most important functions
  */
 
@@ -12,8 +12,8 @@
 
 #include <assert.h>
 
-/* Returns the piece in the determined sqr, pos has to be a bitboard (POW2)
- * Returns NO_PIECE (-1) if there is no piece
+/* Returns the piece in the determined sqr, pos has to be a bitboard
+ * Returns NO_PIECE if there is no piece
  */
 inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 {
@@ -29,24 +29,24 @@ inline int pieceAt(Board* const b, const uint64_t pos, const int color)
 
 static inline int kingMoved(const int color)
 {
-    return ~ (3 << (color << 1));
+    return ~(3 << (color << 1));
 }
 static inline int rookMoved(const int color, const int from)
 {
     if (from == 56 * (1 ^ color))
-        return ~ (1 << (color << 1));
+        return ~(1 << (color << 1));
 
     else if (from == 56 * (1 ^ color) + 7)
-        return ~ (2 << (color << 1));
+        return ~(2 << (color << 1));
 
     return 0b1111;
 }
 
 static inline void flipBits(Board* b, const uint64_t from, const int piece, const int color)
 {
-    b->piece[color][piece] ^= from;
-    b->color[color] ^= from;
-    b->color[color | 2] ^= from;
+    b->piece[color][piece]  ^= from;
+    b->color[color]         ^= from;
+    b->color[color | 2]     ^= from;
 }
 
 /* Flips the necessary bits for castling
@@ -90,7 +90,9 @@ void makeMove(Board* b, const Move move, History* h)
 
     b->enPass = 0;
 
+    //Remove the piece from the 'from' sqr
     flipBits(b, fromBit, move.piece, b->stm);
+
     switch(move.piece)
     {
         case PAWN:
@@ -136,6 +138,7 @@ void makeMove(Board* b, const Move move, History* h)
 
     b->stm ^= 1;
 
+    //If there has been a capture remove the piece
     if (move.capture > 0)
     {
         flipBits(b, toBit, move.capture, b->stm);
@@ -158,6 +161,7 @@ void makePermaMove(Board* b, const Move move)
     b->enPass = 0;
 
     flipBits(b, fromBit, move.piece, b->stm);
+
     switch(move.piece)
     {
         case PAWN:
@@ -218,6 +222,7 @@ void undoMove(Board* b, const Move move, History* h)
 {
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
+    //Read from the history
     b->castleInfo = h->castleInfo;
     b->allPieces = h->allPieces;
     b->enPass = h->enPass;
@@ -272,31 +277,32 @@ int isValid(Board b, const Move m)
         return 0;
     if (m.capture > 0 && pieceAt(&b, toBB, 1 ^ b.stm) != m.capture)
         return 0;
-    //Look at the move
+
+    //Look at the piece type to see if it can be done
     switch (m.piece)
     {
         case PAWN:
-            if ((toBB & posPawnMoves(&b, b.stm, m.from)) == 0)
+            if (! (toBB & posPawnMoves(&b, b.stm, m.from)))
                 return 0;
             break;
         case KNIGHT:
-            if ((toBB & getKnightMoves(m.from)) == 0)
+            if (! (toBB & getKnightMoves(m.from)))
                 return 0;
             break;
         case BISH:
-            if ((toBB & getBishMagicMoves(m.from, b.allPieces)) == 0)
+            if (! (toBB & getBishMagicMoves(m.from, b.allPieces)))
                 return 0;
             break;
         case ROOK:
-            if ((toBB & getRookMagicMoves(m.from, b.allPieces)) == 0)
+            if (! (toBB & getRookMagicMoves(m.from, b.allPieces)))
                 return 0;
             break;
         case QUEEN:
-            if ((toBB & (getRookMagicMoves(m.from, b.allPieces) | getBishMagicMoves(m.from, b.allPieces))) == 0)
+            if (! (toBB & (getRookMagicMoves(m.from, b.allPieces) | getBishMagicMoves(m.from, b.allPieces))))
                 return 0;
             break;
         case KING:
-            if ((toBB & getKingMoves(m.from)) == 0)
+            if (! (toBB & getKingMoves(m.from)))
                 return 0;
             break;
 

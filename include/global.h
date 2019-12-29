@@ -11,6 +11,9 @@
 #define LSB_INDEX(ll) __builtin_ctzll(ll)
 #define MSB_INDEX(ll) (63 - __builtin_clzll(ll))
 
+#define WHITE_PAWN_ATT(bb) (((bb) << 9) & 0xfefefefefefefefe) | (((bb) << 7) & 0x7f7f7f7f7f7f7f7f)
+#define BLACK_PAWN_ATT(bb) (((bb) >> 9) & 0x7f7f7f7f7f7f7f7f) | (((bb) >> 7) & 0xfefefefefefefefe)
+
 #define NO_PIECE -1
 #define KING    0
 #define QUEEN   1
