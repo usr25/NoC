@@ -68,8 +68,8 @@ void loop(void)
         else if (strncmp(beg, "ucinewgame", 10) == 0)
         {
             b = defaultBoard();
-            rep.index = 0;
-            rep.hashTable[rep.index++] = hashPosition(&b);
+            rep.hashTable[0] = hashPosition(&b);
+            rep.index = 1;
         }
 
         else if (strncmp(beg, "uci", 3) == 0)
@@ -127,7 +127,8 @@ static void mate_(Board b, int depth)
     moveToText(m, mv);
 
     fprintf(stdout, "mate %s in %d\n", mv, m.score);
-    fprintf(stdout, "Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
+    fprintf(stdout, "Time taken: %fs\n", 
+        (double)(clock() - startTime) / CLOCKS_PER_SEC);
     fflush (stdout);
 }
 static void eval_(Board b)
@@ -221,13 +222,12 @@ static int move_(Board* b, char* beg, Repetition* rep)
 
     if(m.piece == KING)
     {
-        if (abs(from - to) == 2) //Castle
-        {
-            if (to > from)
-                m.castle = 2; //Castle queenside
-            else
-                m.castle = 1; //Castle kingside
-        }
+        if (to == from + 2) //Queenside castle
+            m.castle = 2;
+        else if (to == from - 2) //Kingside castle
+            m.castle = 1;
+        else
+            m.castle = 0;
     }
     else if(m.piece == PAWN)
     {
@@ -302,7 +302,8 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
 {
     char mv[6] = "";
     moveToText(m, mv);
-    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", 100 * m.score / V_PAWN, depth, duration, nodes, 1000 * nodes / (duration + 1), mv);
+    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", 
+        100 * m.score / V_PAWN, depth, duration, nodes, 1000 * nodes / (duration + 1), mv);
     fflush(stdout);
 }
 static void help_(void)

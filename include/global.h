@@ -48,10 +48,10 @@
 #define EDGE        0xff818181818181ffULL
 #define EDGE_RANKS  0xff000000000000ffULL
 
-#define PLUS_MATE   999999
-#define MINS_MATE  -999999
-#define PLUS_INF   9999999
-#define MINS_INF  -9999999
+#define PLUS_MATE   1159998
+#define MINS_MATE  -1159998
+#define PLUS_INF   99999999
+#define MINS_INF  -99999999
 
 #define MAX_PLY 50
 
@@ -59,7 +59,7 @@
 #define uint64_t unsigned long long
 #endif
 
-inline int min(const int a, const int b) {return (a < b)? a : b;}
-inline int max(const int a, const int b) {return (a > b)? a : b;}
+const inline int min(const int a, const int b) {return (a < b)? a : b;}
+const inline int max(const int a, const int b) {return (a > b)? a : b;}
 
 uint64_t POW2[64];

@@ -152,7 +152,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
 
     Move best = list[0], temp;
     int bestScore = 0;
-    int delta = 60;
+    int delta = 100;
     int alpha = MINS_INF, beta = PLUS_INF;
     for (int depth = 1; depth <= targetDepth; ++depth)
     {
@@ -175,15 +175,15 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
                 break;
             if (temp.score >= beta)
             {
-                beta += delta;
                 delta += delta / 4;
+                beta += delta;
                 researches++;
             }
             else if (temp.score <= alpha)
             {
                 beta = (beta + alpha) / 2;
-                alpha -= delta;
                 delta += delta / 4;
+                alpha -= delta;
                 researches++;
             }
             else
@@ -228,6 +228,10 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
     for (int i = 0; i < numMoves; ++i)
     {
+        //If the move leads to being mated, break
+        if (list[i].score < MINS_MATE)
+            break;
+
         percentage = i / (double) numMoves;
         assert(percentage >= 0 && percentage <= 1.1);
         makeMove(&b, list[i], &h);
@@ -379,7 +383,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     History h;
     Move mt = list[0];
     int expSort = 0;
-    if (depth >= 5 && mt.score < 290)
+    if (expSort = (depth >= 5 && mt.score < 290))
     {
         /*
         //This is to always check the first move after sorting
@@ -396,12 +400,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         */
         int targD = min(pv? depth - 4 : depth / 4, 6);
         expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
-        expSort = 1;
     }
 
     const int canBreak = depth <= 3 && ev + marginDepth(depth) <= alpha && !isInC;
     //const int fewMovesExt = b.stm != us && numMoves < 5;
 
+    const int mateInNext = mate(newHeight+1);
     for (int i = 0; i < numMoves; ++i)
     {
         if (canBreak && list[i].score < 90 && (i > 3 + depth || (i > 3 && !pv)))
@@ -480,7 +484,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             {
                 alpha = best;
 
-                if (alpha >= beta)
+                if (alpha >= beta || alpha >= mateInNext)
                 {
                     addHistory(bestM.from, bestM.to);
                     #ifdef DEBUG

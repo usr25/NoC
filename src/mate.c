@@ -25,7 +25,7 @@ Move findMate(Board b, int depth)
     int alpha = -99, beta = 99;
     int best = -100;
     Move bestM;
-    Move list[250];
+    Move list[NMOVES];
     History h;
     const int numMoves = legalMoves(&b, list) >> 1;
     for (int i = 0; i < numMoves; ++i)
@@ -51,7 +51,7 @@ static int determineMate(Board b, int depth, int height, int alpha, int beta)
 {
     if (depth <= 0) return 0;
     int best = -100;
-    Move list[250];
+    Move list[NMOVES];
     History h;
     const int lgm = legalMoves(&b, list);
     const int numMoves = lgm >> 1;
