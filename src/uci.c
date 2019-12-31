@@ -185,7 +185,7 @@ static void best_time(Board b, char* beg, Repetition* rep)
             clock_t timeToMove;
 
             if (movestogo)
-                timeToMove = min(remTime / 5, remTime / (movestogo + 6) + (clock_t)((double)increment * .4));
+                timeToMove = min(remTime / 5, remTime / (movestogo + 4) + (clock_t)((double)increment * .4));
             else if (increment)
                 timeToMove = min(remTime / 5, remTime / 23 + (clock_t)((double)increment * .95));
             else

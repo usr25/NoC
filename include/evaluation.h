@@ -14,6 +14,7 @@ extern int TWO_BISH;
 extern int SAFE_KING;
 extern int ROOK_OPEN_FILE;
 
+extern int PPAWN_PROT;
 extern int KNIGHT_PAWNS;
 extern int N_KING_OPEN_FILE;
 extern int N_CLOSE_TO_KING;

@@ -13,6 +13,7 @@ int V_PAWN = 116;
 int V_PASSEDP = 70; //Value for a passed pawn right before promotion
 
 int TEMPO = 11; //Value for a passed pawn right before promotion
+int PPAWN_PROT = 12;
 
 //All the variabels that begin with N_ are negative
 int CONNECTED_ROOKS = 23; //Bonus for having connected rooks
@@ -56,14 +57,14 @@ static void assignPC(const Board* b);
 // Main functions
 static int material(void);
 static int pieceActivity(const Board* b);
-static int passedPawns(const uint64_t wp, const uint64_t bp);
+static int passedPawns(uint64_t wp, uint64_t bp, const int ph);
 static int pst(const Board* board, const int phase, const int color);
 static int pawns(const Board* b);
 static int kingSafety(const Board* b);
 static int pawnTension(const Board* b);
 
 static int pieceDevelopment(const Board* b);
-static int rookOnOpenFile(const uint64_t wr, const uint64_t br);
+static int rookOnOpenFile(uint64_t wr, uint64_t br);
 static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
 static int minorPieces(void);
 static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
@@ -111,7 +112,7 @@ int eval(const Board* b)
 
     evaluation += kingSafety(b);
 
-    evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN]);
+    evaluation += passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN], ph);
 
     evaluation += pawns(b);
 
@@ -148,6 +149,7 @@ int insuffMat(const Board* b)
                               ((ODD_TILES & b->piece[WHITE][BISH]) && (ODD_TILES & b->piece[BLACK][BISH]))
                             ||((EVEN_TILES & b->piece[WHITE][BISH]) && (EVEN_TILES & b->piece[BLACK][BISH]));
             }
+
             return 0;
     }
 
@@ -226,35 +228,41 @@ static inline int kingSafety(const Board* b)
     return score;
 }
 
-static int passedPawns(const uint64_t wp, const uint64_t bp)
+static int passedPawns(uint64_t wp, uint64_t bp, const int ph)
 {
-    int lsb = 0, accPawn = 0;
-    uint64_t tempW = wp & 0xffffffff00000000, tempB = bp & 0xffffffff;
+    const int open[8] = {0,  0,  0, 10, 15, 20, 40, 0};
+    const int endg[8] = {0, 7, 15, 20, 30, 42, 70, 0};
+    int lsb = 0, op = 0, end = 0;
+    wp &= 0xffffffff00000000;
+    bp &= 0xffffffff;
     int isProtected, rank;
-    while(tempW)
+    while(wp)
     {
-        lsb = LSB_INDEX(tempW);
+        lsb = LSB_INDEX(wp);
         if ((getWPassedPawn(lsb) & bp) == 0)
         {
             isProtected = (wPawnBBAtt & (1ULL << lsb)) != 0;
             rank = lsb >> 3;
-            accPawn += passedPawnValues[rank] + (isProtected? 12 + rank : 0);
+            op  += open[rank] + (isProtected? PPAWN_PROT + rank : 0);
+            end += endg[rank] + (isProtected? 2 * (PPAWN_PROT + rank) : 0);
+            //accPawn += passedPawnValues[rank] + (isProtected? PPAWN_PROT + rank : 0);
         }
-        REMOVE_LSB(tempW);
+        REMOVE_LSB(wp);
     }
-    while (tempB)
+    while (bp)
     {
-        lsb = LSB_INDEX(tempB);
+        lsb = LSB_INDEX(bp);
         if ((getBPassedPawn(lsb) & wp) == 0)
         {
             isProtected = (bPawnBBAtt & (1ULL << lsb)) != 0;
             rank = 7 ^ (lsb >> 3);
-            accPawn -= passedPawnValues[rank] + (isProtected? 12 + rank : 0);
+            op  -= open[rank] + (isProtected? PPAWN_PROT + rank : 0);
+            end -= endg[rank] + (isProtected? 2 * (PPAWN_PROT + rank) : 0);
         }
-        REMOVE_LSB(tempB);
+        REMOVE_LSB(bp);
     }
 
-    return accPawn;
+    return taperedEval(ph, op, end);
 }
 
 inline uint64_t shiftSideways(const uint64_t bb)
@@ -355,20 +363,21 @@ static inline int connectedRooks(const uint64_t wh, const uint64_t bl, const uin
 
     return CONNECTED_ROOKS * res;
 }
-static inline int rookOnOpenFile(const uint64_t wr, const uint64_t br)
+static inline int rookOnOpenFile(uint64_t wr, uint64_t br)
 {
     int r = 0;
-    if (wr)
+    uint64_t ray;
+    while (wr)
     {
-        r += (getVert(LSB_INDEX(wr) & 7) & wPawnBB) == 0;
-        if (wRook > 1)
-            r += (getVert(MSB_INDEX(wr) & 7) & wPawnBB) == 0;
+        ray = getVert(LSB_INDEX(wr) & 7);
+        r += ((ray & wPawnBB) == 0) + ((ray & bPawnBB) == 0);
+        REMOVE_LSB(wr);
     }
-    if (br)
+    while (br)
     {
-        r -= (getVert(LSB_INDEX(br) & 7) & bPawnBB) == 0;
-        if (bRook > 1)
-            r -= (getVert(MSB_INDEX(br) & 7) & bPawnBB) == 0;
+        ray = getVert(LSB_INDEX(br) & 7);
+        r -= ((ray & wPawnBB) == 0) + ((ray & bPawnBB) == 0);
+        REMOVE_LSB(br);
     }
 
     return ROOK_OPEN_FILE * r;

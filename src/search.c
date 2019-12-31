@@ -46,13 +46,7 @@ static const inline int mate(int height)
 {
     return PLUS_MATE + 100 - height;
 }
-/* Dertermine the type of position
- */
-static inline int rookVSKing(const Board b)
-{
-    return POPCOUNT(b.piece[b.stm][ROOK]) == 1 && POPCOUNT(b.allPieces ^ b.piece[b.stm][ROOK]) == 2;
-}
-static inline int noZugz(const Board b)
+static inline int zugz(const Board b)
 {
     return POPCOUNT(b.color[b.stm] ^ b.piece[b.stm][PAWN]) <= 2;
 }
@@ -195,8 +189,8 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
         best = temp;
         bestScore = best.score;
 
-        infoString(best, depth, nodes, 1000 * (last - start) / CLOCKS_PER_SEC);
-        if ((calledTiming && (1.2f * (last - start) > timeToMove)) || best.score >= PLUS_MATE)
+        infoString(best, depth, nodes, 1000 * elapsed / CLOCKS_PER_SEC);
+        if ((calledTiming && (1.3f * elapsed > timeToMove)) || best.score >= PLUS_MATE)
             break;
     }
 
@@ -338,7 +332,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
 
     const int ev = eval(&b);
-    const int nZg = noZugz(b);
 
     if (!isInC)
     {
@@ -355,7 +348,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             return ev;
 
         // Null move pruning
-        if (!null && !nZg && depth > R)
+        if (!null && !zugz(b) && depth > R + pv)
         {
             if (nullMove(b, depth, beta, prevHash))
             {
@@ -418,7 +411,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
         if (isDraw(&b, rep, newHash, list[i].capture > 0))
         {
-            val = height < 5? 0 : -(newHash & 15); //TODO: Only do this on 3fold rep
+            val = (height < 5)? 0 : 8 - (newHash & 15); //TODO: Only do this on 3fold rep
         }
         else
         {
@@ -457,7 +450,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     }
                     if (!pv && list[i].piece == KING && list[i].capture < 1 && POPCOUNT(b.allPieces) > 15)
                         reduction++;
-                    if (!expSort && pv && list[i].score > 69 && list[i].capture > 0)
+                    if (!expSort && pv && list[i].score > 300 && list[i].capture > 0)
                         reduction--;
                     else if (list[i].piece == PAWN && isAdvancedPassedPawn(list[i], b.piece[b.stm][PAWN], 1 ^ b.stm))
                         reduction--;
