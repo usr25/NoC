@@ -27,6 +27,13 @@ int PAWN_PROTECTION = 24; //Bonus for Bish / Knight protected by pawn
 int ATTACKED_BY_PAWN = 69; //Bonus if a pawn can attack a piece
 int N_DOUBLED_PAWNS = -36; //Penalization for doubled pawns (proportional to the pawns in line - 1)
 
+int ROOK_XR = 10;
+int BISH_XR = 15;
+int QUEEN_XR = 5;
+int ROOK_MOB = 1;
+int BISH_MOB = 2;
+int QUEEN_MOB = 1;
+
 int N_CLOSE_TO_KING = -1; //Penalization for having enemy pieces close to our king
 //This ones aren't on use at the moment
 int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
@@ -60,14 +67,14 @@ static int pieceActivity(const Board* b);
 static int passedPawns(uint64_t wp, uint64_t bp, const int ph);
 static int pst(const Board* board, const int phase, const int color);
 static int pawns(const Board* b);
+static int xrayAndMob(const Board* b);
 static int kingSafety(const Board* b);
 static int pawnTension(const Board* b);
 
-static int pieceDevelopment(const Board* b);
+static int pieceXrayMob(const Board* b, uint64_t (*move) (int, uint64_t), const int piece, const int xrayScore, const int mobScore);
 static int rookOnOpenFile(uint64_t wr, uint64_t br);
 static int connectedRooks(const uint64_t wh, const uint64_t bl, const uint64_t all);
 static int minorPieces(void);
-static int bishopMobility(const uint64_t wh, const uint64_t bl, const uint64_t all);
 
 
 // TODO: Make the pawns bitboards as global to avoid passing too many arguments
@@ -117,6 +124,8 @@ int eval(const Board* b)
     evaluation += pawns(b);
 
     evaluation += pawnTension(b);
+
+    //evaluation += xrayAndMob(b);
 
     assert(evaluation < PLUS_MATE && evaluation > MINS_MATE);
     return TEMPO + (b->stm? evaluation : -evaluation);
@@ -381,6 +390,42 @@ static inline int rookOnOpenFile(uint64_t wr, uint64_t br)
     }
 
     return ROOK_OPEN_FILE * r;
+}
+static int xrayAndMob(const Board* b)
+{
+    int final = 0;
+
+    final += pieceXrayMob(b, getBishMagicMoves, BISH, BISH_XR, BISH_MOB);
+    final += pieceXrayMob(b, getRookMagicMoves, ROOK, ROOK_XR, ROOK_MOB);
+    //final += pieceXrayMob(b, getQueenMagicMoves, QUEEN, QUEEN_XR, QUEEN_MOB);
+
+    return final;
+}
+static int pieceXrayMob(const Board* b, uint64_t (*move) (int, uint64_t), const int piece, const int xrayScore, const int mobScore)
+{
+    int xr = 0, mob = 0, lsb;
+    uint64_t temp = b->piece[WHITE][piece], ray;
+
+    while (temp)
+    {
+        lsb = LSB_INDEX(temp);
+        ray = move(lsb, b->piece[WHITE][PAWN] | b->piece[BLACK][PAWN]);
+        xr += POPCOUNT(ray & (b->piece[BLACK][QUEEN] | b->piece[BLACK][KING]));
+        mob += POPCOUNT(ray & b->color[AV_WHITE]) >> 1;
+        REMOVE_LSB(temp);
+    }
+
+    temp = b->piece[BLACK][piece];
+    while (temp)
+    {
+        lsb = LSB_INDEX(temp);
+        ray = move(lsb, b->piece[WHITE][PAWN] | b->piece[BLACK][PAWN]);
+        xr -= POPCOUNT(ray & (b->piece[WHITE][QUEEN] | b->piece[WHITE][KING]));
+        mob -= POPCOUNT(ray & b->color[AV_BLACK]) >> 1;
+        REMOVE_LSB(temp);
+    }
+
+    return xrayScore * xr + mobScore * mob;
 }
 inline int minorPieces(void)
 {

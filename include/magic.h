@@ -17,13 +17,18 @@ uint64_t rookMagic[64];
  * to include the opp pieces for captures
  */
 
-__attribute__((hot)) static inline uint64_t getRookMagicMoves(const int sqr, const uint64_t allPieces)
+static inline uint64_t getRookMagicMoves(const int sqr, const uint64_t allPieces)
 {
     //64 - 12 == 52, worst case scenario. To make it variable use POPCOUNT(mask)
     return rookMagicMoves[sqr][((allPieces & getStraInt(sqr)) * rookMagic[sqr]) >> 52];
 }
-__attribute__((hot)) static inline uint64_t getBishMagicMoves(const int sqr, const uint64_t allPieces)
+static inline uint64_t getBishMagicMoves(const int sqr, const uint64_t allPieces)
 {
     //64 - 9 == 55, worst case scenario
     return bishMagicMoves[sqr][((allPieces & getDiagInt(sqr)) * bishMagic[sqr]) >> 55];
+}
+static inline uint64_t getQueenMagicMoves(const int sqr, const uint64_t allPieces)
+{
+    //64 - 9 == 55, worst case scenario
+    return getBishMagicMoves(sqr, allPieces) | getRookMagicMoves(sqr, allPieces);
 }
