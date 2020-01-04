@@ -62,7 +62,7 @@ const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 
 /* Time management */
 static clock_t startT = 0;
-static clock_t timeToMoveT = 0;
+static clock_t stopAt = 0;
 static int calledTiming = 0;
 
 /* Info string */
@@ -98,22 +98,23 @@ void initCall(void)
 
 static int us;
 static Move moveStack[MAX_PLY];
-Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth)
+Move bestTime(Board b, Repetition rep, SearchParams sp)
 {
     nodes = 0;
-    assert(timeToMove >= 0);
-    assert(targetDepth >= 0);
+    assert(sp.timeToMove >= 0);
+    assert(sp.depth >= 0);
     assert(rep.index >= 0 && rep.index <= 128);
-    /* All the time management */
-    calledTiming = (targetDepth == 0)? 1 : 0;
-    targetDepth  = (targetDepth == 0)? 99 : targetDepth;
-    if (targetDepth > MAX_PLY){
+    /* Adjust the depth if necessary */
+    calledTiming = (sp.depth == 0)? 1 : 0;
+    sp.depth = (sp.depth == 0)? MAX_PLY : sp.depth;
+    if (sp.depth > MAX_PLY){
         printf("[-] Target depth > MAX_PLY, changing value\n");
-        targetDepth = MAX_PLY;
+
+        sp.depth = MAX_PLY;
     }
     clock_t start = clock(), last, elapsed;
 
-    timeToMoveT = timeToMove;
+    stopAt = sp.timeToMove + start;
     startT = start;
 
     us = b.stm;
@@ -148,7 +149,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
     int bestScore = 0;
     int delta = 100;
     int alpha = MINS_INF, beta = PLUS_INF;
-    for (int depth = 1; depth <= targetDepth; ++depth)
+    for (int depth = 1; depth <= sp.depth; ++depth)
     {
         delta = 100;//max(100, (2*delta)/3);//100;// + depth;
         if (depth >= 6)
@@ -165,7 +166,7 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             last = clock();
             elapsed = last - start;
 
-            if (calledTiming && elapsed > timeToMove)
+            if (calledTiming && elapsed > sp.timeToMove)
                 break;
             if (temp.score >= beta)
             {
@@ -183,14 +184,14 @@ Move bestTime(Board b, const clock_t timeToMove, Repetition rep, int targetDepth
             else
                 break;
         }
-        if (calledTiming && elapsed > timeToMove)
+        if (calledTiming && elapsed > sp.timeToMove)
             break;
 
         best = temp;
         bestScore = best.score;
 
         infoString(best, depth, nodes, 1000 * elapsed / CLOCKS_PER_SEC);
-        if ((calledTiming && (1.3f * elapsed > timeToMove)) || best.score >= PLUS_MATE)
+        if (best.score >= PLUS_MATE || (calledTiming && (1.4f * elapsed > sp.timeToMove)))
             break;
     }
 
@@ -293,7 +294,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
     #endif
 
-    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() - startT > timeToMoveT && percentage < .9f))
+    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() > stopAt && percentage < .9f))
     {
         exitFlag = 1;
         return 0;

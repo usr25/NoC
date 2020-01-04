@@ -30,7 +30,7 @@ static int compMove(char* fen, char* target, int depth, int len)
     char mv[6] = "";
     Board b = genFromFen(fen, &ignore);
     //drawPosition(b, 0);
-    Move best = bestTime(b, 0, (Repetition){.index = 0}, depth);
+    Move best = bestTime(b, (Repetition){.index = 0}, (SearchParams) {.depth = depth});
 
     moveToText(best, mv);
     //printf("%s\n", mv);
@@ -220,7 +220,7 @@ static void parseFensFromFileEva(void)
         hasEnded = upTo(fp, buff, '\n');
 
         Repetition rep = (Repetition) {.index = 0};
-        drawMove(bestTime(b, 0, rep, depth));
+        drawMove(bestTime(b, rep, (SearchParams) {.depth = depth}));
         printf("\n");
         if (cnt % 10 == 0)
             printf("cnt: %d\n", cnt);
@@ -242,10 +242,10 @@ static void slowEval(void)
 
     printf("[+] Eval equal position: ");
     b = defaultBoard();
-    drawMove(bestTime(b, 0, (Repetition){}, depth));
+    drawMove(bestTime(b, (Repetition){}, (SearchParams) {.depth = depth}));
     printf(" ");
     b.stm ^= 1;
-    drawMove(bestTime(b, 0, (Repetition){}, depth));
+    drawMove(bestTime(b, (Repetition){}, (SearchParams) {.depth = depth}));
     printf("\n");
 
     depth = 12;

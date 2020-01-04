@@ -27,7 +27,7 @@ static void perft_(Board b, int depth);
 static void mate_(Board b, int depth);
 static void eval_(Board b);
 static void best_(Board b, char* beg, Repetition* rep);
-static void best_time(Board, char* beg, Repetition* rep);
+static void go_(Board, char* beg, Repetition* rep);
 static void help_(void);
 static int move_(Board* b, char* beg, Repetition* rep);
 static Board gen_(char* beg, Repetition* rep);
@@ -54,7 +54,7 @@ void loop(void)
             isready();
 
         else if (strncmp(beg, "go", 2) == 0)
-            best_time(b, beg + 3, &rep);
+            go_(b, beg + 3, &rep);
 
         else if (strncmp(beg, "position startpos", 17) == 0)
             b = gen_def(beg + 18, &rep);
@@ -136,9 +136,9 @@ static void eval_(Board b)
     fprintf(stdout, "%d\n", eval(&b));
     fflush(stdout);
 }
-static void best_time(Board b, char* beg, Repetition* rep)
+static void go_(Board b, char* beg, Repetition* rep)
 {
-    int callDepth = 0;
+    SearchParams sp = {.depth = 0, .timeToMove = 0, .extraTime = 0};
     int wtime = 0, btime = 0, winc = 0, binc = 0, movestogo = 0;
 
     clock_t movetime = 0;
@@ -162,10 +162,10 @@ static void best_time(Board b, char* beg, Repetition* rep)
             movestogo = atoi(beg);
         } else if (strncmp(beg, "depth", 5) == 0) {
             beg += 6;
-            callDepth = atoi(beg);
+            sp.depth = atoi(beg);
         } else if (strncmp(beg, "movetime", 8) == 0) {
             beg += 9;
-            movetime = (clock_t)atoi(beg);
+            sp.timeToMove = (clock_t)atoi(beg) * CLOCKS_PER_SEC / 1000;
         }
 
         ++beg;
@@ -174,35 +174,27 @@ static void best_time(Board b, char* beg, Repetition* rep)
     Move best;
     char mv[6] = "";
 
-    if (!callDepth)
+    if (!sp.depth)
     {
         //Play with time
-        clock_t calcTime = 0;
-        if (!movetime)
+        if (!sp.timeToMove)
         {
             clock_t remTime   = b.stm? wtime : btime;
             clock_t increment = b.stm? winc  : binc;
-            clock_t timeToMove;
+            clock_t timeInSecs;
 
             if (movestogo)
-                timeToMove = min(remTime / 5, remTime / (movestogo + 4) + (clock_t)((double)increment * .4));
+                timeInSecs = min(remTime / 5, remTime / (movestogo + 2) + (clock_t)((double)increment * .4));
             else if (increment)
-                timeToMove = min(remTime / 5, remTime / 23 + (clock_t)((double)increment * .95));
+                timeInSecs = min(remTime / 5, remTime / 23 + (clock_t)((double)increment * .95));
             else
-                timeToMove = remTime / 41;
+                timeInSecs = remTime / 41;
 
-            calcTime = (timeToMove * CLOCKS_PER_SEC) / 1000;
+            sp.timeToMove = (timeInSecs * CLOCKS_PER_SEC) / 1000;
         }
-        else //The time is fixed
-            calcTime = (movetime * CLOCKS_PER_SEC) / 1000;
+    }
 
-        best = bestTime(b, calcTime, *rep, 0);
-    }
-    else
-    {
-        //Go for depth
-        best = bestTime(b, 0, *rep, callDepth);
-    }
+    best = bestTime(b, *rep, sp);
 
     moveToText(best, mv);
 
