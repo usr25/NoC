@@ -41,8 +41,10 @@ int main(const int argc, char** const argv)
     initMagics();
 
     #ifdef TRAIN
+    setVariables(argc, argv);
     readValues(argv[1]);
     txlTrain();
+    exit(EXIT_SUCCESS);
     #endif
 
     initEval();
