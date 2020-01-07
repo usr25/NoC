@@ -97,7 +97,7 @@ void initCall(void)
 }
 
 static int us;
-static Move moveStack[MAX_PLY];
+static int foundBefore;
 Move bestTime(Board b, Repetition rep, SearchParams sp)
 {
     nodes = 0;
@@ -107,11 +107,12 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     /* Adjust the depth if necessary */
     calledTiming = (sp.depth == 0)? 1 : 0;
     sp.depth = (sp.depth == 0)? MAX_PLY : sp.depth;
+
     if (sp.depth > MAX_PLY){
         printf("[-] Target depth > MAX_PLY, changing value\n");
-
         sp.depth = MAX_PLY;
     }
+
     clock_t start = clock(), last, elapsed;
 
     stopAt = sp.timeToMove + start;
@@ -143,7 +144,6 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     initCall();
 
     assignScores(&b, list, numMoves, NO_MOVE, 0);
-    sort(list, list+numMoves);
 
     Move best = list[0], temp;
     int bestScore = 0;
@@ -160,14 +160,13 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
         for (int i = 0; i < 5; ++i)
         {
-            temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
+            foundBefore = 0;
             sort(list, list+numMoves);
+            temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
 
             last = clock();
             elapsed = last - start;
 
-            if (calledTiming && elapsed > sp.timeToMove)
-                break;
             if (temp.score >= beta)
             {
                 delta += delta / 4;
@@ -182,9 +181,15 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                 researches++;
             }
             else
+            {
+                if (exitFlag && foundBefore)
+                    best = list[foundBefore];
+                break;
+            }
+            if (exitFlag)
                 break;
         }
-        if (calledTiming && elapsed > sp.timeToMove)
+        if (exitFlag)
             break;
 
         best = temp;
@@ -210,6 +215,8 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
 static double percentage = 0;
 static int isInNullMove = 0; //TODO: Use a global variable to detect when the engine is in a null move
+static Move moveStack[MAX_PLY];
+static int evalStack[MAX_PLY];
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
@@ -218,9 +225,10 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
     History h;
     Move currBest = list[0];
-    int val;
+    int val, best = MINS_INF;
     uint64_t hash = hashPosition(&b), newHash;
 
+    evalStack[0] = eval(&b);
     for (int i = 0; i < numMoves; ++i)
     {
         //If the move leads to being mated, break
@@ -255,13 +263,19 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
         //For the sorting at later depths
         list[i].score = val;
 
-        if (val > alpha)
+        if (val > best)
         {
+            best = val;
             currBest = list[i];
-            alpha = val;
+            if (!exitFlag)
+                foundBefore = i;
+            if (val > alpha)
+            {
+                alpha = val;
 
-            if (val >= beta)
-                break;
+                if (val >= beta)
+                    break;
+            }
         }
     }
 
@@ -294,7 +308,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
     #endif
 
-    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() > stopAt && percentage < .9f))
+    if (calledTiming && (exitFlag || (nodes & 4095) == 0 && clock() > stopAt && percentage < .8f))
     {
         exitFlag = 1;
         return 0;
@@ -333,6 +347,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
 
     const int ev = eval(&b);
+    evalStack[height] = ev;
 
     if (!isInC)
     {
@@ -366,6 +381,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (!numMoves)
         return isInC * -mate(height);
 
+    const int improving = height > 1 && ev > evalStack[height-2] + 20 && !isInC && !null;
+    const int notImproving = height > 1 && ev < evalStack[height-2] - 75 && !null;
     const int newHeight = height + 1;
     uint64_t newHash;
     int best = MINS_INF;
@@ -445,11 +462,13 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                             reduction++;
                     }
                     */
-                    if (i > 4 && list[i].capture < 1)
+                    if (i > 3 && list[i].capture < 1)
                     {
-                        reduction += 1 + depth / (3 + pv);
+                        reduction += 1 - (!pv && improving) + depth / 3;
                     }
                     if (!pv && list[i].piece == KING && list[i].capture < 1 && POPCOUNT(b.allPieces) > 15)
+                        reduction++;
+                    if (!pv && notImproving)
                         reduction++;
                     if (!expSort && pv && list[i].score > 300 && list[i].capture > 0)
                         reduction--;
@@ -660,7 +679,7 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     Repetition _rep = (Repetition) {.index = 0};
     b.stm ^= 1;
     const int td = (depth < 6)? depth - R : depth / 4 + 1;
-    const int val = -pvSearch(b, -beta, -beta + 1, td, 1, 1, changeTurn(prevHash), &_rep);
+    const int val = -pvSearch(b, -beta, -beta + 1, td, MAX_PLY - 11, 1, changeTurn(prevHash), &_rep);
     b.stm ^= 1;
 
     return val >= beta;
