@@ -248,7 +248,7 @@ static void slowEval(void)
     drawMove(bestTime(b, (Repetition){}, (SearchParams) {.depth = depth}));
     printf("\n");
 
-    depth = 12;
+    depth = 13;
 
     white &= compMove("5b2/7p/3p2bk/2p2pN1/2P2P2/P1QPqB1P/7K/8 w - -", "g5f7", depth, 4); //Knight sac to mate
 

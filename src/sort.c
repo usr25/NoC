@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 #include <time.h>
 
 #include "../include/global.h"
@@ -25,8 +26,9 @@ __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr
 
 static const Move NOMOVE = (Move) {.from = -1, .to = -1};
 static int pVal[6];
-static int history[4096]; //TODO: make it 2x4096 to discriminate between stm
 Move killerMoves[MAX_PLY][NUM_KM];
+
+long history[4096];
 
 inline int compMoves(const Move* m1, const Move* m2)
 {
@@ -160,7 +162,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             if (pawnAtt & (1ULL << curr->to))
                 curr->score -= 25 - 2*curr->piece;
             int add = history[(curr->from << 6) + curr->to];
-            if (add > 15) add = 16;
+            add = (int)sqrt(add);
             curr->score += add;
         }
 
@@ -212,8 +214,8 @@ inline void addHistory(const int from, const int to)
 }
 void initHistory(void)
 {
-    int* end = history + 4096;
-    for (int* p = history; p != end; ++p)
+    long* end = history + 4096;
+    for (long* p = history; p != end; ++p)
         *p = 0;
 }
 
