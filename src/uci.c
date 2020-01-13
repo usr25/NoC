@@ -242,7 +242,7 @@ static int move_(Board* b, char* beg, Repetition* rep)
 
     makePermaMove(b, m);
 
-    if (m.piece == PAWN || m.capture > 0)
+    if (m.piece == PAWN || IS_CAP(m))
         rep->index = 0;
     rep->hashTable[rep->index++] = hashPosition(b);
 

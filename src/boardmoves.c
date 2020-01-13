@@ -139,7 +139,7 @@ void makeMove(Board* b, const Move move, History* h)
     b->stm ^= 1;
 
     //If there has been a capture remove the piece
-    if (move.capture > 0)
+    if (IS_CAP(move))
     {
         flipBits(b, toBit, move.capture, b->stm);
         b->fifty = 0;
@@ -207,7 +207,7 @@ void makePermaMove(Board* b, const Move move)
 
     b->stm ^= 1;
 
-    if (move.capture > 0)
+    if (IS_CAP(move))
     {
         flipBits(b, toBit, move.capture, b->stm);
         b->fifty = 0;
@@ -228,7 +228,7 @@ void undoMove(Board* b, const Move move, History* h)
     b->enPass = h->enPass;
     b->fifty = h->fifty;
 
-    if (move.capture > 0)
+    if (IS_CAP(move))
         flipBits(b, toBit, move.capture, b->stm);
 
     b->stm ^= 1;
@@ -275,7 +275,7 @@ int isValid(Board b, const Move m)
         return 0;
     if (pieceAt(&b, fromBB, b.stm) == NO_PIECE)
         return 0;
-    if (m.capture > 0 && pieceAt(&b, toBB, 1 ^ b.stm) != m.capture)
+    if (IS_CAP(m) && pieceAt(&b, toBB, 1 ^ b.stm) != m.capture)
         return 0;
 
     //Look at the piece type to see if it can be done
