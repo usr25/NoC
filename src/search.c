@@ -190,7 +190,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         bestScore = best.score;
 
         infoString(best, depth, nodes, 1000 * elapsed / CLOCKS_PER_SEC);
-        if (best.score >= PLUS_MATE || (calledTiming && (1.4f * elapsed > sp.timeToMove)))
+        if (best.score >= PLUS_MATE || (calledTiming && (1.35f * elapsed > sp.timeToMove)))
             break;
     }
 
@@ -308,7 +308,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (exitFlag)
         return 0;
-    if (calledTiming && (nodes & 4095) == 0 && clock() > stopAt && percentage < .8f)
+    if (calledTiming && (nodes & 4095) == 0 && clock() > stopAt && percentage < .86f)
     {
         exitFlag = 1;
         return 0;
@@ -447,7 +447,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 int reduction = 1;
                 if (depth > 1 && !inC)
                 {
-                    if (i > 5)
+                    if (i > 4 + pv)
                     {
                         reduction += 1 - (!pv && improving) + depth / 4;
                     }

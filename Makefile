@@ -9,7 +9,8 @@ GDIR=gav
 TRAINER=trainer.cpp
 LICHESS=~/Desktop/lichess/lichess-bot-master/engines/
 
-CFLAGS= -O3 -flto -lm -lpthread
+#If the cpu doesn't have popcnt instructions remove -mpopcnt
+CFLAGS=-O3 -flto -lm -lpthread -mpopcnt
 
 DEPS=$(IDIR)/*
 

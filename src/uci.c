@@ -184,7 +184,7 @@ static void go_(Board b, char* beg, Repetition* rep)
             clock_t timeInSecs;
 
             if (movestogo)
-                timeInSecs = min(remTime / 5, remTime / (movestogo + 2) + (clock_t)((double)increment * .4));
+                timeInSecs = min(remTime / 5, remTime / (movestogo + 4) + (clock_t)((double)increment * .4));
             else if (increment)
                 timeInSecs = min(remTime / 5, remTime / 23 + (clock_t)((double)increment * .95));
             else
