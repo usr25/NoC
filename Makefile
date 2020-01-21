@@ -7,7 +7,7 @@ SDIR=src
 IDIR=include
 GDIR=gav
 TRAINER=trainer.cpp
-LICHESS=~/Desktop/lichess/lichess-bot-master/engines/
+LICHESS=~/Desktop/Chess/lichess-bot-master/engines/
 
 #If the cpu doesn't have popcnt instructions remove -mpopcnt
 CFLAGS=-O3 -flto -lm -lpthread -mpopcnt

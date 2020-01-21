@@ -9,10 +9,13 @@
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)
 #define LSB_INDEX(ll) __builtin_ctzll(ll)
-#define MSB_INDEX(ll) (63 - __builtin_clzll(ll))
+#define MSB_INDEX(ll) (63 ^ __builtin_clzll(ll))
 
 #define WHITE_PAWN_ATT(bb) (((bb) << 9) & 0xfefefefefefefefe) | (((bb) << 7) & 0x7f7f7f7f7f7f7f7f)
 #define BLACK_PAWN_ATT(bb) (((bb) >> 9) & 0x7f7f7f7f7f7f7f7f) | (((bb) >> 7) & 0xfefefefefefefefe)
+
+#define BASE_64(a, b) (((a) << 6) + (b))
+#define RANGE_64(a) ((a) >= 0 && (a) < 64)
 
 #define NO_PIECE -1
 #define KING    0
@@ -30,9 +33,9 @@
 #define AV_BLACK 2
 #define AV_WHITE 3
 
-#define BCASTLEK 0b1
-#define BCASTLEQ 0b10
-#define WCASTLEK 0b100
+#define BCASTLEK    0b1
+#define BCASTLEQ   0b10
+#define WCASTLEK  0b100
 #define WCASTLEQ 0b1000
 
 #define C_MASK_WK 0x6ULL

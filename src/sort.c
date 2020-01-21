@@ -28,7 +28,8 @@ static const Move NOMOVE = (Move) {.from = -1, .to = -1};
 static int pVal[6];
 Move killerMoves[MAX_PLY][NUM_KM];
 
-long history[4096];
+long history[2][4096];
+Move counterMove[4096];
 
 inline int compMoves(const Move* m1, const Move* m2)
 {
@@ -38,11 +39,11 @@ inline int compMoves(const Move* m1, const Move* m2)
 void initSort(void)
 {
     //This is so that evaluation tweaks don't affect the ordering
-    pVal[0] = 2320;
-    pVal[1] = 1267;
-    pVal[2] = 609;
+    pVal[0] = 5000;
+    pVal[1] = 1200;
+    pVal[2] = 600;
     pVal[3] = 385;
-    pVal[4] = 372;
+    pVal[4] = 375;
     pVal[5] = 116;
 }
 
@@ -142,6 +143,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
 
     for (Move* curr = list; curr != end; ++curr)
     {
+        assert(RANGE_64(curr->from) && RANGE_64(curr->to));
         if (curr->promotion > 0) //Promotions have their score assigned
             continue;
         if(curr->capture > 0) //There has been a capture
@@ -161,8 +163,11 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         {
             if (pawnAtt & (1ULL << curr->to))
                 curr->score -= 25 - 2*curr->piece;
-            int add = history[(curr->from << 6) + curr->to];
-            add = (int)sqrt(add);
+            int add = history[b->stm][BASE_64(curr->from, curr->to)];
+            if (add > 0)
+                add = (int)sqrt(add);
+            else
+                add = -(int)sqrt(-add);
             curr->score += add;
         }
 
@@ -208,15 +213,30 @@ inline void addKM(const Move m, const int depth)
     killerMoves[depth][0] = killerMoves[depth][1];
     killerMoves[depth][1] = m;
 }
-inline void addHistory(const int from, const int to)
+inline void addHistory(const int from, const int to, const int n, const int stm)
 {
-    history[(from << 6) + to]++;
+    assert(RANGE_64(from) && RANGE_64(to));
+    long* h = &history[stm][BASE_64(from, to)];
+    *h+=(long)n;
+    if (*h > 7000)
+        *h/=10;
+}
+inline void decHistory(const int from, const int to, const int n, const int stm)
+{
+    assert(RANGE_64(from) && RANGE_64(to));
+    long* h = &history[stm][BASE_64(from, to)];
+    *h-=(long)n;
+    if (*h < -7000)
+        *h/=10;
 }
 void initHistory(void)
 {
-    long* end = history + 4096;
-    for (long* p = history; p != end; ++p)
+    long* end = history[0] + 4096;
+    for (long* p = history[BLACK], *q = history[WHITE]; p != end; ++p, ++q)
+    {
         *p = 0;
+        *q = 0;
+    }
 }
 
 /* Moves the largest score to the beggining of the list

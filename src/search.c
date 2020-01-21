@@ -97,7 +97,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     nodes = 0;
     assert(sp.timeToMove >= 0);
     assert(sp.depth >= 0);
-    assert(rep.index >= 0 && rep.index <= 128);
+    assert(rep.index >= 0 && rep.index < 128);
     /* Adjust the depth if necessary */
     calledTiming = (sp.depth == 0)? 1 : 0;
     sp.depth     = (sp.depth == 0)? MAX_PLY : sp.depth;
@@ -228,6 +228,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
         //If the move leads to being mated, break (since the moves are ordered based on score)
         if (list[i].score < MINS_MATE)
             break;
+        moveStack[0] = list[i];
 
         percentage = i / (double) numMoves;
         assert(percentage >= 0 && percentage <= 1.1);
@@ -395,19 +396,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int expSort = 0;
     if (expSort = (depth >= 5 && mt.score < 290))
     {
-        /*
-        //This is to always check the first move after sorting
-        makeMove(&b, mt, &h);
-        newHash = makeMoveHash(prevHash, &b, mt, h);
-        best = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep);
-        if (best > alpha)
-        {
-            alpha = best;
-            if (best >= beta)
-                return best;
-        }
-        undoMove(&b, mt, &h);
-        */
         int targD = min(pv? depth - 4 : depth / 4, 6);
         expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
@@ -422,10 +410,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     for (int i = 0; i < numMoves; ++i)
     {
         m = list[i];
+        moveStack[height] = m;
+        assert(RANGE_64(m.from) && RANGE_64(m.to));
         if (canBreak && m.score < 90 && (i > 3 + depth || (i > 3 && !pv)))
             break;
-        //if (expSort && compMoves(&mt, &list[i]))
-        //  continue;
 
         makeMove(&b, m, &h);
         newHash = makeMoveHash(prevHash, &b, m, h);
@@ -433,7 +421,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
         if (isDraw(&b, rep, newHash, IS_CAP(m)))
         {
-            val = (height < 5)? 0 : 8 - (newHash & 15); //TODO: Only do this on 3fold rep
+            val = (height < 5)? 0 : 8 - (newHash & 15);
         }
         else
         {
@@ -447,7 +435,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 int reduction = 1;
                 if (depth > 1 && !inC)
                 {
-                    if (i > 4 + pv)
+                    if (i > 3 + 2*pv)
                     {
                         reduction += 1 - (!pv && improving) + depth / 4;
                     }
@@ -467,6 +455,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
                 }
 
+                assert(depth - reduction >= 0);
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep, inC);
                 if (val > alpha && (pv || reduction > 1))
                     val = -pvSearch(b, -alpha-1, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
@@ -486,14 +475,18 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                 if (alpha >= beta || alpha >= mateInNext)
                 {
-                    addHistory(bestM.from, bestM.to);
+                    addHistory(bestM.from, bestM.to, 1, 1 ^ b.stm);
+
                     #ifdef DEBUG
                     ++betaCutOff;
                     if (i == 0) ++betaCutOffHit;
                     #endif
 
-                    if (bestM.capture < 1) addKM(bestM, depth);
+                    if (!IS_CAP(bestM))
+                        addKM(bestM, depth);
 
+                    /*for (int j = 0; j < i; ++j)
+                        decHistory(list[j].from, list[j].to, depth);*/
                     break;
                 }
             }
@@ -589,7 +582,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta - 1, -alpha + 1, depth - 1, 1, 1, newHash, rep, isInCheck(&b, b.stm));
+            val = -pvSearch(b, -beta - 1, -alpha + 1, depth - 1, MAX_PLY - 7, 1, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
         }
 
