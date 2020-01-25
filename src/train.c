@@ -17,7 +17,7 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 
-#define NUM_VARS 16
+#define NUM_VARS 15
 
 
 typedef struct
@@ -178,22 +178,20 @@ static void setArray(const int* arr)
     V_BISH      = arr[2];
     V_KNIGHT    = arr[3];
 
-    V_PASSEDP   = arr[4];
+    CONNECTED_ROOKS = arr[4];
+    ROOK_OPEN_FILE  = arr[5];
+    SAFE_KING       = arr[6];
 
-    CONNECTED_ROOKS = arr[5];
-    ROOK_OPEN_FILE  = arr[6];
-    SAFE_KING       = arr[7];
+    BISH_PAIR       = arr[7];
+    KNIGHT_PAWNS    = arr[8];
+    N_KING_OPEN_FILE= arr[9];
 
-    TWO_BISH        = arr[8];
-    KNIGHT_PAWNS    = arr[9];
-    N_KING_OPEN_FILE= arr[10];
+    PAWN_CHAIN      = arr[10];
+    PAWN_PROTECTION = arr[11];
+    ATTACKED_BY_PAWN= arr[12];
+    N_DOUBLED_PAWNS = arr[13];
 
-    PAWN_CHAIN      = arr[11];
-    PAWN_PROTECTION = arr[12];
-    ATTACKED_BY_PAWN= arr[13];
-    N_DOUBLED_PAWNS = arr[14];
-
-    TEMPO = arr[15];
+    TEMPO = arr[14];
 }
 
 /* Saves the array into memory, so in case it crashes no data is lost

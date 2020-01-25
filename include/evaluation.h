@@ -10,7 +10,7 @@ extern int V_PAWN;
 
 extern int V_PASSEDP;
 extern int CONNECTED_ROOKS;
-extern int TWO_BISH;
+extern int BISH_PAIR;
 extern int SAFE_KING;
 extern int ROOK_OPEN_FILE;
 
@@ -21,7 +21,6 @@ extern int ROOK_MOB;
 extern int BISH_MOB;
 extern int QUEEN_MOB;
 
-extern int PPAWN_PROT;
 extern int KNIGHT_PAWNS;
 extern int N_KING_OPEN_FILE;
 extern int N_CLOSE_TO_KING;
