@@ -86,7 +86,7 @@ void setVariables(const int argc, char** const argv)
                 printf("[-] Invalid arg %s\n", argv[i+1]);
                 exit(EXIT_FAILURE);
             }
-        } else if (strncmp(argv[i], "-n", 2) == 0) { //Number of positions
+        } else if (strncmp(argv[i], "-p", 2) == 0) { //Number of positions
             num_pos = atoi(argv[i+1]);
             if (num_pos <= 0){
                 printf("[-] Invalid arg %s\n", argv[i+1]);
@@ -335,7 +335,7 @@ static void optimize(void)
     double bestVal = error();
     int improved = 1, iter = 0;
 
-    printf("Start training with %d threads, %d variables and %d positions\n", num_thr, NUM_VARS, num_pos);
+    printf("Start training with %d threads, %d variables, and %d positions\n", num_thr, NUM_VARS, num_pos);
     printf("Init E: %.12f\n", bestVal);
 
     while(improved)

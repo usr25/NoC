@@ -4,10 +4,10 @@
  * eval > 0 -> It is good for white
  */
 
-int V_QUEEN = 1302;
-int V_ROOK = 622;
-int V_BISH = 385;
-int V_KNIGHT = 365;
+int V_QUEEN = 1379;
+int V_ROOK = 649;
+int V_BISH = 411;
+int V_KNIGHT = 395;
 int V_PAWN = 116;
 
 int V_PASSEDP = 70; //Value for a passed pawn right before promotion
@@ -15,16 +15,16 @@ int V_PASSEDP = 70; //Value for a passed pawn right before promotion
 int TEMPO = 11; //Value for a passed pawn right before promotion
 
 //All the variabels that begin with N_ are negative
-int CONNECTED_ROOKS = 23; //Bonus for having connected rooks
+int CONNECTED_ROOKS = 25; //Bonus for having connected rooks
 int ROOK_OPEN_FILE = 22; //Bonus for a rook on an open file (No same color pawns)
-int SAFE_KING = 27; //Bonus for pawns surrounding the king
-int BISH_PAIR = 55; //Bonus for having the bishop pair
-int KNIGHT_PAWNS = 37; //Bonus for the knights when there are a lot of pawns
-int N_KING_OPEN_FILE = -11; //Penalization for having the king on a file with no same color pawns
-int PAWN_CHAIN = 16; //Bonus for making a pawn chain
-int PAWN_PROTECTION = 24; //Bonus for Bish / Knight protected by pawn
-int ATTACKED_BY_PAWN = 50; //Bonus if a pawn can attack a piece
-int N_DOUBLED_PAWNS = -36; //Penalization for doubled pawns (proportional to the pawns in line - 1)
+int SAFE_KING = 24; //Bonus for pawns surrounding the king
+int BISH_PAIR = 54; //Bonus for having the bishop pair
+int KNIGHT_PAWNS = 32; //Bonus for the knights when there are a lot of pawns
+int N_KING_OPEN_FILE = -3; //Penalization for having the king on a file with no same color pawns
+int PAWN_CHAIN = 27; //Bonus for making a pawn chain
+int PAWN_PROTECTION = 14; //Bonus for Bish / Knight protected by pawn
+int ATTACKED_BY_PAWN = 71; //Bonus if a pawn can attack a piece
+int N_DOUBLED_PAWNS = -41; //Penalization for doubled pawns (proportional to the pawns in line - 1)
 
 int ROOK_XR = 10;
 int BISH_XR = 15;
@@ -407,7 +407,7 @@ static int pawnTension(const Board* b)
     const int wMajor = POPCOUNT(wPawnBBAtt & (b->piece[BLACK][ROOK] | b->piece[BLACK][QUEEN]));
     const int bMajor = POPCOUNT(bPawnBBAtt & (b->piece[WHITE][ROOK] | b->piece[WHITE][QUEEN]));
 
-    return ATTACKED_BY_PAWN * (wMinor * wMinor - bMinor * bMinor) + 2 * ATTACKED_BY_PAWN * (wMajor * wMajor - bMajor * bMajor);
+    return ATTACKED_BY_PAWN * (min(7, wMinor * wMinor) - min(7, bMinor * bMinor)) + 2 * ATTACKED_BY_PAWN * (min(5, wMajor * wMajor) - min(5, bMajor * bMajor));
     //return ATTACKED_BY_PAWN * (wMinor - bMinor) + 2 * ATTACKED_BY_PAWN * (wMajor - bMajor);
 }
 
@@ -519,7 +519,7 @@ static int pst(const Board* board, const int phase, const int color)
     return taperedEval(phase, opening, endgame);
 }
 
-static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c, int* opening, int* endgame, uint64_t (*move) (int, uint64_t))
+static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c, int* opening, int* endgame, int* attOnQ, uint64_t (*move) (int, uint64_t))
 {
     uint64_t bb = b->piece[c][piece], mv;
 
@@ -545,6 +545,10 @@ static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c,
             {
                 ev->acc[1^c] -= defWg[piece];
             }
+            if (piece != QUEEN && (mv & b->piece[1^c][QUEEN]))
+            {
+                attOnQ++;
+            }
         }
 
         REMOVE_LSB(bb);
@@ -554,14 +558,14 @@ static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c,
 
 static int pst2(EvalMovs* ev, const Board* b, const int phase, const int color)
 {
-    int opening = 0, endgame = 0;
+    int opening = 0, endgame = 0, attOnQ = 0;
 
-    psHelper(ev, b, KING,   color, &opening, &endgame, auxKnightMoves);
-    psHelper(ev, b, QUEEN,  color, &opening, &endgame, getQueenMagicMoves);
-    psHelper(ev, b, ROOK,   color, &opening, &endgame, getRookMagicMoves);
-    psHelper(ev, b, BISH,   color, &opening, &endgame, getBishMagicMoves);
-    psHelper(ev, b, KNIGHT, color, &opening, &endgame, auxKnightMoves);
-    psHelper(ev, b, PAWN,   color, &opening, &endgame, auxKnightMoves);
+    psHelper(ev, b, KING,   color, &opening, &endgame, &attOnQ, auxKnightMoves);
+    psHelper(ev, b, QUEEN,  color, &opening, &endgame, &attOnQ, getQueenMagicMoves);
+    psHelper(ev, b, ROOK,   color, &opening, &endgame, &attOnQ, getRookMagicMoves);
+    psHelper(ev, b, BISH,   color, &opening, &endgame, &attOnQ, getBishMagicMoves);
+    psHelper(ev, b, KNIGHT, color, &opening, &endgame, &attOnQ, auxKnightMoves);
+    psHelper(ev, b, PAWN,   color, &opening, &endgame, &attOnQ, auxKnightMoves);
 
-    return taperedEval(phase, opening, endgame);
+    return taperedEval(phase, opening, endgame) + attOnQ;
 }
