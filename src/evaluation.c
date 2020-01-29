@@ -25,6 +25,7 @@ int PAWN_CHAIN = 27; //Bonus for making a pawn chain
 int PAWN_PROTECTION = 14; //Bonus for Bish / Knight protected by pawn
 int ATTACKED_BY_PAWN = 71; //Bonus if a pawn can attack a piece
 int N_DOUBLED_PAWNS = -41; //Penalization for doubled pawns (proportional to the pawns in line - 1)
+int N_ISOLATED_PAWN = -5; //Penalization for isolated pawns
 
 int ROOK_XR = 10;
 int BISH_XR = 15;
@@ -40,7 +41,6 @@ int BISHOP_MOBILITY = 1; //Bonus for squares available to the bishop
 int ATTACKED_BY_PAWN_LATER = 6; //Bonus if a pawn can attack a piece after moving once
 int N_PIECE_SLOW_DEV = -10; //Penalization for keeping the pieces in the back-rank
 int STABLE_KING = 25; //Bonus for king in e1/8 or castled
-int N_ISOLATED_PAWN = -10; //Penalization for isolated pawns
 int N_TARGET_PAWN = -7; //Penalization for a pawn that can't be protected by another pawn
 int CLEAN_PAWN = 20; //Bonus for a (passed?) pawn that doesn't have any pieces in the sqr ahead, only if it is on the opp half
 
@@ -519,7 +519,7 @@ static int pst(const Board* board, const int phase, const int color)
     return taperedEval(phase, opening, endgame);
 }
 
-static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c, int* opening, int* endgame, int* attOnQ, uint64_t (*move) (int, uint64_t))
+static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c, int* opening, int* endgame, int* isol, uint64_t (*move) (int, uint64_t))
 {
     uint64_t bb = b->piece[c][piece], mv;
 
@@ -545,10 +545,11 @@ static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c,
             {
                 ev->acc[1^c] -= defWg[piece];
             }
-            if (piece != QUEEN && (mv & b->piece[1^c][QUEEN]))
-            {
-                attOnQ++;
-            }
+        }
+        else if (piece == PAWN)
+        {
+            if (!(getPawnLanes(lsb) & b->piece[c][PAWN]))
+                (*isol)++;
         }
 
         REMOVE_LSB(bb);
@@ -558,14 +559,14 @@ static void psHelper(EvalMovs* ev, const Board* b, const int piece, const int c,
 
 static int pst2(EvalMovs* ev, const Board* b, const int phase, const int color)
 {
-    int opening = 0, endgame = 0, attOnQ = 0;
+    int opening = 0, endgame = 0, isol = 0;
 
-    psHelper(ev, b, KING,   color, &opening, &endgame, &attOnQ, auxKnightMoves);
-    psHelper(ev, b, QUEEN,  color, &opening, &endgame, &attOnQ, getQueenMagicMoves);
-    psHelper(ev, b, ROOK,   color, &opening, &endgame, &attOnQ, getRookMagicMoves);
-    psHelper(ev, b, BISH,   color, &opening, &endgame, &attOnQ, getBishMagicMoves);
-    psHelper(ev, b, KNIGHT, color, &opening, &endgame, &attOnQ, auxKnightMoves);
-    psHelper(ev, b, PAWN,   color, &opening, &endgame, &attOnQ, auxKnightMoves);
+    psHelper(ev, b, KING,   color, &opening, &endgame, &isol, auxKnightMoves);
+    psHelper(ev, b, QUEEN,  color, &opening, &endgame, &isol, getQueenMagicMoves);
+    psHelper(ev, b, ROOK,   color, &opening, &endgame, &isol, getRookMagicMoves);
+    psHelper(ev, b, BISH,   color, &opening, &endgame, &isol, getBishMagicMoves);
+    psHelper(ev, b, KNIGHT, color, &opening, &endgame, &isol, auxKnightMoves);
+    psHelper(ev, b, PAWN,   color, &opening, &endgame, &isol, auxKnightMoves);
 
-    return taperedEval(phase, opening, endgame) + attOnQ;
+    return taperedEval(phase, opening, endgame) + N_ISOLATED_PAWN * isol;
 }

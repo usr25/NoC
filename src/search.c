@@ -396,7 +396,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int expSort = 0;
     if (expSort = (depth >= 5 && mt.score < 290))
     {
-        int targD = min(pv? depth - 4 : depth / 4, 6);
+        int targD = min(pv? depth - 4 : depth / 4, 9);
         expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 
@@ -437,7 +437,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 {
                     if (i > 3 + 2*pv)
                     {
-                        reduction += 1 - (!pv && improving) + depth / 4;
+                        reduction += 1 - (!pv && improving) + depth / 3;
                     }
                     if (m.piece == KING && !IS_CAP(m) && !m.castle && POPCOUNT(b.allPieces) > 15)
                         reduction+=2;

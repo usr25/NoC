@@ -1,15 +1,16 @@
-1302 #Queen
-622 #Rook
-385 #Bish
-365 #Knight
-23 #Connected rooks
+1379 #Queen
+649 #Rook
+411 #Bish
+395 #Knight
+25 #Connected rooks
 22 #Rook open file
 27 #Safe king
-55 #Bish pair
-37 #Knight pawns
--11 #King open file
-16 #Pawn chain
-24 #Pawn protection
-50 #Attacked by pawn
--36 #Doubled pawns
+54 #Bish pair
+32 #Knight pawns
+-5 #King open file
+27 #Pawn chain
+14 #Pawn protection
+71 #Attacked by pawn
+-41 #Doubled pawns
+-5 #Isolated pawns
 11 #Tempo
