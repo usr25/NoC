@@ -72,7 +72,7 @@ static int see(Board* b, const int sqr, const int pieceAtSqr)
     {
         const int attacker = pieceAt(b, POW2[from], col);
 
-        const Move move = (Move){.from=from, .to=sqr, .piece=attacker, .capture = pieceAtSqr, .castle=0};
+        const Move move = (Move){.from=from, .to=sqr, .piece=attacker, .capture=pieceAtSqr, .castle=0};
 
         makePermaMove(b, move);
         const int score = pVal[pieceAtSqr] - see(b, sqr, attacker);

@@ -30,3 +30,4 @@ int equal(const Board* a, const Board* b);
 Board duplicate(const Board b);
 
 int getIndex(const char row, const char col);
+int boardIsOK(const Board* b);

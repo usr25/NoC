@@ -209,8 +209,8 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
 static double percentage = 0;
 static int isInNullMove = 0; //TODO: Use a global variable to detect when the engine is in a null move
-static Move moveStack[MAX_PLY];
-static int evalStack[MAX_PLY];
+static Move moveStack[MAX_PLY+7]; //To avoid possible overflow errors
+static int evalStack[MAX_PLY+7];
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
@@ -563,7 +563,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
  */
 static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
 {
-    assert(depth > 0 && depth < 7);
+    assert(depth > 0 && depth < 10);
     assert(beta >= alpha);
 
     uint64_t newHash;
@@ -582,7 +582,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta - 1, -alpha + 1, depth - 1, MAX_PLY - 7, 1, newHash, rep, isInCheck(&b, b.stm));
+            val = -pvSearch(b, -beta - 1, -alpha + 1, depth - 1, MAX_PLY - 9, 1, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
         }
 

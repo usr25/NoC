@@ -230,3 +230,20 @@ const int getIndex(const char row, const char col)
 {
     return ((col - '1') << 3) + (7 + 'a' - row);
 }
+
+//TODO: Maybe make it more real (eg.: PPCNT(WhKnight) < 5)
+int boardIsOK(const Board* b)
+{
+    int ok = 1;
+
+    ok &= (b->color[BLACK] & b->color[WHITE]) == 0;
+    ok &= (b->color[BLACK] | b->color[WHITE]) == b->allPieces;
+
+    for (int c = BLACK; c <= WHITE && ok; ++c)
+    {
+        ok &= POPCOUNT(b->piece[c][KING]) == 1;
+        ok &= ~b->color[c] == b->color[2|c];
+    }
+
+    return ok;
+}

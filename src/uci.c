@@ -191,6 +191,7 @@ static void go_(Board b, char* beg, Repetition* rep)
                 timeInSecs = remTime / 41;
 
             sp.timeToMove = (timeInSecs * CLOCKS_PER_SEC) / 1000;
+            assert(sp.timeToMove >= 0);
         }
     }
 

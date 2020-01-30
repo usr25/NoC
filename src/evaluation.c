@@ -45,7 +45,6 @@ int N_TARGET_PAWN = -7; //Penalization for a pawn that can't be protected by ano
 int CLEAN_PAWN = 20; //Bonus for a (passed?) pawn that doesn't have any pieces in the sqr ahead, only if it is on the opp half
 
 
-
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -100,7 +99,7 @@ static int passedPawnValues[8];
 
 static int attackersOnK[2]; //Used to count the number of attackers on the king
 //Shamelessly copied from chessprogramming (sf). 54 elements
-static const int kingAtt[100] = {
+static const int kingAtt[64] = {
     0,  0,   1,   2,   3,   5,   7,   9,  12,  15,
   18,  22,  26,  30,  35,  39,  44,  50,  56,  62,
   68,  75,  82,  85,  89,  97, 105, 113, 122, 131,
@@ -111,6 +110,12 @@ static const int kingAtt[100] = {
 };
 static const int attWg[6] = {0, 5, 4, 3, 3};
 static const int defWg[6] = {0, 1, 1, 2, 2};
+
+static inline int taperedEval(const int ph, const int beg, const int end)
+{
+    assert(ph >= 0 && ph <= 256);
+    return ((beg * (255 ^ ph)) + (end * ph)) / 256;
+}
 
 uint64_t auxKnightMoves(const int lsb, const uint64_t pieces)
 {
@@ -161,7 +166,8 @@ int eval(const Board* b)
 
     evaluation += pst2(&ev, b, ph, WHITE) - pst2(&ev, b, ph, BLACK);
 
-    evaluation += kingAtts(&ev, b);
+    int ka = kingAtts(&ev, b);
+    evaluation += taperedEval(ph, ka, ka / 2);
 
     evaluation += pieceActivity(b);
 
@@ -217,7 +223,7 @@ int kingAtts(EvalMovs* ev, const Board* b)
     for (int c = BLACK; c <= WHITE; ++c)
         ev->acc[c] += 6 * POPCOUNT(ev->movs[c][QUEEN] & ev->kingDanger[1^c] & ~ev->all[1^c]);
 
-    return ((attackersOnK[WHITE]>2)*kingAtt[min(max(ev->acc[WHITE], 0), 53)] - (attackersOnK[BLACK]>2)*kingAtt[min(max(ev->acc[BLACK], 0), 53)]);
+    return ((attackersOnK[WHITE]>2)*kingAtt[max(ev->acc[WHITE], 63)] - (attackersOnK[BLACK]>2)*kingAtt[min(ev->acc[BLACK], 0), 63]);
 }
 
 int mobility(EvalMovs* ev)
@@ -261,11 +267,6 @@ static int phase(void)
         -quPh * (wQueen + bQueen);
 
     return ((currPh << 8) + (totPh >> 1)) / totPh;
-}
-
-static inline int taperedEval(const int ph, const int beg, const int end)
-{
-    return ((beg * (255 ^ ph)) + (end * ph)) >> 8;
 }
 
 
@@ -568,5 +569,5 @@ static int pst2(EvalMovs* ev, const Board* b, const int phase, const int color)
     psHelper(ev, b, KNIGHT, color, &opening, &endgame, &isol, auxKnightMoves);
     psHelper(ev, b, PAWN,   color, &opening, &endgame, &isol, auxKnightMoves);
 
-    return taperedEval(phase, opening, endgame) + N_ISOLATED_PAWN * isol;
+    return taperedEval(phase, opening, endgame) /*+ N_ISOLATED_PAWN * isol*/;
 }
