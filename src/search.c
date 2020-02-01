@@ -457,7 +457,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                 assert(depth - reduction >= 0);
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep, inC);
-                if (val > alpha && (pv || reduction > 1))
+                if (val > alpha && reduction > 1)
                     val = -pvSearch(b, -alpha-1, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
                 if (pv && val > alpha && val < beta)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
@@ -475,15 +475,16 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                 if (alpha >= beta || alpha >= mateInNext)
                 {
-                    addHistory(bestM.from, bestM.to, 1, 1 ^ b.stm);
-
                     #ifdef DEBUG
                     ++betaCutOff;
                     if (i == 0) ++betaCutOffHit;
                     #endif
 
                     if (!IS_CAP(bestM))
+                    {
+                        addHistory(bestM.from, bestM.to, 1, 1 ^ b.stm);
                         addKM(bestM, depth);
+                    }
 
                     /*for (int j = 0; j < i; ++j)
                         decHistory(list[j].from, list[j].to, depth);*/
@@ -520,7 +521,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + V_QUEEN <= alpha)
+    else if (score + V_QUEEN[0] <= alpha)
         return alpha;
 
     if (d == 0)

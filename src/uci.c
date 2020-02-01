@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include <time.h>
 
 #include "../include/global.h"
@@ -296,7 +297,7 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
     char mv[6] = "";
     moveToText(m, mv);
     fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", 
-        100 * m.score / V_PAWN, depth, duration, nodes, 1000 * nodes / (duration + 1), mv);
+        100 * m.score / V_PAWN[0], depth, duration, nodes, 1000 * nodes / (duration + 1), mv);
     fflush(stdout);
 }
 static void help_(void)

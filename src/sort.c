@@ -18,9 +18,9 @@
 #include "../include/magic.h"
 #include "../include/evaluation.h"
 
-static int smallestAttackerSqr(const Board* b, const int sqr, const int col);
+static int smallestAttackerSqr(const Board* b, const int sqr, const int col, const uint64_t diag, const uint64_t stra);
 static inline int seeCapture(Board b, const Move m);
-__attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr);
+__attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr, const uint64_t diag, const uint64_t stra);
 
 #define NUM_KM 2
 
@@ -59,12 +59,12 @@ void initKM(void)
 static inline int seeCapture(Board b, const Move m)
 {
     makePermaMove(&b, m);
-    return pVal[m.capture] - see(&b, m.to, m.piece);
+    return pVal[m.capture] - see(&b, m.to, m.piece, getDiagMoves(m.to), getStraMoves(m.to));
 }
-static int see(Board* b, const int sqr, const int pieceAtSqr)
+static int see(Board* b, const int sqr, const int pieceAtSqr, const uint64_t diag, const uint64_t stra)
 {
     const int col = b->stm;
-    const int from = smallestAttackerSqr(b, sqr, 1 ^ col);
+    const int from = smallestAttackerSqr(b, sqr, 1 ^ col, diag, stra);
 
     int value = 0;
 
@@ -75,14 +75,14 @@ static int see(Board* b, const int sqr, const int pieceAtSqr)
         const Move move = (Move){.from=from, .to=sqr, .piece=attacker, .capture=pieceAtSqr, .castle=0};
 
         makePermaMove(b, move);
-        const int score = pVal[pieceAtSqr] - see(b, sqr, attacker);
+        const int score = pVal[pieceAtSqr] - see(b, sqr, attacker, diag, stra);
         value = (score > 0)? score : 0;
     }
 
     return value;
 }
 
-static int smallestAttackerSqr(const Board* b, const int sqr, const int col)
+static int smallestAttackerSqr(const Board* b, const int sqr, const int col, const uint64_t diag, const uint64_t stra)
 {
     const int opp = 1 ^ col;
     const uint64_t obst = b->allPieces;
@@ -105,14 +105,14 @@ static int smallestAttackerSqr(const Board* b, const int sqr, const int col)
     if (temp)
         return LSB_INDEX(temp);
 
-    if ((b->piece[opp][BISH] | b->piece[opp][QUEEN]) & getDiagMoves(sqr))
+    if ((b->piece[opp][BISH] | b->piece[opp][QUEEN]) & diag)
         bishMag = getBishMagicMoves(sqr, obst);
 
     temp = bishMag & b->piece[opp][BISH];
     if (temp)
         return LSB_INDEX(temp);
 
-    if ((b->piece[opp][ROOK] | b->piece[opp][QUEEN]) & getStraMoves(sqr))
+    if ((b->piece[opp][ROOK] | b->piece[opp][QUEEN]) & stra)
         rookMag = getRookMagicMoves(sqr, obst);
 
     temp = rookMag & b->piece[opp][ROOK];

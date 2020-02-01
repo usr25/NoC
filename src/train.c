@@ -17,13 +17,14 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 
-#define NUM_VARS 16
+#define NUM_VARS 14
 
 
 typedef struct
 {
     int successful;
-    int value;
+    int valueMG;
+    int valueEG;
 } ReadInt;
 
 typedef struct
@@ -51,7 +52,7 @@ static char valFile[200];  //File that contains the initial values
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int vals[NUM_VARS];     //The values of the variables
+static int vals[2*NUM_VARS];     //The values of the variables
 static FenResult* positions;   //Array that holds the fens+results in memory, this is much faster than reading from the hard drive
 static double* acc;            //Accumulators for the different threads
 
@@ -129,8 +130,8 @@ void readValues(const char* path)
     int i = 0;
     while((r = getNext(fp)).successful)
     {
-        vals[i] = r.value;
-        ++i;
+        vals[i++] = r.valueMG;
+        vals[i++] = r.valueEG;
     }
 
     setArray(vals);
@@ -153,14 +154,15 @@ static ReadInt getNext(FILE* fp)
     char* line = NULL;
     size_t len = 0;
     ssize_t read;
-    ReadInt r = (ReadInt){.successful = 0, .value = 0};
+    ReadInt r = (ReadInt){.successful = 0};
 
     if ((read = getline(&line, &len, fp)) != -1)
     {
         if (read > 1 && isNumeric(line[0]))
         {
             r.successful = 1;
-            r.value = atoi(line);
+            r.valueMG = atoi(line);
+            r.valueEG = atoi(strchr(line, ',')+1);
         }
     }
 
@@ -173,29 +175,40 @@ static ReadInt getNext(FILE* fp)
  */
 static void setArray(const int* arr)
 {
-    V_QUEEN     = arr[0];
-    V_ROOK      = arr[1];
-    V_BISH      = arr[2];
-    V_KNIGHT    = arr[3];
+    V_QUEEN[0]  = arr[0];
+    V_QUEEN[1]  = arr[1];
+    V_ROOK[0] = arr[2];
+    V_ROOK[1] = arr[3];
+    V_BISH[0] = arr[4];
+    V_BISH[1] = arr[5];
+    V_KNIGHT[0] = arr[6];
+    V_KNIGHT[1] = arr[7];
 
-    CONNECTED_ROOKS = arr[4];
-    ROOK_OPEN_FILE  = arr[5];
-    SAFE_KING       = arr[6];
+    CONNECTED_ROOKS[0] = arr[8];
+    CONNECTED_ROOKS[1] = arr[9];
+    ROOK_OPEN_FILE [0] = arr[10];
+    ROOK_OPEN_FILE [1] = arr[11];
+    SAFE_KING      [0] = arr[12];
+    SAFE_KING      [1] = arr[13];
 
-    BISH_PAIR       = arr[7];
-    KNIGHT_PAWNS    = arr[8];
-    N_KING_OPEN_FILE= arr[9];
+    BISH_PAIR      [0] = arr[14];
+    BISH_PAIR      [1] = arr[15];
+    KNIGHT_PAWNS   [0] = arr[16];
+    KNIGHT_PAWNS   [1] = arr[17];
+    N_KING_OPEN_FILE[0] = arr[18];
+    N_KING_OPEN_FILE[1] = arr[19];
 
-    PAWN_CHAIN      = arr[10];
-    PAWN_PROTECTION = arr[11];
-    ATTACKED_BY_PAWN= arr[12];
-    N_DOUBLED_PAWNS = arr[13];
-    N_ISOLATED_PAWN = arr[14];
-
-    TEMPO = arr[15];
+    PAWN_CHAIN     [0] = arr[20];
+    PAWN_CHAIN     [1] = arr[21];
+    PAWN_PROTECTION[0] = arr[22];
+    PAWN_PROTECTION[1] = arr[23];
+    ATTACKED_BY_PAWN[0] = arr[24];
+    ATTACKED_BY_PAWN[1] = arr[25];
+    N_DOUBLED_PAWNS[0] = arr[26];
+    N_DOUBLED_PAWNS[1] = arr[27];
 }
 
-/* Saves the array into memory, so in case it crashes no data is lost
+/* Saves the array into the harddrive, so in case it crashes no data is lost
  */
 static void saveArray(const int* arr)
 {
@@ -203,13 +216,18 @@ static void saveArray(const int* arr)
     fp = fopen(saveFile, "w");
     if (fp == NULL)
     {
-        printf("[-] Error opening \'%s\' as w\n", saveFile);
+        printf("[-] Error opening \'%s\' in write mode\n", saveFile);
+        printf("[-] Printing the current values...\n");
+
+        for (int i = 0; i < NUM_VARS; ++i)
+            printf("%d, %d\n", arr[2*i],arr[2*i+1]);
+
         exit(EXIT_FAILURE);
     }
-    char numAsStr[7];
+    char numAsStr[20];
     for (int i = 0; i < NUM_VARS; ++i)
     {
-        sprintf(numAsStr, "%d\n", arr[i]);
+        sprintf(numAsStr, "%d, %d\n", arr[2*i],arr[2*i+1]);
         fputs(numAsStr, fp);
     }
     fclose(fp);
@@ -238,7 +256,7 @@ static void loadFensIntoMem(void)
             positions[i] = (FenResult) {};
             if (read > 1)
             {
-                for (int j = 0; j < 150; ++j)
+                for (int j = 0; j < 200; ++j)
                 {
                     if (line[j] == '\n')
                     {
@@ -276,13 +294,15 @@ static void loadFensIntoMem(void)
     if (line) free(line);
 }
 
-int assign;
+static int assign;
 
+/* Multithreaded function to calculate the error, called from each thread
+ */
 static void* mthError(void* var)
 {
     const int limit = num_pos / num_thr;
     pthread_mutex_lock(&mutex);
-    int threadOffset = assign;
+    const int threadOffset = assign;
     assign++;
     pthread_mutex_unlock(&mutex);
 
@@ -306,7 +326,7 @@ static void* mthError(void* var)
 
 static double error(void)
 {
-    //Set up the mth vars
+    //Set up the multithread vars
     assign = 0;
 
     setArray(vals);
@@ -343,12 +363,13 @@ static void optimize(void)
     {
         iter++;
         improved = 0;
-        for (int var = 0; var < NUM_VARS; ++var)
+        for (int var = 0; var < 2*NUM_VARS; ++var)
         {
             if (vals[var] >= val_lim || vals[var] <= -val_lim) continue;
 
             int best = vals[var];
             vals[var]++;
+            initEval(); //To ensure that the change have been applied for some variables (such as passed pawns)
             double newVal = error();
 
             while (newVal < bestVal)
@@ -357,11 +378,13 @@ static void optimize(void)
                 best = vals[var];
                 bestVal = newVal;
                 vals[var]++;
+                initEval();
                 newVal = error();
             }
             if(!improved)
             {
                 vals[var] -= 2;
+                initEval();
                 newVal = error();
                 while(newVal < bestVal)
                 {
@@ -369,6 +392,7 @@ static void optimize(void)
                     bestVal = newVal;
                     best = vals[var];
                     vals[var]--;
+                    initEval();
                     newVal = error();
                 }
             }
@@ -382,5 +406,5 @@ static void optimize(void)
     }
 
     saveArray(vals);
-    printf("Optimum E: %.12f\n", error());
+    printf("Optimum E: %.12f\n", bestVal);
 }
