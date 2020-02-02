@@ -1,6 +1,6 @@
 # NoC
 
-An attempt at making a chess engine from scratch. Under active development. I haven't decided on a name, for the time being it is **NoC**.
+An attempt at making a chess engine from scratch. Under active development.
 
 ### Warnings: 
 
@@ -22,13 +22,15 @@ You should see a message such as `[+] Using tablebases: 3 4 ~5` where the number
 
 The tablebases are currently used to give a fast mate in endgames, and in the search function as an oracle. There is currently no way to not use them besides altering the source code, to do this go to gaviota.c and set `*tbIsAv = 0` in `gavWDL / gavScore` to disable search oracle and DTM queries respectively, or remove the tablebases you don't want to be used.
 
+They aren't of much use when the match uses tablebases or engine scores to award a premature win.
+
 ### About
 
-Chess engine written in C. Currently used in lichess.org as 'usr25'. From the testing I've done it should be around 2100 elo.
+Chess engine written in C. Currently used in lichess.org as 'usr25'. From the testing I've done it should be around 2300 elo.
 
 No guarantees are made about the engine. All the testing matches were done using cutechess.
 
-The version corresponds to the month and year fo release. 11.19 == Nov 19, unless there is a big change there will be one version max per month
+The version corresponds to the month and year of release. 11.19 == Nov 19, unless there is a big change there will be one version max per month.
 
 ### Thanks
 
