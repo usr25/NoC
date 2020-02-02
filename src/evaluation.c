@@ -59,7 +59,7 @@ static void assignPC(const Board* b);
 // Main functions
 static void material(void);
 static void pieceActivity(const Board* b, const EvalMovs* ev);
-static void passedPawns(uint64_t wp, uint64_t bp, const int ph);
+static void passedPawns(uint64_t wp, uint64_t bp, const int ph, const EvalMovs* ev);
 static int pst(const Board* board, const int phase, const int color);
 static void pawns(const Board* b);
 static void kingSafety(const Board* b);
@@ -165,7 +165,7 @@ int eval(const Board* b)
 
     kingSafety(b);
 
-    passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN], ph);
+    passedPawns(b->piece[WHITE][PAWN], b->piece[BLACK][PAWN], ph, &ev);
 
     pawns(b);
 
@@ -297,27 +297,30 @@ static inline void kingSafety(const Board* b)
     int closeW = POPCOUNT(wkMoves & b->color[WHITE] & ~wPawnBB);
     int closeB = POPCOUNT(bkMoves & b->color[BLACK] & ~bPawnBB);
     const int mult[9] = {0, 1, 3, 5, 3, 0, -1, -2, -5};
-    score += CLOSE_TO_KING * (3*closeW - closeW*closeW - 3*closeB+);
+    addVal(CLOSE_TO_KING, mult[closeW] - mult[closeB]);
     */
 }
 
-static void passedPawns(uint64_t wp, uint64_t bp, const int ph)
+static void passedPawns(uint64_t wp, uint64_t bp, const int ph, const EvalMovs* ev)
 {
     const int open[8] = {0, 0,  0, 10, 15, 20, 40, 0};
     const int endg[8] = {0, 7, 15, 20, 30, 42, 70, 0};
     int lsb = 0, op = 0, end = 0;
     wp &= 0xffffffff00000000;
     bp &= 0xffffffff;
-    int isProtected, rank;
+    uint64_t pos;
+    int isProtected, rank, advanceBonus;
     while(wp)
     {
         lsb = LSB_INDEX(wp);
         if ((getWPassedPawn(lsb) & bp) == 0)
         {
+            pos = 1ULL << lsb;
             rank = lsb >> 3;
-            isProtected = (wPawnBBAtt & (1ULL << lsb))? rank : 0;
+            isProtected = (wPawnBBAtt & pos)? rank : 0;
+            advanceBonus = ((pos << 8) & (mostPieces | ev->all[BLACK]))? 0 : 12;
             op  += open[rank] + isProtected;
-            end += endg[rank] + 2*isProtected;
+            end += endg[rank] + 2*isProtected + advanceBonus;
         }
         REMOVE_LSB(wp);
     }
@@ -326,10 +329,12 @@ static void passedPawns(uint64_t wp, uint64_t bp, const int ph)
         lsb = LSB_INDEX(bp);
         if ((getBPassedPawn(lsb) & wp) == 0)
         {
+            pos = 1ULL << lsb;
             rank = 7 ^ (lsb >> 3);
-            isProtected = (bPawnBBAtt & (1ULL << lsb))? rank : 0;
+            isProtected = (bPawnBBAtt & pos)? rank : 0;
+            advanceBonus = ((pos >> 8) & (mostPieces | ev->all[WHITE]))? 0 : 12;
             op  -= open[rank] + isProtected;
-            end -= endg[rank] + 2*isProtected;
+            end -= endg[rank] + 2*isProtected + advanceBonus;
         }
         REMOVE_LSB(bp);
     }
@@ -367,7 +372,7 @@ static void pawns(const Board* b)
     const int bMajor = POPCOUNT(bPawnBBAtt & (b->piece[WHITE][ROOK] | b->piece[WHITE][QUEEN]));
 
     addVal(ATTACKED_BY_PAWN, min(7, wMinor * wMinor) - min(7, bMinor * bMinor));
-    addVal(ATTACKED_BY_PAWN, 2*(min(6, wMajor * wMajor) - min(6, bMajor * bMajor)));
+    addVal(ATTACKED_BY_PAWN, 2*(min(5, wMajor * wMajor) - min(5, bMajor * bMajor)));
 }
 
 
@@ -393,7 +398,7 @@ static void rookOnOpenFile(uint64_t wr, uint64_t br)
 inline void minorPieces(void)
 {
     addVal(BISH_PAIR, (wBish > 1) - (bBish > 1));
-    addVal(KNIGHT_PAWNS, (wPawn + bPawn) * (wKnight - bKnight) / 10);
+    addVal(KNIGHT_PAWNS, (wKnight - bKnight) * ((wPawn + bPawn) / 10));
 }
 
 const int mirror[64] = {

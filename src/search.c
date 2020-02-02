@@ -321,6 +321,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     else if (depth == 0)
         return qsearch(b, alpha, beta, -1);
 
+    const int origAlpha = alpha;
+    alpha = max(-mate(height), alpha);
+    beta = min(mate(height+1), beta);
+    if (alpha >= beta)
+        return alpha;
+
     int val;
     Move bestM = NO_MOVE;
     if (table[index].key == prevHash)
@@ -386,7 +392,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int newHeight = height + 1;
     uint64_t newHash;
     int best = MINS_INF;
-    const int origAlpha = alpha;
 
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
@@ -473,7 +478,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             {
                 alpha = best;
 
-                if (alpha >= beta || alpha >= mateInNext)
+                if (alpha >= beta)
                 {
                     #ifdef DEBUG
                     ++betaCutOff;
@@ -482,12 +487,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                     if (!IS_CAP(bestM))
                     {
-                        addHistory(bestM.from, bestM.to, 1, 1 ^ b.stm);
+                        addHistory(bestM.from, bestM.to, depth, 1^b.stm);
                         addKM(bestM, depth);
                     }
 
-                    /*for (int j = 0; j < i; ++j)
-                        decHistory(list[j].from, list[j].to, depth);*/
+                    for (int j = 0; j < i; ++j)
+                        decHistory(list[j].from, list[j].to, !IS_CAP(list[j]), 1^b.stm);
                     break;
                 }
             }

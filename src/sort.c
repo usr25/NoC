@@ -165,7 +165,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
                 curr->score -= 25 - 2*curr->piece;
             int add = history[b->stm][BASE_64(curr->from, curr->to)];
             if (add > 0)
-                add = (int)sqrt(add);
+                add = (int)sqrt(add) / 2;
             else
                 add = -(int)sqrt(-add);
             curr->score += add;
