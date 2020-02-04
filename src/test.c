@@ -118,7 +118,7 @@ static int perftH(char* fen, const int depth)
     return hashPerft(b, depth, hashPosition(&b));
 }
 
-static int testHashingPerfts()
+static void testHashingPerfts()
 {
     printf("H Knight: %d\n", perftH("8/3nn3/1k6/8/8/6K1/3NN3/8 w - -", 5));
     printf("H Bish:   %d\n", perftH("8/3bb3/1k6/8/8/6K1/3BB3/8 w - -", 5));

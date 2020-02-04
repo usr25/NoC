@@ -322,6 +322,8 @@ static void* mthError(void* var)
     }
 
     acc[threadOffset] = localAcc;
+
+    return NULL;
 }
 
 static double error(void)

@@ -27,8 +27,7 @@ static void isready(void);
 static void perft_(Board b, int depth);
 static void mate_(Board b, int depth);
 static void eval_(Board b);
-static void best_(Board b, char* beg, Repetition* rep);
-static void go_(Board, char* beg, Repetition* rep);
+static void go_(Board b, char* beg, Repetition* rep);
 static void help_(void);
 static int move_(Board* b, char* beg, Repetition* rep);
 static Board gen_(char* beg, Repetition* rep);
@@ -141,8 +140,6 @@ static void go_(Board b, char* beg, Repetition* rep)
 {
     SearchParams sp = {.depth = 0, .timeToMove = 0, .extraTime = 0};
     int wtime = 0, btime = 0, winc = 0, binc = 0, movestogo = 0;
-
-    clock_t movetime = 0;
 
     while (beg[1] != '\0' && beg[1] != '\n')
     {

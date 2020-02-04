@@ -408,7 +408,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int canBreak = depth <= 3 && ev + marginDepth[depth] <= alpha && !isInC;
     //const int fewMovesExt = b.stm != us && numMoves < 5;
 
-    const int mateInNext = mate(newHeight+1);
     int inC;
     Move m;
 

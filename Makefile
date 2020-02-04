@@ -27,7 +27,7 @@ GAVLIB=-L$(GDIR) -lgtb -lpthread -lm
 
 
 $(ODIR)/%A.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) -Wall
 
 $(ODIR)/%T.o: $(SDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) -DTRAIN -DNDEBUG -DNUSE_TB -lpthread
@@ -49,7 +49,7 @@ debug: $(OBJD)
 	$(CC) -o $@ $^ $(CFLAGS) -DDEBUG -DNUSE_TB
 
 assert: $(OBJA)
-	$(CC) -o $@ $^ $(CFLAGS) -DNUSE_TB
+	$(CC) -o $@ $^ $(CFLAGS) -DNUSE_TB -Wall
 
 train: $(OBJT)
 	$(CC) -o $@ $^ $(CFLAGS) -DTRAIN -DNUSE_TB -DNDEBUG -lpthread

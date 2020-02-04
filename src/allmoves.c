@@ -1056,7 +1056,6 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
 {
     Move* p = list;
     const int color = b->stm, opp = 1 ^ b->stm;
-    const int k = LSB_INDEX(b->piece[b->stm][KING]);
     const uint64_t oppPieces = b->color[opp];
     const uint64_t pinnedMask = ~pinned;
     const AttacksOnK att = getCheckTiles(b, color);
