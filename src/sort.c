@@ -167,13 +167,13 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             if (add > 0)
                 add = (int)sqrt(add) / 2;
             else
-                add = -(int)sqrt(-add);
+                add = -(int)sqrt(-add) / 2;
             curr->score += add;
         }
 
         if (compMoves(&bestFromPos, curr)) //It was the best refutation in the same position
         {
-            curr->score += 1200;
+            curr->score += 2200;
         }
         else
         {

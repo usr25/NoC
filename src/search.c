@@ -327,7 +327,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (alpha >= beta)
         return alpha;
 
-    int val;
+    int val, ttHit = 0;
     Move bestM = NO_MOVE;
     if (table[index].key == prevHash)
     {
@@ -350,6 +350,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 return table[index].val;
         }
         bestM = table[index].m;
+        ttHit = moveIsValidBasic(&b, &bestM);
     }
 
     const int ev = eval(&b);
@@ -382,6 +383,47 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
     }
 
+    uint64_t newHash;
+    int best = MINS_INF;
+    const int newHeight = height + 1;
+    History h;
+    if (ttHit)
+    {
+        makeMove(&b, bestM, &h);
+        newHash = makeMoveHash(prevHash, &b, bestM, h);
+
+        if (isDraw(&b, rep, newHash, IS_CAP(bestM)))
+        {
+            val = (height < 5)? 0 : 8 - (newHash & 15);
+        }
+        else
+        {
+            addHash(rep, newHash);
+            val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, isInCheck(&b, b.stm));
+            remHash(rep);
+        }
+        undoMove(&b, bestM, &h);
+
+        best = val;
+        if (best > alpha)
+        {
+            alpha = best;
+            if (alpha >= beta)
+            {
+                #ifdef DEBUG
+                ++betaCutOff;
+                if (i == 0) ++betaCutOffHit;
+                #endif
+                if (!IS_CAP(bestM))
+                {
+                    addHistory(bestM.from, bestM.to, depth, 1^b.stm);
+                    addKM(bestM, depth);
+                }
+                goto end;
+            }
+        }
+    }
+
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
     if (!numMoves)
@@ -389,14 +431,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     const int improving = height > 1 && ev > evalStack[height-2] + 20 && !isInC && !null;
     const int notImproving = height > 1 && ev < evalStack[height-2] - 75 && !null;
-    const int newHeight = height + 1;
-    uint64_t newHash;
-    int best = MINS_INF;
 
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
 
-    History h;
     Move mt = list[0];
     int expSort = 0;
     if (expSort = (depth >= 5 && mt.score < 290))
@@ -411,12 +449,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int inC;
     Move m;
 
-    for (int i = 0; i < numMoves; ++i)
+    for (int i = ttHit; i < numMoves; ++i)
     {
         m = list[i];
         moveStack[height] = m;
         assert(RANGE_64(m.from) && RANGE_64(m.to));
-        if (canBreak && m.score < 90 && (i > 3 + depth || (i > 3 && !pv)))
+        if (canBreak && !IS_CAP(m) && (i > 3 + depth || (i > 3 && !pv)))
             break;
 
         makeMove(&b, m, &h);
@@ -500,6 +538,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         undoMove(&b, m, &h);
     }
 
+    end: ;
     int flag = EXACT;
 
     if (best <= origAlpha)
@@ -587,7 +626,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta - 1, -alpha + 1, depth - 1, MAX_PLY - 9, 1, newHash, rep, isInCheck(&b, b.stm));
+            val = -pvSearch(b, -beta-1, -alpha + 1, depth - 1, MAX_PLY - 11, 1, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
         }
 

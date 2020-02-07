@@ -84,6 +84,14 @@ void drawMove(const Move m)
     else if (m.castle & 2)
         printf(" O-O-O");
 }
+void debugMove(const Move m)
+{
+    char mv[6] = "";
+    moveToText(m, mv);
+
+    printf("%s, score: %d, piece: %d, capture: %d, promotion: %d, enPass: %d, castle: %d\n", 
+        mv, m.score, m.piece, m.capture, m.promotion, m.enPass, m.castle);
+}
 void moveToText(const Move m, char* mv)
 {
     mv[0] = (char)('h' - (m.from & 7));

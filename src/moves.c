@@ -3,6 +3,8 @@
  * castles, the ability to castle and the attacks on the king
  */
 
+#include <assert.h>
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -344,4 +346,13 @@ int givesCheck(const Board* b, const Move m)
         numChecks += (getBishMagicMoves(k, newPieces) & bi) != 0;
 
     return numChecks;
+}
+
+int moveIsValidBasic(const Board* b, const Move* m)
+{
+    int pieceValid = (b->piece[b->stm][m->piece] & POW2[m->from]) != 0;
+    int toValid = (b->color[2|b->stm] & POW2[m->to]) != 0;
+    int captValid = (!IS_CAP(*m)) || (POW2[m->to] & b->piece[1^b->stm][m->capture]);
+
+    return (m->piece == PAWN && m->enPass) || (pieceValid && toValid && captValid);
 }

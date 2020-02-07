@@ -11,6 +11,7 @@
 #include "../include/io.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 
 uint64_t perftRecursive(Board b, const int depth)
@@ -51,6 +52,7 @@ uint64_t perft(Board b, const int depth, const int divide)
 
     for (int i = 0; i < numMoves; ++i)
     {
+        assert(moveIsValidBasic(&b, &moves[i]));
         makeMove(&b, moves[i], &h);
 
         int temp = perftRecursive(b, depth - 1);

@@ -66,5 +66,6 @@ AttacksOnK getCheckTiles(const Board* b, const int color);
 int isInCheck(const Board* b, const int kingsColor);
 int slidingCheck(const Board* b, const int kingsColor);
 int givesCheck(const Board* b, const Move m);
+int moveIsValidBasic(const Board* b, const Move* m);
 
 #define IS_CAP(m) ((m).capture > 0)
