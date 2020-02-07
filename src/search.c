@@ -349,6 +349,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             if (alpha >= beta)
                 return table[index].val;
         }
+
         bestM = table[index].m;
         ttHit = moveIsValidBasic(&b, &bestM);
     }
@@ -371,7 +372,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             return ev;
 
         // Null move pruning
-        if (!null && depth > R + pv && !zugz(b))
+        if (!null && !pv && depth > R && !zugz(b))
         {
             if (nullMove(b, depth, beta, prevHash))
             {
