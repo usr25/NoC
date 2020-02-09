@@ -1,7 +1,7 @@
 #define ALL 0xffffffffffffffffULL //(~0ULL)
 
 #define ENGINE_AUTHOR "Jorge"
-#define ENGINE_NAME "NoC 1.20"
+#define ENGINE_NAME "NoC 2.20"
 
 //#define USE_TB
 //#define TRAIN

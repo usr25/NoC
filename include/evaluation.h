@@ -18,3 +18,4 @@ extern int PAWN_PROTECTION[2];
 extern int ATTACKED_BY_PAWN[2];
 extern int N_DOUBLED_PAWNS[2];
 extern int N_ISOLATED_PAWN[2];
+extern int QUEEN_CHECKS[2];

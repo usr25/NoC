@@ -1,4 +1,4 @@
-1348, 1400 #Queen
+1345, 1395 #Queen
 604, 695 #Rook
 422, 417 #Bish
 411, 389 #Knight
@@ -13,6 +13,8 @@
 80, 61 #Attacked by pawn
 -10, -35 #Doubled pawns
 -5, -5 #Isolated pawns
+20, 20 #Queen checks
+
 #6, 4 #Att by pawn push
 #40, 70 #7th rank passed pawn (TODO: implement)
 #116, 120 #Pawn (Don't touch too much)

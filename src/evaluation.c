@@ -9,7 +9,7 @@
 
 const int TEMPO = 11; //Value for a passed pawn right before promotion
 
-int V_QUEEN[2] = {1348, 1400};
+int V_QUEEN[2] = {1345, 1395};
 int V_ROOK[2] = {604, 695};
 int V_BISH[2] = {422, 417};
 int V_KNIGHT[2] = {411, 389};
@@ -25,6 +25,7 @@ int PAWN_CHAIN[2] = {27, 27}; //Bonus for making a pawn chain
 int PAWN_PROTECTION[2] = {14, 15}; //Bonus for Bish / Knight protected by pawn
 int ATTACKED_BY_PAWN[2] = {80, 61}; //Bonus if a pawn can attack a piece
 int N_DOUBLED_PAWNS[2] = {-10, -35}; //Penalization for doubled pawns (proportional to the pawns in line - 1)
+int QUEEN_CHECKS[2] = {20, 20};
 
 //Not yet implemented
 int PASSED_PAWN[2] = {40, 70}; //Bonus for passed pawns at the 7th rank
@@ -51,27 +52,30 @@ typedef struct
     uint64_t kingDanger[2];
     uint64_t pawnAtts[2];
     uint64_t mostPieces;
+
     int acc[2];
     int cnt[2][6];
     int k[2];
     int attOnK[2];
     int ph;
+
+    int result[2];
 } Eval;
 
 
 static int phase(const Eval* ev);
 
 // Main functions
-static void material(const Eval* ev);
-static void pieceActivity(const Board* b, const Eval* ev);
-static void passedPawns(uint64_t wp, uint64_t bp, const Eval* ev);
-static void pawns(const Board* b, const Eval* ev);
-static void kingSafety(const Board* b, const Eval* ev);
+static void material(Eval* ev);
+static void pieceActivity(const Board* b, Eval* ev);
+static void passedPawns(uint64_t wp, uint64_t bp, Eval* ev);
+static void pawns(const Board* b, Eval* ev);
+static void kingSafety(const Board* b, Eval* ev);
 
 static void pst2(Eval* ev, const Board* b, const int color);
-static void rookOnOpenFile(const Board* b);
-static void minorPieces(const Eval* ev);
-static void space(const Board* b, const Eval* ev, const int c);
+static void rookOnOpenFile(const Board* b, Eval* ev);
+static void minorPieces(Eval* ev);
+static void space(const Board* b, Eval* ev, const int c);
 
 static int kingAtts(Eval* ev, const Board* b);
 
@@ -89,11 +93,11 @@ static const int kingAtt[64] = {
 static const int attWg[6] = {0, 5, 4, 3, 3};
 static const int defWg[6] = {0, 1, 1, 2, 2};
 
-static int result[2] = {0, 0};
-static inline void addVal(const int* score, const int val)
+
+static inline void addVal(Eval* ev, const int* score, const int val)
 {
-    result[OP] += score[OP] * val;
-    result[EG] += score[EG] * val;
+    ev->result[OP] += score[OP] * val;
+    ev->result[EG] += score[EG] * val;
 }
 
 static inline int taperedEval(const int ph, const int beg, const int end)
@@ -134,6 +138,8 @@ void initializeEvMov(Eval* ev, const Board* b)
     ev->k[WHITE] = LSB_INDEX(b->piece[WHITE][KING]);
     ev->k[BLACK] = LSB_INDEX(b->piece[BLACK][KING]);
     ev->mostPieces = b->allPieces ^ b->piece[WHITE][QUEEN] ^ b->piece[BLACK][QUEEN];
+
+    ev->result[OP] = 0; ev->result[EG] = 0;
 }
 
 void initEval(void)
@@ -147,8 +153,6 @@ int eval(const Board* b)
     assert(POPCOUNT(b->piece[WHITE][KING]) == 1);
     assert(POPCOUNT(b->piece[BLACK][KING]) == 1);
 
-    result[OP] = 0; result[EG] = 0;
-
     Eval ev;
     initializeEvMov(&ev, b);
 
@@ -160,8 +164,8 @@ int eval(const Board* b)
     pst2(&ev, b, BLACK);
 
     int ka = kingAtts(&ev, b);
-    result[OP] += ka;
-    result[EG] += ka / 2;
+    ev.result[OP] += ka;
+    ev.result[EG] += ka / 2;
 
     pieceActivity(b, &ev);
 
@@ -174,7 +178,7 @@ int eval(const Board* b)
     space(b, &ev, WHITE);
     space(b, &ev, BLACK);
 
-    int evaluation = taperedEval(ev.ph, result[0], result[1]);
+    int evaluation = taperedEval(ev.ph, ev.result[0], ev.result[1]);
     assert(evaluation < PLUS_MATE && evaluation > MINS_MATE);
 
     return TEMPO + (b->stm? evaluation : -evaluation);
@@ -214,22 +218,24 @@ int insuffMat(const Board* b)
     return 0;
 }
 
-static void space(const Board* b, const Eval* ev, const int c)
+static void space(const Board* b, Eval* ev, const int c)
 {
     uint64_t mask = c? 0xffffff0000 : 0xffffff000000;
     uint64_t safe = mask & ~(ev->movs[1^c][PAWN] | b->color[c]);
     int score = POPCOUNT(safe);
     if (c)
-        result[OP] += score;
+        ev->result[OP] += score;
     else
-        result[OP] -= score;
+        ev->result[OP] -= score;
 }
 
 static int kingAtts(Eval* ev, const Board* b)
 {
     //Penalization for free queen checks
-    for (int c = BLACK; c <= WHITE; ++c)
-        ev->acc[c] += 6 * POPCOUNT(ev->movs[c][QUEEN] & ev->kingDanger[1^c] & ~ev->all[1^c]);
+
+    int q = POPCOUNT(ev->movs[WHITE][QUEEN] & ev->kingDanger[BLACK] & ~ev->all[BLACK]);
+    q -= POPCOUNT(ev->movs[BLACK][QUEEN] & ev->kingDanger[WHITE] & ~ev->all[WHITE]);
+    addVal(ev, QUEEN_CHECKS, q);
 
     return ((ev->attOnK[WHITE]>2)*kingAtt[min(ev->acc[WHITE], 63)] - (ev->attOnK[BLACK]>2)*kingAtt[min(ev->acc[BLACK], 63)]);
 }
@@ -254,39 +260,39 @@ static int phase(const Eval* ev)
 }
 
 
-static inline void material(const Eval* ev)
+static inline void material(Eval* ev)
 {
-    addVal(V_QUEEN, ev->cnt[WHITE][QUEEN] - ev->cnt[BLACK][QUEEN]);
-    addVal(V_ROOK, ev->cnt[WHITE][ROOK] - ev->cnt[BLACK][ROOK]);
-    addVal(V_BISH, ev->cnt[WHITE][BISH] - ev->cnt[BLACK][BISH]);
-    addVal(V_KNIGHT, ev->cnt[WHITE][KNIGHT] - ev->cnt[BLACK][KNIGHT]);
-    addVal(V_PAWN, ev->cnt[WHITE][PAWN] - ev->cnt[BLACK][PAWN]);
+    addVal(ev, V_QUEEN, ev->cnt[WHITE][QUEEN] - ev->cnt[BLACK][QUEEN]);
+    addVal(ev, V_ROOK, ev->cnt[WHITE][ROOK] - ev->cnt[BLACK][ROOK]);
+    addVal(ev, V_BISH, ev->cnt[WHITE][BISH] - ev->cnt[BLACK][BISH]);
+    addVal(ev, V_KNIGHT, ev->cnt[WHITE][KNIGHT] - ev->cnt[BLACK][KNIGHT]);
+    addVal(ev, V_PAWN, ev->cnt[WHITE][PAWN] - ev->cnt[BLACK][PAWN]);
 }
 
-static inline void pieceActivity(const Board* b, const Eval* ev)
+static inline void pieceActivity(const Board* b, Eval* ev)
 {
     minorPieces(ev);
-    rookOnOpenFile(b);
+    rookOnOpenFile(b, ev);
 
-    addVal(CONNECTED_ROOKS, ((ev->movs[WHITE][ROOK] & b->piece[WHITE][ROOK]) != 0) - ((ev->movs[BLACK][ROOK] & b->piece[BLACK][ROOK]) != 0));
+    addVal(ev, CONNECTED_ROOKS, ((ev->movs[WHITE][ROOK] & b->piece[WHITE][ROOK]) != 0) - ((ev->movs[BLACK][ROOK] & b->piece[BLACK][ROOK]) != 0));
 }
 
-static inline void kingSafety(const Board* b, const Eval* ev)
+static inline void kingSafety(const Board* b, Eval* ev)
 {
     const uint64_t wkMoves = getKingMoves(ev->k[WHITE]);
     const uint64_t bkMoves = getKingMoves(ev->k[BLACK]);
 
-    addVal(SAFE_KING, POPCOUNT(wkMoves & b->piece[WHITE][PAWN]) - POPCOUNT(bkMoves & b->piece[BLACK][PAWN]));
-    addVal(N_KING_OPEN_FILE, ((getUpMoves(ev->k[WHITE]) & b->piece[WHITE][PAWN]) == 0) - ((getDownMoves(ev->k[BLACK]) & b->piece[BLACK][PAWN]) == 0));
+    addVal(ev, SAFE_KING, POPCOUNT(wkMoves & b->piece[WHITE][PAWN]) - POPCOUNT(bkMoves & b->piece[BLACK][PAWN]));
+    addVal(ev, N_KING_OPEN_FILE, ((getUpMoves(ev->k[WHITE]) & b->piece[WHITE][PAWN]) == 0) - ((getDownMoves(ev->k[BLACK]) & b->piece[BLACK][PAWN]) == 0));
     /*
     int closeW = POPCOUNT(wkMoves & b->color[WHITE] & ~wPawnBB);
     int closeB = POPCOUNT(bkMoves & b->color[BLACK] & ~bPawnBB);
     const int mult[9] = {0, 1, 3, 5, 3, 0, -1, -2, -5};
-    addVal(CLOSE_TO_KING, mult[closeW] - mult[closeB]);
+    addVal(ev, CLOSE_TO_KING, mult[closeW] - mult[closeB]);
     */
 }
 
-static void passedPawns(uint64_t wp, uint64_t bp, const Eval* ev)
+static void passedPawns(uint64_t wp, uint64_t bp, Eval* ev)
 {
     const int open[8] = {0, 0,  0, 10, 15, 20, 40, 0};
     const int endg[8] = {0, 7, 15, 20, 30, 42, 70, 0};
@@ -324,17 +330,17 @@ static void passedPawns(uint64_t wp, uint64_t bp, const Eval* ev)
         REMOVE_LSB(bp);
     }
 
-    result[OP] += op;
-    result[EG] += end;
+    ev->result[OP] += op;
+    ev->result[EG] += end;
 }
 
-static void pawns(const Board* b, const Eval* ev)
+static void pawns(const Board* b, Eval* ev)
 {
     const uint64_t wPawnBB = b->piece[WHITE][PAWN];
     const uint64_t bPawnBB = b->piece[BLACK][PAWN];
-    addVal(PAWN_CHAIN, POPCOUNT(wPawnBB & ev->pawnAtts[WHITE]) - POPCOUNT(bPawnBB & ev->pawnAtts[BLACK]));
-    addVal(PAWN_PROTECTION, POPCOUNT(ev->pawnAtts[WHITE] & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(ev->pawnAtts[BLACK] & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
-    addVal(N_DOUBLED_PAWNS, POPCOUNT(wPawnBB & ((wPawnBB << 8) | (wPawnBB << 16))) - POPCOUNT(bPawnBB & ((bPawnBB >> 8) | (bPawnBB >> 16))));
+    addVal(ev, PAWN_CHAIN, POPCOUNT(wPawnBB & ev->pawnAtts[WHITE]) - POPCOUNT(bPawnBB & ev->pawnAtts[BLACK]));
+    addVal(ev, PAWN_PROTECTION, POPCOUNT(ev->pawnAtts[WHITE] & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(ev->pawnAtts[BLACK] & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
+    addVal(ev, N_DOUBLED_PAWNS, POPCOUNT(wPawnBB & ((wPawnBB << 8) | (wPawnBB << 16))) - POPCOUNT(bPawnBB & ((bPawnBB >> 8) | (bPawnBB >> 16))));
     //addVal(ATTACKED_BY_PAWN_LATER, POPCOUNT((wPawnBBAtt << 8) & b->color[BLACK]) - POPCOUNT((bPawnBBAtt >> 8) & b->color[WHITE]));
 
     const int wMinor = POPCOUNT(ev->pawnAtts[WHITE] & (b->piece[BLACK][KNIGHT] | b->piece[BLACK][BISH]));
@@ -343,12 +349,12 @@ static void pawns(const Board* b, const Eval* ev)
     const int wMajor = POPCOUNT(ev->pawnAtts[WHITE] & (b->piece[BLACK][ROOK] | b->piece[BLACK][QUEEN]));
     const int bMajor = POPCOUNT(ev->pawnAtts[BLACK] & (b->piece[WHITE][ROOK] | b->piece[WHITE][QUEEN]));
 
-    addVal(ATTACKED_BY_PAWN, min(7, wMinor * wMinor) - min(7, bMinor * bMinor));
-    addVal(ATTACKED_BY_PAWN, 2*(min(5, wMajor * wMajor) - min(5, bMajor * bMajor)));
+    addVal(ev, ATTACKED_BY_PAWN, min(7, wMinor * wMinor) - min(7, bMinor * bMinor));
+    addVal(ev, ATTACKED_BY_PAWN, 2*(min(5, wMajor * wMajor) - min(5, bMajor * bMajor)));
 }
 
 
-static void rookOnOpenFile(const Board* b)
+static void rookOnOpenFile(const Board* b, Eval* ev)
 {
     int r = 0;
     uint64_t ray;
@@ -367,12 +373,12 @@ static void rookOnOpenFile(const Board* b)
         REMOVE_LSB(temp);
     }
 
-    addVal(ROOK_OPEN_FILE, r);
+    addVal(ev, ROOK_OPEN_FILE, r);
 }
-inline void minorPieces(const Eval* ev)
+inline void minorPieces(Eval* ev)
 {
-    addVal(BISH_PAIR, (ev->cnt[WHITE][BISH] > 1) - (ev->cnt[BLACK][BISH] > 1));
-    addVal(KNIGHT_PAWNS, (ev->cnt[WHITE][KNIGHT] - ev->cnt[BLACK][KNIGHT]) * ((ev->cnt[WHITE][PAWN] + ev->cnt[BLACK][PAWN]) / 10));
+    addVal(ev, BISH_PAIR, (ev->cnt[WHITE][BISH] > 1) - (ev->cnt[BLACK][BISH] > 1));
+    addVal(ev, KNIGHT_PAWNS, (ev->cnt[WHITE][KNIGHT] - ev->cnt[BLACK][KNIGHT]) * ((ev->cnt[WHITE][PAWN] + ev->cnt[BLACK][PAWN]) / 10));
 }
 
 const int mirror[64] = {
@@ -460,10 +466,10 @@ static void pst2(Eval* ev, const Board* b, const int color)
 
     if (color)
     {
-        result[OP] += opening; result[EG] += endgame;
+        ev->result[OP] += opening; ev->result[EG] += endgame;
     }
     else
     {
-        result[OP] -= opening; result[EG] -= endgame;
+        ev->result[OP] -= opening; ev->result[EG] -= endgame;
     }
 }

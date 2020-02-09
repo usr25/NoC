@@ -368,7 +368,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         */
         // Static pruning
-        if (!pv && depth <= 4 && ev - 150 * depth >= beta && ev < 9000)
+        if (!pv && depth <= 4 && ev - 180 * depth >= beta && ev < 9000)
             return ev;
 
         // Null move pruning
