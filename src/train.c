@@ -17,7 +17,7 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 
-#define NUM_VARS 15
+#define NUM_VARS 16
 
 
 typedef struct
@@ -44,11 +44,11 @@ static double error(void);
 /* static vars */
 static int num_thr = 2; //Number of threads
 static int num_pos = 100; //To count the number of positions run $ wc -l /../fen.csv
-static int val_lim = 1400; //To ensure that no value gets too high
+static int val_lim = 1500; //To ensure that no value gets too high
 
-static char fenFile[200];  //File with the fens and results
-static char saveFile[200]; //File where the optimum values will be placed
-static char valFile[200];  //File that contains the initial values
+static char fenFile[256];  //File with the fens and results
+static char saveFile[256]; //File where the optimum values will be placed
+static char valFile[256];  //File that contains the initial values
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -208,6 +208,8 @@ static void setArray(const int* arr)
     N_DOUBLED_PAWNS[1] = arr[27];
     QUEEN_CHECKS[0] = arr[28];
     QUEEN_CHECKS[1] = arr[29];
+    N_ISOLATED_PAWN[0] = arr[30];
+    N_ISOLATED_PAWN[1] = arr[31];
 }
 
 /* Saves the array into the harddrive, so in case it crashes no data is lost
@@ -296,8 +298,7 @@ static void loadFensIntoMem(void)
     if (line) free(line);
 }
 
-static int assign;
-
+static volatile int assign;
 /* Multithreaded function to calculate the error, called from each thread
  */
 static void* mthError(void* var)
@@ -369,7 +370,7 @@ static void optimize(void)
         improved = 0;
         for (int var = 0; var < 2*NUM_VARS; ++var)
         {
-            if (vals[var] >= val_lim || vals[var] <= -val_lim) continue;
+            if (vals[var] >= val_lim || vals[var] <= -val_lim || vals[var] == 0) continue;
 
             int best = vals[var];
             vals[var]++;

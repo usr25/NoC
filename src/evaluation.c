@@ -9,10 +9,10 @@
 
 const int TEMPO = 11; //Value for a passed pawn right before promotion
 
-int V_QUEEN[2] = {1345, 1395};
-int V_ROOK[2] = {604, 695};
-int V_BISH[2] = {422, 417};
-int V_KNIGHT[2] = {411, 389};
+int V_QUEEN[2] = {1352, 1417};
+int V_ROOK[2] = {555, 726};
+int V_BISH[2] = {431, 419};
+int V_KNIGHT[2] = {416, 393};
 int V_PAWN[2] = {116, 120};
 
 int CONNECTED_ROOKS[2] = {28, 25}; //Bonus for having connected rooks
@@ -21,15 +21,15 @@ int SAFE_KING[2] = {33, 17}; //Bonus for pawns surrounding the king
 int BISH_PAIR[2] = {57, 54}; //Bonus for having the bishop pair
 int KNIGHT_PAWNS[2] = {32, 35}; //Bonus for the knights when there are a lot of pawns
 int N_KING_OPEN_FILE[2] = {-3, 0}; //Penalization for having the king on a file with no same color pawns
-int PAWN_CHAIN[2] = {27, 27}; //Bonus for making a pawn chain
+int PAWN_CHAIN[2] = {31, 27}; //Bonus for making a pawn chain
 int PAWN_PROTECTION[2] = {14, 15}; //Bonus for Bish / Knight protected by pawn
-int ATTACKED_BY_PAWN[2] = {80, 61}; //Bonus if a pawn can attack a piece
-int N_DOUBLED_PAWNS[2] = {-10, -35}; //Penalization for doubled pawns (proportional to the pawns in line - 1)
-int QUEEN_CHECKS[2] = {20, 20};
+int ATTACKED_BY_PAWN[2] = {84, 63}; //Bonus if a pawn can attack a piece
+int N_DOUBLED_PAWNS[2] = {-10, -17}; //Penalization for doubled pawns (proportional to the pawns in line - 1)
+int QUEEN_CHECKS[2] = {50, 8};
+int N_ISOLATED_PAWN[2] = {-2, -3}; //Penalization for isolated pawns
 
 //Not yet implemented
 int PASSED_PAWN[2] = {40, 70}; //Bonus for passed pawns at the 7th rank
-int N_ISOLATED_PAWN[2] = {-5, -5}; //Penalization for isolated pawns
 int CLOSE_TO_KING[2] = {2, 2}; //Bonus for having pieces close to the king, but not too many!
 int ATTACKED_BY_PAWN_LATER[2] = {6, 5}; //Bonus if a pawn can attack a piece after moving once
 
@@ -445,7 +445,7 @@ static void psHelper(Eval* ev, const Board* b, const int piece, const int c, int
         }
         else if (piece == PAWN)
         {
-            if (!(getPawnLanes(lsb) & b->piece[c][PAWN]))
+            if (!(getPawnLanes(lsb & 7) & b->piece[c][PAWN]))
                 (*isol)++;
         }
 
@@ -467,9 +467,11 @@ static void pst2(Eval* ev, const Board* b, const int color)
     if (color)
     {
         ev->result[OP] += opening; ev->result[EG] += endgame;
+        addVal(ev, N_ISOLATED_PAWN, isol);
     }
     else
     {
         ev->result[OP] -= opening; ev->result[EG] -= endgame;
+        addVal(ev, N_ISOLATED_PAWN, -isol);
     }
 }

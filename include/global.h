@@ -50,15 +50,15 @@
 #define ODD_TILES   0xaa55aa55aa55aa55ULL
 #define EDGE        0xff818181818181ffULL
 #define EDGE_RANKS  0xff000000000000ffULL
-
 #define CENTRE  0x1818000000
 #define BIG_CENTRE 0x3c3c3c3c0000
+
 #define PLUS_MATE   1159998
 #define MINS_MATE  -1159998
 #define PLUS_INF   99999999
 #define MINS_INF  -99999999
 
-#define MAX_PLY 50
+#define MAX_PLY 75
 
 #ifndef uint64_t
 #define uint64_t unsigned long long

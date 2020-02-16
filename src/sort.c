@@ -29,7 +29,7 @@ static int pVal[6];
 Move killerMoves[MAX_PLY][NUM_KM];
 
 long history[2][4096];
-Move counterMove[4096];
+Move counterMove[2][4096];
 
 inline int compMoves(const Move* m1, const Move* m2)
 {
@@ -146,7 +146,7 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         assert(RANGE_64(curr->from) && RANGE_64(curr->to));
         if (curr->promotion > 0) //Promotions have their score assigned
             continue;
-        if(curr->capture > 0) //There has been a capture
+        if(IS_CAP(*curr)) //There has been a capture
         {
             /*
             //Simple MVV-LVA
@@ -178,9 +178,9 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
         else
         {
             if (compMoves(&killerMoves[depth][0], curr))
-                curr->score += 58;
-            else if (compMoves(&killerMoves[depth][1], curr))
                 curr->score += 59;
+            else if (compMoves(&killerMoves[depth][1], curr))
+                curr->score += 58;
         }
         /*
         if (curr->score < 300)
@@ -197,7 +197,7 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
     Move* end = list + numMoves;
     for (Move* curr = list; curr != end; ++curr)
     {
-        if(curr->capture > 0)
+        if(IS_CAP(*curr))
         {
             //TODO: Add bonus if it captures the last piece to move
             //TODO: That could be improved using bbs of the last pieces moved

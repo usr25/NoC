@@ -219,7 +219,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
     Move currBest = list[0];
     History h;
-    int val, best = MINS_INF, inC;
+    int val, inC;
     uint64_t hash = hashPosition(&b), newHash;
 
     evalStack[0] = eval(&b);
@@ -260,19 +260,15 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
         //For the sorting at later depths
         list[i].score = val;
 
-        if (val > best)
+        if (val > alpha)
         {
-            best = val;
-            currBest = list[i];
             if (!exitFlag)
                 foundBefore = i;
-            if (val > alpha)
-            {
-                alpha = val;
+            currBest = list[i];
+            alpha = val;
 
-                if (val >= beta)
-                    break;
-            }
+            if (val >= beta)
+                break;
         }
     }
 
@@ -627,7 +623,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta-1, -alpha + 1, depth - 1, MAX_PLY - 11, 1, newHash, rep, isInCheck(&b, b.stm));
+            val = -pvSearch(b, -beta, -alpha, depth - 1, MAX_PLY - 11, 1, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
         }
 
