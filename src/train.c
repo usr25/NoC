@@ -142,6 +142,11 @@ void readValues(const char* path)
 void txlTrain(void)
 {
     loadFensIntoMem();
+    if (pthread_mutex_init(&mutex, NULL) != 0) {
+        printf("Can't generate mutex\n");
+        return;
+    } else
+        printf("[+] Mutex initialized successfully\n");
     optimize();
 
     free(positions);
@@ -304,10 +309,13 @@ static volatile int assign;
 static void* mthError(void* var)
 {
     const int limit = num_pos / num_thr;
-    pthread_mutex_lock(&mutex);
+    int success = pthread_mutex_lock(&mutex);
     const int threadOffset = assign;
     assign++;
     pthread_mutex_unlock(&mutex);
+
+    if (success == -1)
+        printf("Couldn't lock\n");
 
     int _ignore;
     int qv, adjustedQV;
