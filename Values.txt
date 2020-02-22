@@ -1,20 +1,20 @@
-1352, 1417 #Queen
-555, 726 #Rook
-431, 419 #Bish
-416, 393 #Knight
+1355, 1432 #Queen
+555, 740 #Rook
+432, 428 #Bish
+417, 402 #Knight
 28, 25 #Connected rooks
-26, 22 #Rook open file
+27, 22 #Rook open file
 33, 17 #Safe king
 57, 54 #Bish pair
 32, 35 #Knight pawns
--3, -1 #King open file
+-3, 0 #King open file
 31, 27 #Pawn chain
 14, 15 #Pawn protection
-84, 63 #Attacked by pawn
+91, 67 #Attacked by pawn
 -10, -17 #Doubled pawns
-50, 8 #Queen checks
--2, -3 #Isolated pawns
+50, 12 #Queen checks
+-2, -2 #Isolated pawns
 
 #6, 4 #Att by pawn push
 #40, 70 #7th rank passed pawn (TODO: implement)
-#116, 120 #Pawn (Don't touch too much)
+#116, 134 #Pawn (Don't touch too much)

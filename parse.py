@@ -28,8 +28,11 @@ def parse(pgns, to):
     print("[+] Parsing games")
     cnt = 0
     with open(pgns, "r") as read, open(to, "w") as write:
-        game = pgn.read_game(read)
+        game = 1
         while game:
+            game = pgn.read_game(read)
+            if game == None:
+                continue
             board = game.board()
             res = result(game.headers["Result"])
             if res == None:
@@ -51,11 +54,12 @@ def parse(pgns, to):
                 board.push(move)
 
             cnt += len(l[start:])
+            buff = []
             for move in l[start:]:
                 board.push(move)
-                write.write("{},{}\n".format(board.fen(), res))
+                buff.append("{},{}".format(board.fen(), res))
+            write.write("\n".join(buff))
 
-            game = pgn.read_game(read)
 
     print("[+] Added {} positions".format(cnt))
 
