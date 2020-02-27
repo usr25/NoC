@@ -353,22 +353,22 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int ev = eval(&b);
     evalStack[height] = ev;
 
-    if (!isInC)
+    if (!isInC && !pv)
     {
         // Razoring
-        /*
-        if (depth == 1 && ev + V_ROOK + 101 <= alpha && isSafe){
-            int razScore = qsearch(b, alpha, beta);
+        if (depth == 1 && ev + V_ROOK[0] + 101 <= alpha)
+        {
+            int razScore = qsearch(b, alpha, beta, -1);
             if (razScore >= beta)
                 return razScore;
         }
-        */
+
         // Static pruning
-        if (!pv && depth <= 4 && ev - 180 * depth >= beta && ev < 9000)
+        if (depth <= 4 && ev - 180 * depth >= beta && ev < 9000)
             return ev;
 
         // Null move pruning
-        if (!null && !pv && depth > R && !zugz(b))
+        if (!null && ev >= beta && depth > R && !zugz(b))
         {
             if (nullMove(b, depth, beta, prevHash))
             {
@@ -521,12 +521,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                     if (!IS_CAP(bestM))
                     {
-                        addHistory(bestM.from, bestM.to, depth, 1^b.stm);
+                        addHistory(bestM.from, bestM.to, depth*depth, 1^b.stm);
                         addKM(bestM, depth);
                     }
 
                     for (int j = 0; j < i; ++j)
-                        decHistory(list[j].from, list[j].to, !IS_CAP(list[j]), 1^b.stm);
+                        decHistory(list[j].from, list[j].to, (!IS_CAP(list[j]))*depth, 1^b.stm);
                     break;
                 }
             }

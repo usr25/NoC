@@ -81,14 +81,14 @@ static int kingAtts(Eval* ev, const Board* b);
 
 
 //Shamelessly copied from chessprogramming (sf). 64 elements
-static const int kingAtt[64] = {
+static const int kingAtt[70] = {
     0,  0,   1,   2,   3,   5,   7,   9,  12,  15,
   18,  22,  26,  30,  35,  39,  44,  50,  56,  62,
   68,  75,  82,  85,  89,  97, 105, 113, 122, 131,
  140, 150, 169, 180, 191, 202, 213, 225, 237, 248,
  260, 272, 283, 295, 307, 319, 330, 342, 354, 366,
  377, 389, 401, 412, 424, 436, 448, 459, 471, 483,
- 494, 500, 500, 500
+ 494, 500, 500, 500, 500, 500, 500, 500, 500, 500
 };
 static const int attWg[6] = {0, 5, 4, 3, 3};
 static const int defWg[6] = {0, 1, 1, 2, 2};
@@ -164,8 +164,7 @@ int eval(const Board* b)
     pst2(&ev, b, BLACK);
 
     int ka = kingAtts(&ev, b);
-    ev.result[OP] += ka;
-    ev.result[EG] += ka / 2;
+    ev.result[OP] += ka; ev.result[EG] += ka / 2;
 
     pieceActivity(b, &ev);
 
@@ -221,7 +220,7 @@ int insuffMat(const Board* b)
 static void space(const Board* b, Eval* ev, const int c)
 {
     uint64_t mask = c? 0xffffff0000 : 0xffffff000000;
-    uint64_t safe = mask & ~(ev->movs[1^c][PAWN] | b->color[c]);
+    uint64_t safe = mask & ~(ev->pawnAtts[1^c] | b->color[c]);
     int score = POPCOUNT(safe);
     if (c)
         ev->result[OP] += score;
@@ -237,7 +236,7 @@ static int kingAtts(Eval* ev, const Board* b)
     q -= POPCOUNT(ev->movs[BLACK][QUEEN] & ev->kingDanger[WHITE] & ~ev->all[WHITE]);
     addVal(ev, QUEEN_CHECKS, q);
 
-    return ((ev->attOnK[WHITE]>2)*kingAtt[min(ev->acc[WHITE], 63)] - (ev->attOnK[BLACK]>2)*kingAtt[min(ev->acc[BLACK], 63)]);
+    return ((ev->attOnK[WHITE]>2)*kingAtt[min(ev->acc[WHITE], 69)] - (ev->attOnK[BLACK]>2)*kingAtt[min(ev->acc[BLACK], 69)]);
 }
 
 static int phase(const Eval* ev)
