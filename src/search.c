@@ -209,8 +209,8 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
 static double percentage = 0;
 static int isInNullMove = 0; //TODO: Use a global variable to detect when the engine is in a null move
-static Move moveStack[MAX_PLY+7]; //To avoid possible overflow errors
-static int evalStack[MAX_PLY+7];
+static Move moveStack[MAX_PLY+10]; //To avoid possible overflow errors
+static int evalStack[MAX_PLY+10];
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     assert(depth > 0);
@@ -432,11 +432,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
 
-    Move mt = list[0];
     int expSort = 0;
-    if (expSort = (depth >= 5 && mt.score < 290))
+    if (expSort = (depth >= 5 && list[0].score < 290 && numMoves > 3))
     {
-        int targD = min(pv? depth - 4 : depth / 4, 9);
+        int targD = (pv? depth / 2 : depth / 4) & 15;
         expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 
@@ -476,7 +475,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 {
                     if (i > 3 + 2*pv)
                     {
-                        reduction += 1 - (!pv && improving) + depth / 3;
+                        int hv = history[1^b.stm][BASE_64(m.from, m.to)];
+                        reduction += 1 - (!pv && improving) + depth / 3 - (hv > 1250);
                     }
                     if (m.piece == KING && !IS_CAP(m) && !m.castle && POPCOUNT(b.allPieces) > 15)
                         reduction+=2;
@@ -604,7 +604,6 @@ int qsearch(Board b, int alpha, const int beta, const int d)
  */
 static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
 {
-    assert(depth > 0 && depth < 10);
     assert(beta >= alpha);
 
     uint64_t newHash;
@@ -699,7 +698,7 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     Repetition _rep = (Repetition) {.index = 0};
     b.stm ^= 1;
     const int td = (depth < 6)? depth - R : depth / 4 + 1;
-    const int val = -pvSearch(b, -beta, -beta + 1, td, MAX_PLY - 11, 1, changeTurn(prevHash), &_rep, 0);
+    const int val = -pvSearch(b, -beta, -beta + 1, td, MAX_PLY - 15, 1, changeTurn(prevHash), &_rep, 0);
     b.stm ^= 1;
 
     return val >= beta;

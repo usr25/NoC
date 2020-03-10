@@ -1,18 +1,13 @@
-#define ALL 0xffffffffffffffffULL //(~0ULL)
-
 #define ENGINE_AUTHOR "Jorge"
-#define ENGINE_NAME "NoC 2.20"
-
-//#define USE_TB
-//#define TRAIN
+#define ENGINE_NAME "NoC 3.20"
 
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)
 #define LSB_INDEX(ll) __builtin_ctzll(ll)
 #define MSB_INDEX(ll) (63 ^ __builtin_clzll(ll))
 
-#define WHITE_PAWN_ATT(bb) (((bb) << 9) & 0xfefefefefefefefe) | (((bb) << 7) & 0x7f7f7f7f7f7f7f7f)
-#define BLACK_PAWN_ATT(bb) (((bb) >> 9) & 0x7f7f7f7f7f7f7f7f) | (((bb) >> 7) & 0xfefefefefefefefe)
+#define WHITE_PAWN_ATT(bb) (((bb) << 9) & 0xfefefefefefefefeULL) | (((bb) << 7) & 0x7f7f7f7f7f7f7f7fULL)
+#define BLACK_PAWN_ATT(bb) (((bb) >> 9) & 0x7f7f7f7f7f7f7f7fULL) | (((bb) >> 7) & 0xfefefefefefefefeULL)
 
 #define BASE_64(a, b) (((a) << 6) + (b))
 #define RANGE_64(a) ((a) >= 0 && (a) < 64)
@@ -50,15 +45,24 @@
 #define ODD_TILES   0xaa55aa55aa55aa55ULL
 #define EDGE        0xff818181818181ffULL
 #define EDGE_RANKS  0xff000000000000ffULL
-#define CENTRE  0x1818000000
-#define BIG_CENTRE 0x3c3c3c3c0000
+#define CENTRE      0x1818000000ULL
+#define BIG_CENTRE  0x3c3c3c3c0000ULL
 
 #define PLUS_MATE   1159998
 #define MINS_MATE  -1159998
-#define PLUS_INF   99999999
-#define MINS_INF  -99999999
+#define PLUS_INF    9999999
+#define MINS_INF   -9999999
 
 #define MAX_PLY 75
+
+#define TT_MOVE     0xf000
+#define GOOD_CAP    0xe000
+#define KILLER      0xd000
+#define COUNTER     0xc000
+#define BAD_CAP     0xb000
+
+#define SCORE_MASK   0xfff
+#define TYPE_MASK   0xf000
 
 #ifndef uint64_t
 #define uint64_t unsigned long long

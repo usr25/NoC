@@ -28,7 +28,6 @@ static const Move NOMOVE = (Move) {.from = -1, .to = -1};
 static int pVal[6];
 Move killerMoves[MAX_PLY][NUM_KM];
 
-long history[2][4096];
 Move counterMove[2][4096];
 
 inline int compMoves(const Move* m1, const Move* m2)
@@ -216,23 +215,23 @@ inline void addKM(const Move m, const int depth)
 inline void addHistory(const int from, const int to, const int n, const int stm)
 {
     assert(RANGE_64(from) && RANGE_64(to));
-    long* h = &history[stm][BASE_64(from, to)];
-    *h+=(long)n;
+    int* h = &history[stm][BASE_64(from, to)];
+    *h+=n;
     if (*h > 7000)
         *h/=10;
 }
 inline void decHistory(const int from, const int to, const int n, const int stm)
 {
     assert(RANGE_64(from) && RANGE_64(to));
-    long* h = &history[stm][BASE_64(from, to)];
-    *h-=(long)n;
+    int* h = &history[stm][BASE_64(from, to)];
+    *h-=n;
     if (*h < -7000)
         *h/=10;
 }
 void initHistory(void)
 {
-    long* end = history[0] + 4096;
-    for (long* p = history[BLACK], *q = history[WHITE]; p != end; ++p, ++q)
+    int* end = history[0] + 4096;
+    for (int* p = history[BLACK], *q = history[WHITE]; p != end; ++p, ++q)
     {
         *p = 0;
         *q = 0;
