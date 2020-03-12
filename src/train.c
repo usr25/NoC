@@ -367,17 +367,18 @@ static double error(void)
 static void optimize(void)
 {
     double bestVal = error();
-    int improved = 1, iter = 0;
+    int improved = 1, oneMore = 1, iter = 0;
 
     printf("Start training with %d threads, %d variables, and %d positions\n", num_thr, NUM_VARS, num_pos);
     printf("Init E: %.12f\n", bestVal);
 
-    while(improved)
+    do
     {
         iter++;
-        improved = 0;
+        oneMore = 0;
         for (int var = 0; var < 2*NUM_VARS; ++var)
         {
+            improved = 0;
             if (vals[var] >= val_lim || vals[var] <= -val_lim || vals[var] == 0) continue;
 
             int best = vals[var];
@@ -410,13 +411,14 @@ static void optimize(void)
                 }
             }
 
+            oneMore |= improved;
             vals[var] = best;
         }
 
         //Output the error and save the vals
         printf("E: %.12f\n", bestVal);
         saveArray(vals);
-    }
+    } while (oneMore);
 
     saveArray(vals);
     printf("Optimum E: %.12f\n", bestVal);
