@@ -17,7 +17,7 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 
-#define NUM_VARS 16
+#define NUM_VARS 19
 
 
 typedef struct
@@ -205,16 +205,23 @@ static void setArray(const int* arr)
 
     PAWN_CHAIN     [0] = arr[20];
     PAWN_CHAIN     [1] = arr[21];
-    PAWN_PROTECTION[0] = arr[22];
-    PAWN_PROTECTION[1] = arr[23];
-    ATTACKED_BY_PAWN[0] = arr[24];
-    ATTACKED_BY_PAWN[1] = arr[25];
-    N_DOUBLED_PAWNS[0] = arr[26];
-    N_DOUBLED_PAWNS[1] = arr[27];
-    QUEEN_CHECKS[0] = arr[28];
-    QUEEN_CHECKS[1] = arr[29];
-    N_ISOLATED_PAWN[0] = arr[30];
-    N_ISOLATED_PAWN[1] = arr[31];
+    PAWN_PROTECTION_BISH[0] = arr[22];
+    PAWN_PROTECTION_BISH[1] = arr[23];
+    PAWN_PROTECTION_KNIG[0] = arr[24];
+    PAWN_PROTECTION_KNIG[1] = arr[25];
+    ATTACKED_BY_PAWN[0] = arr[26];
+    ATTACKED_BY_PAWN[1] = arr[27];
+    N_DOUBLED_PAWNS[0] = arr[28];
+    N_DOUBLED_PAWNS[1] = arr[29];
+    QUEEN_CHECKS[0] = arr[30];
+    QUEEN_CHECKS[1] = arr[31];
+    N_ISOLATED_PAWN[0] = arr[32];
+    N_ISOLATED_PAWN[1] = arr[33];
+
+    BISH_MOB[0] = arr[34];
+    BISH_MOB[1] = arr[35];
+    KNIG_MOB[0] = arr[36];
+    KNIG_MOB[1] = arr[37];
 }
 
 /* Saves the array into the harddrive, so in case it crashes no data is lost

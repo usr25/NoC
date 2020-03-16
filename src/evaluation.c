@@ -9,30 +9,28 @@
 
 const int TEMPO = 11; //Value for a passed pawn right before promotion
 
-int V_QUEEN[2] = {1355, 1432};
-int V_ROOK[2] = {555, 740};
-int V_BISH[2] = {432, 428};
-int V_KNIGHT[2] = {417, 402};
+int V_QUEEN[2] = {1347, 1433};
+int V_ROOK[2] = {536, 778};
+int V_BISH[2] = {431, 440};
+int V_KNIGHT[2] = {414, 399};
 int V_PAWN[2] = {116, 134};
 
-int CONNECTED_ROOKS[2] = {28, 25}; //Bonus for having connected rooks
-int ROOK_OPEN_FILE[2] = {27, 22}; //Bonus for a rook on an open file (No same color pawns)
-int SAFE_KING[2] = {33, 17}; //Bonus for pawns surrounding the king
-int BISH_PAIR[2] = {57, 54}; //Bonus for having the bishop pair
-int KNIGHT_PAWNS[2] = {32, 35}; //Bonus for the knights when there are a lot of pawns
-int N_KING_OPEN_FILE[2] = {-3, 0}; //Penalization for having the king on a file with no same color pawns
-int PAWN_CHAIN[2] = {31, 27}; //Bonus for making a pawn chain
-int PAWN_PROTECTION[2] = {14, 15}; //Bonus for Bish / Knight protected by pawn
-int ATTACKED_BY_PAWN[2] = {91, 67}; //Bonus if a pawn can attack a piece
-int N_DOUBLED_PAWNS[2] = {-10, -17}; //Penalization for doubled pawns (proportional to the pawns in line - 1)
-int QUEEN_CHECKS[2] = {50, 12};
-int N_ISOLATED_PAWN[2] = {-2, -2}; //Penalization for isolated pawns
+int CONNECTED_ROOKS[2] = {20, 8}; //Bonus for having connected rooks
+int ROOK_OPEN_FILE[2] = {35, 1}; //Bonus for a rook on an open file (No same color pawns)
+int SAFE_KING[2] = {32, 9}; //Bonus for pawns surrounding the king
+int BISH_PAIR[2] = {39, 56}; //Bonus for having the bishop pair
+int KNIGHT_PAWNS[2] = {27, 45}; //Bonus for the knights when there are a lot of pawns
+int N_KING_OPEN_FILE[2] = {-14, 12}; //Penalization for having the king on a file with no same color pawns
+int PAWN_CHAIN[2] = {26, 21}; //Bonus for making a pawn chain
+int PAWN_PROTECTION_BISH[2] = {10, 14}; //Bonus for Bish / Knight protected by pawn
+int PAWN_PROTECTION_KNIG[2] = {8, 14}; //Bonus for Bish / Knight protected by pawn
+int ATTACKED_BY_PAWN[2] = {89, 67}; //Bonus if a pawn can attack a piece
+int N_DOUBLED_PAWNS[2] = {-20, -37}; //Penalization for doubled pawns (proportional to the pawns in line - 1)
+int QUEEN_CHECKS[2] = {39, 18};
+int N_ISOLATED_PAWN[2] = {-7, -2}; //Penalization for isolated pawns
 
-//Not yet implemented
-int PASSED_PAWN[2] = {40, 70}; //Bonus for passed pawns at the 7th rank
-int CLOSE_TO_KING[2] = {2, 2}; //Bonus for having pieces close to the king, but not too many!
-int ATTACKED_BY_PAWN_LATER[2] = {6, 5}; //Bonus if a pawn can attack a piece after moving once
-
+int BISH_MOB[2] = {10, -5};
+int KNIG_MOB[2] = {9, 0};
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -268,10 +266,30 @@ static inline void material(Eval* ev)
     addVal(ev, V_PAWN, ev->cnt[WHITE][PAWN] - ev->cnt[BLACK][PAWN]);
 }
 
+static void mobility(const Board* b, Eval* ev)
+{
+    //position fen 8/5P2/1PbNppp1/1P2b3/PP1P4/2B3p1/3Pn1P1/K1k5 w
+    uint64_t pawns = b->piece[WHITE][PAWN] | b->piece[BLACK][PAWN];
+    uint64_t wBlockedPawns = ((b->piece[WHITE][PAWN] << 8) & (pawns | ev->pawnAtts[BLACK])) >> 8;
+    uint64_t bBlockedPawns = ((b->piece[BLACK][PAWN] >> 8) & (pawns | ev->pawnAtts[WHITE])) << 8;
+
+    uint64_t wBishMvs = ev->movs[WHITE][BISH] & ~(wBlockedPawns | ev->pawnAtts[BLACK]);
+    uint64_t bBishMvs = ev->movs[BLACK][BISH] & ~(bBlockedPawns | ev->pawnAtts[WHITE]);
+    uint64_t wKnigMvs = ev->movs[WHITE][KNIGHT] & ~(wBlockedPawns | ev->pawnAtts[BLACK]);
+    uint64_t bKnigMvs = ev->movs[BLACK][KNIGHT] & ~(bBlockedPawns | ev->pawnAtts[WHITE]);
+
+    int bish = (POPCOUNT(wBishMvs) / 3 - 3*ev->cnt[WHITE][BISH]) - (POPCOUNT(bBishMvs) / 3 - 3*ev->cnt[BLACK][BISH]);
+    int knig = (POPCOUNT(wKnigMvs) / 3 - 3*ev->cnt[WHITE][KNIGHT]) - (POPCOUNT(bKnigMvs) / 3 - 3*ev->cnt[BLACK][KNIGHT]);
+
+    addVal(ev, BISH_MOB, bish);
+    addVal(ev, KNIG_MOB, knig);
+}
+
 static inline void pieceActivity(const Board* b, Eval* ev)
 {
     minorPieces(ev);
     rookOnOpenFile(b, ev);
+    mobility(b, ev);
 
     addVal(ev, CONNECTED_ROOKS, ((ev->movs[WHITE][ROOK] & b->piece[WHITE][ROOK]) != 0) - ((ev->movs[BLACK][ROOK] & b->piece[BLACK][ROOK]) != 0));
 }
@@ -338,7 +356,8 @@ static void pawns(const Board* b, Eval* ev)
     const uint64_t wPawnBB = b->piece[WHITE][PAWN];
     const uint64_t bPawnBB = b->piece[BLACK][PAWN];
     addVal(ev, PAWN_CHAIN, POPCOUNT(wPawnBB & ev->pawnAtts[WHITE]) - POPCOUNT(bPawnBB & ev->pawnAtts[BLACK]));
-    addVal(ev, PAWN_PROTECTION, POPCOUNT(ev->pawnAtts[WHITE] & (b->piece[WHITE][BISH] | b->piece[WHITE][KNIGHT])) - POPCOUNT(ev->pawnAtts[BLACK] & (b->piece[BLACK][BISH] | b->piece[BLACK][KNIGHT])));
+    addVal(ev, PAWN_PROTECTION_BISH, POPCOUNT(ev->pawnAtts[WHITE] & b->piece[WHITE][BISH] & ~ev->pawnAtts[BLACK]) - POPCOUNT(ev->pawnAtts[BLACK] & b->piece[BLACK][BISH] & ~ev->pawnAtts[WHITE]));
+    addVal(ev, PAWN_PROTECTION_KNIG, POPCOUNT(ev->pawnAtts[WHITE] & b->piece[WHITE][KNIGHT] & ~ev->pawnAtts[BLACK]) - POPCOUNT(ev->pawnAtts[BLACK] & b->piece[BLACK][KNIGHT] & ~ev->pawnAtts[WHITE]));
     addVal(ev, N_DOUBLED_PAWNS, POPCOUNT(wPawnBB & ((wPawnBB << 8) | (wPawnBB << 16))) - POPCOUNT(bPawnBB & ((bPawnBB >> 8) | (bPawnBB >> 16))));
     //addVal(ATTACKED_BY_PAWN_LATER, POPCOUNT((wPawnBBAtt << 8) & b->color[BLACK]) - POPCOUNT((bPawnBBAtt >> 8) & b->color[WHITE]));
 
