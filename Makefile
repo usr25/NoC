@@ -70,3 +70,4 @@ all:
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
 	rm -f debug release train trainer assert
+

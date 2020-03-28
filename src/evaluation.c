@@ -9,28 +9,28 @@
 
 const int TEMPO = 11; //Value for a passed pawn right before promotion
 
-int V_QUEEN[2] = {1347, 1433};
-int V_ROOK[2] = {536, 778};
-int V_BISH[2] = {431, 440};
+int V_QUEEN[2] = {1342, 1432};
+int V_ROOK[2] = {539, 770};
+int V_BISH[2] = {431, 432};
 int V_KNIGHT[2] = {414, 399};
 int V_PAWN[2] = {116, 134};
 
-int CONNECTED_ROOKS[2] = {20, 8}; //Bonus for having connected rooks
+int CONNECTED_ROOKS[2] = {19, 10}; //Bonus for having connected rooks
 int ROOK_OPEN_FILE[2] = {35, 1}; //Bonus for a rook on an open file (No same color pawns)
 int SAFE_KING[2] = {32, 9}; //Bonus for pawns surrounding the king
-int BISH_PAIR[2] = {39, 56}; //Bonus for having the bishop pair
-int KNIGHT_PAWNS[2] = {27, 45}; //Bonus for the knights when there are a lot of pawns
-int N_KING_OPEN_FILE[2] = {-14, 12}; //Penalization for having the king on a file with no same color pawns
-int PAWN_CHAIN[2] = {26, 21}; //Bonus for making a pawn chain
-int PAWN_PROTECTION_BISH[2] = {10, 14}; //Bonus for Bish / Knight protected by pawn
-int PAWN_PROTECTION_KNIG[2] = {8, 14}; //Bonus for Bish / Knight protected by pawn
-int ATTACKED_BY_PAWN[2] = {89, 67}; //Bonus if a pawn can attack a piece
-int N_DOUBLED_PAWNS[2] = {-20, -37}; //Penalization for doubled pawns (proportional to the pawns in line - 1)
-int QUEEN_CHECKS[2] = {39, 18};
-int N_ISOLATED_PAWN[2] = {-7, -2}; //Penalization for isolated pawns
+int BISH_PAIR[2] = {41, 52}; //Bonus for having the bishop pair
+int KNIGHT_PAWNS[2] = {26, 37}; //Bonus for the knights when there are a lot of pawns
+int N_KING_OPEN_FILE[2] = {-14, 18}; //Penalization for having the king on a file with no same color pawns
+int PAWN_CHAIN[2] = {25, 22}; //Bonus for making a pawn chain
+int PAWN_PROTECTION_BISH[2] = {13, 10}; //Bonus for Bish / Knight protected by pawn
+int PAWN_PROTECTION_KNIG[2] = {9, 9}; //Bonus for Bish / Knight protected by pawn
+int ATTACKED_BY_PAWN[2] = {90, 67}; //Bonus if a pawn can attack a piece
+int N_DOUBLED_PAWNS[2] = {-20, -34}; //Penalization for doubled pawns (proportional to the pawns in line - 1)
+int QUEEN_CHECKS[2] = {43, 14};
+int N_ISOLATED_PAWN[2] = {-10, -1}; //Penalization for isolated pawns
 
-int BISH_MOB[2] = {10, -5};
-int KNIG_MOB[2] = {9, 0};
+int BISH_MOB[2] = {9, 1};
+int KNIG_MOB[2] = {9, 2};
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -279,7 +279,7 @@ static void mobility(const Board* b, Eval* ev)
     uint64_t bKnigMvs = ev->movs[BLACK][KNIGHT] & ~(bBlockedPawns | ev->pawnAtts[WHITE]);
 
     int bish = (POPCOUNT(wBishMvs) / 3 - 3*ev->cnt[WHITE][BISH]) - (POPCOUNT(bBishMvs) / 3 - 3*ev->cnt[BLACK][BISH]);
-    int knig = (POPCOUNT(wKnigMvs) / 3 - 3*ev->cnt[WHITE][KNIGHT]) - (POPCOUNT(bKnigMvs) / 3 - 3*ev->cnt[BLACK][KNIGHT]);
+    int knig = (POPCOUNT(wKnigMvs) / 2 - 2*ev->cnt[WHITE][KNIGHT]) - (POPCOUNT(bKnigMvs) / 2 - 2*ev->cnt[BLACK][KNIGHT]);
 
     addVal(ev, BISH_MOB, bish);
     addVal(ev, KNIG_MOB, knig);

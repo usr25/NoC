@@ -312,7 +312,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
 
 
-    if (isInC)
+    if (isInC && (depth < 5 || IS_CAP(moveStack[height-1])))
         depth++;
     else if (depth == 0)
         return qsearch(b, alpha, beta, -1);
@@ -350,7 +350,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         ttHit = moveIsValidBasic(&b, &bestM);
     }
 
-    const int ev = eval(&b);
+    const int ev = isInC? -2000 : eval(&b);
     evalStack[height] = ev;
 
     if (!isInC && !pv)
@@ -358,7 +358,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         // Razoring
         if (depth == 1 && ev + V_ROOK[0] + 101 <= alpha)
         {
-            int razScore = qsearch(b, alpha, beta, -1);
+            const int razScore = qsearch(b, alpha, beta, -1);
             if (razScore >= beta)
                 return razScore;
         }
@@ -409,7 +409,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             {
                 #ifdef DEBUG
                 ++betaCutOff;
-                if (i == 0) ++betaCutOffHit;
+                ++betaCutOffHit;
                 #endif
                 if (!IS_CAP(bestM))
                 {
@@ -427,7 +427,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         return isInC * -mate(height);
 
     const int improving = height > 1 && ev > evalStack[height-2] + 20 && !isInC && !null;
-    const int notImproving = height > 1 && ev < evalStack[height-2] - 75 && !null;
+    const int notImproving = height > 1 && ev < evalStack[height-2] - 75 && !isInC && !null;
 
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
@@ -525,8 +525,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                         addKM(bestM, depth);
                     }
 
-                    for (int j = 0; j < i; ++j)
-                        decHistory(list[j].from, list[j].to, (!IS_CAP(list[j]))*depth, 1^b.stm);
+                    if (depth < 6)
+                    {
+                        for (int j = 0; j < i; ++j)
+                            decHistory(list[j].from, list[j].to, (!IS_CAP(list[j]))*depth, 1^b.stm);
+                    }
                     break;
                 }
             }
