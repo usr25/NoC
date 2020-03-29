@@ -57,6 +57,7 @@ const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 
 /* Time management */
 static clock_t stopAt = 0;
+static clock_t timeToMove = 0;
 static int calledTiming = 0;
 
 /* Info string */
@@ -92,9 +93,11 @@ void initCall(void)
 
 static int us;
 static int foundBefore;
+static int extraTimeUsed;
 Move bestTime(Board b, Repetition rep, SearchParams sp)
 {
     nodes = 0;
+    extraTimeUsed = 0;
     assert(sp.timeToMove >= 0);
     assert(sp.depth >= 0);
     assert(rep.index >= 0 && rep.index < 128);
@@ -111,6 +114,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     clock_t start = clock(), last, elapsed;
 
     stopAt = sp.timeToMove + start;
+    timeToMove = sp.timeToMove;
 
     us = b.stm;
 
@@ -208,7 +212,6 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 }
 
 static double percentage = 0;
-static int isInNullMove = 0; //TODO: Use a global variable to detect when the engine is in a null move
 static Move moveStack[MAX_PLY+10]; //To avoid possible overflow errors
 static int evalStack[MAX_PLY+10];
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
@@ -279,9 +282,10 @@ static const int marginDepth[4] = {0, 400, 600, 1200};
 static int pvSearch(Board b, int alpha, int beta, int depth, const int height, const int null, const uint64_t prevHash, Repetition* rep, const int isInC)
 {
     assert(rep->index >= 0 && rep->index < 128);
-    assert(height > 0);
     assert(beta >= alpha);
     assert(b.fifty >= 0);
+    assert(height > 0 && height <= MAX_PLY);
+    assert(depth >= 0);
 
     const int pv = beta - alpha > 1;
     nodes++;
@@ -305,12 +309,22 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (exitFlag)
         return 0;
-    if (calledTiming && (nodes & 4095) == 0 && clock() > stopAt && percentage < .86f)
+    if (calledTiming && (nodes & 4095) == 0 && clock() > stopAt)
     {
-        exitFlag = 1;
-        return 0;
+        if (percentage < .86f && !extraTimeUsed)
+        {
+            extraTimeUsed = 1;
+            stopAt += timeToMove / 20;
+        }
+        else
+        {
+            exitFlag = 1;
+            return 0;
+        }
     }
 
+    if (height >= MAX_PLY)
+        return eval(&b);
 
     if (isInC && (depth < 5 || IS_CAP(moveStack[height-1])))
         depth++;
@@ -435,7 +449,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int expSort = 0;
     if (expSort = (depth >= 5 && list[0].score < 290 && numMoves > 3))
     {
-        int targD = (pv? depth / 2 : depth / 4) & 15;
+        const int targD = min(pv? depth / 2 : depth / 4, 20);
         expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 
@@ -502,6 +516,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
             }
             remHash(rep);
+            assert(rep->index >= 0);
+            assert(compMoves(&moveStack[height], &m) && moveStack[height].piece == m.piece);
         }
 
         if (val > best)
@@ -608,6 +624,8 @@ int qsearch(Board b, int alpha, const int beta, const int d)
 static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
 {
     assert(beta >= alpha);
+    assert(depth >= 1);
+    assert(height > 0 && height <= MAX_PLY);
 
     uint64_t newHash;
     int val;
@@ -625,7 +643,7 @@ static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, co
         else
         {
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta, -alpha, depth - 1, MAX_PLY - 11, 1, newHash, rep, isInCheck(&b, b.stm));
+            val = -pvSearch(b, -beta, -alpha, depth - 1, height, 1, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
         }
 
@@ -698,6 +716,7 @@ static Move tableLookUp(Board b, int* tbAv)
 
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash)
 {
+    assert(depth >= R);
     Repetition _rep = (Repetition) {.index = 0};
     b.stm ^= 1;
     const int td = (depth < 6)? depth - R : depth / 4 + 1;
@@ -718,7 +737,7 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
         if (isRepetition(rep, newHash)) repe++;
         #endif
 
-        return rep->index > 99 || isRepetition(rep, newHash) || isThreeRep(rep, newHash);
+        return rep->index >= 100 || isRepetition(rep, newHash) || isThreeRep(rep, newHash);
     }
 
     return 0;
