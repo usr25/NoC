@@ -19,6 +19,7 @@ typedef struct
 {
     uint64_t key;
     int val;
+    int eval;
     int depth;
     int flag;
     Move m;

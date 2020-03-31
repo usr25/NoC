@@ -1,5 +1,5 @@
 #define ENGINE_AUTHOR "Jorge"
-#define ENGINE_NAME "NoC 3.20"
+#define ENGINE_NAME "NoC 4.20"
 
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)

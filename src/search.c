@@ -98,6 +98,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 {
     nodes = 0;
     extraTimeUsed = 0;
+    SearchData sd = (SearchData) {.lastMove = NO_MOVE, .lastScore = 0, .consecutiveMove = 0, .consecutiveScore = 0};
     assert(sp.timeToMove >= 0);
     assert(sp.depth >= 0);
     assert(rep.index >= 0 && rep.index < 128);
@@ -145,7 +146,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
     Move best = list[0], temp;
     int bestScore = 0;
-    int delta = 75;
+    int delta;
     int alpha = MINS_INF, beta = PLUS_INF;
     for (int depth = 1; depth <= sp.depth; ++depth)
     {
@@ -184,17 +185,29 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                     best = list[foundBefore];
                 break;
             }
-            if (exitFlag)
+            if (exitFlag || extraTimeUsed)
                 break;
         }
-        if (exitFlag)
+        if (exitFlag || extraTimeUsed)
             break;
 
+        sd.lastMove = best;
+        sd.lastScore = best.score;
         best = temp;
         bestScore = best.score;
 
         infoString(best, depth, nodes, 1000 * elapsed / CLOCKS_PER_SEC);
-        if (best.score >= PLUS_MATE || (calledTiming && (1.35f * elapsed > sp.timeToMove)))
+
+        if (compMoves(&sd.lastMove, &best))
+            sd.consecutiveMove++;
+        else
+            sd.consecutiveMove = 0;
+        if (abs(sd.lastScore - bestScore) < 11)
+            sd.consecutiveScore++;
+        else
+            sd.consecutiveScore = 0;
+        if (best.score >= PLUS_MATE 
+            || (calledTiming && ((clock_t)(1.35f * elapsed) > sp.timeToMove)))
             break;
     }
 
@@ -287,8 +300,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     assert(height > 0 && height <= MAX_PLY);
     assert(depth >= 0);
 
-    const int pv = beta - alpha > 1;
     nodes++;
+    const int pv = beta - alpha > 1;
     const int index = prevHash % NUM_ENTRIES;
     assert(index >= 0 && index < NUM_ENTRIES);
 
@@ -311,7 +324,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         return 0;
     if (calledTiming && (nodes & 4095) == 0 && clock() > stopAt)
     {
-        if (percentage < .86f && !extraTimeUsed)
+        if (percentage > .86f && !extraTimeUsed)
         {
             extraTimeUsed = 1;
             stopAt += timeToMove / 20;
@@ -323,6 +336,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
     }
 
+    const int origAlpha = alpha;
+    alpha = max(-mate(height), alpha);
+    beta = min(mate(height+1), beta);
+    if (alpha >= beta)
+        return alpha;
+
     if (height >= MAX_PLY)
         return eval(&b);
 
@@ -331,19 +350,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     else if (depth == 0)
         return qsearch(b, alpha, beta, -1);
 
-    const int origAlpha = alpha;
-    alpha = max(-mate(height), alpha);
-    beta = min(mate(height+1), beta);
-    if (alpha >= beta)
-        return alpha;
-
-    int val, ttHit = 0;
+    int val, ttHit = 0, ev = -2000;
     Move bestM = NO_MOVE;
-    if (table[index].key == prevHash)
+    Eval* tableEntry = &table[index];
+    if (tableEntry->key == prevHash)
     {
-        if (height > 3 && table[index].depth >= depth)
+        if (height > 3 && tableEntry->depth >= depth)
         {
-            switch (table[index].flag)
+            switch (tableEntry->flag)
             {
                 case LO:
                     alpha = max(alpha, table[index].val);
@@ -352,19 +366,21 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     beta = min(beta, table[index].val);
                     break;
                 case EXACT:
-                    val = table[index].val;
+                    val = tableEntry->val;
                     if (val < PLUS_MATE - 100)
                         return val;
             }
             if (alpha >= beta)
-                return table[index].val;
+                return tableEntry->val;
         }
 
-        bestM = table[index].m;
+        bestM = tableEntry->m;
+        ev = tableEntry->eval;
         ttHit = moveIsValidBasic(&b, &bestM);
     }
 
-    const int ev = isInC? -2000 : eval(&b);
+    if (!(isInC || ttHit))
+        ev = eval(&b);
     evalStack[height] = ev;
 
     if (!isInC && !pv)
@@ -496,7 +512,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                         reduction+=2;
                     if (!pv && notImproving)
                         reduction++;
-                    if (IS_CAP(m) && m.capture < PAWN)
+                    if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < 4))
                         reduction--;
                     else if (m.piece == PAWN && isAdvancedPassedPawn(m, b.piece[b.stm][PAWN], 1 ^ b.stm))
                         reduction--;
@@ -562,7 +578,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     else if (best >= beta)
         flag = LO;
 
-    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = best, .depth = depth, .flag = flag};
+    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = best, .eval = ev, .depth = depth, .flag = flag};
 
     return best;
 }
