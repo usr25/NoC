@@ -32,6 +32,8 @@ int N_ISOLATED_PAWN[2] = {-10, -1}; //Penalization for isolated pawns
 int BISH_MOB[2] = {9, 1};
 int KNIG_MOB[2] = {9, 2};
 
+int PIECES_MOV[2] = {6, 2};
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -283,6 +285,16 @@ static void mobility(const Board* b, Eval* ev)
 
     addVal(ev, BISH_MOB, bish);
     addVal(ev, KNIG_MOB, knig);
+
+    int pm = 0;
+    uint64_t whiteAv = ~(ev->all2[BLACK] | ev->pawnAtts[BLACK]) & b->color[AV_WHITE];
+    uint64_t blackAv = ~(ev->all2[WHITE] | ev->pawnAtts[WHITE]) & b->color[AV_BLACK];
+    for (int p = QUEEN; p < PAWN; ++p)
+    {
+        pm += POPCOUNT(ev->movs[WHITE][p] & whiteAv) - POPCOUNT(ev->movs[BLACK][p] & blackAv);
+    }
+
+    addVal(ev, PIECES_MOV, pm);
 }
 
 static inline void pieceActivity(const Board* b, Eval* ev)

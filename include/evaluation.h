@@ -24,3 +24,4 @@ extern int QUEEN_CHECKS[2];
 
 extern int BISH_MOB[2];
 extern int KNIG_MOB[2];
+extern int PIECES_MOV[2];

@@ -58,7 +58,10 @@ const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 /* Time management */
 static clock_t stopAt = 0;
 static clock_t timeToMove = 0;
-static int calledTiming = 0;
+static int playWithTime = 0;
+static int foundBefore = 0;
+static int finishingTime = 0;
+static int requestedextraTime = 0;
 
 /* Info string */
 static uint64_t nodes = 0;
@@ -86,24 +89,28 @@ void initCall(void)
     repe = 0;
     noMoveGen = 0;
     exitFlag = 0;
+    nodes = 0;
+    finishingTime = 0;
+    requestedextraTime = 0;
+    foundBefore = 0;
 
     initHistory();
     initKM();
 }
 
+
 static int us;
-static int foundBefore;
-static int extraTimeUsed;
 Move bestTime(Board b, Repetition rep, SearchParams sp)
 {
-    nodes = 0;
-    extraTimeUsed = 0;
+    initCall();
+
     SearchData sd = (SearchData) {.lastMove = NO_MOVE, .lastScore = 0, .consecutiveMove = 0, .consecutiveScore = 0};
     assert(sp.timeToMove >= 0);
+    assert(sp.extraTime >= 0);
     assert(sp.depth >= 0);
     assert(rep.index >= 0 && rep.index < 128);
     /* Adjust the depth if necessary */
-    calledTiming = (sp.depth == 0)? 1 : 0;
+    playWithTime = (sp.depth == 0)? 1 : 0;
     sp.depth     = (sp.depth == 0)? MAX_PLY : sp.depth;
 
     if (sp.depth > MAX_PLY)
@@ -140,8 +147,6 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     }
     #endif
 
-    initCall();
-
     assignScores(&b, list, numMoves, NO_MOVE, 0);
 
     Move best = list[0], temp;
@@ -150,14 +155,14 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     int alpha = MINS_INF, beta = PLUS_INF;
     for (int depth = 1; depth <= sp.depth; ++depth)
     {
-        delta = 75;
+        delta = 45;
         if (depth >= 6)
         {
             alpha = bestScore - delta;
             beta = bestScore + delta;
         }
 
-        for (int i = 0; i < 5; ++i)
+        while (1)
         {
             foundBefore = 0;
             sort(list, list+numMoves);
@@ -168,16 +173,30 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
             if (temp.score >= beta)
             {
-                delta += delta / 2;
                 beta += delta;
+                delta += delta / 2;
                 researches++;
+
+                if (!requestedextraTime && last < stopAt && 4*elapsed > stopAt - last)
+                {
+                    requestedextraTime = 1;
+                    stopAt += sp.extraTime;
+                    timeToMove += sp.extraTime;
+                }
             }
             else if (temp.score <= alpha)
             {
                 beta = (beta + alpha) / 2;
-                delta += delta / 2;
                 alpha -= delta;
+                delta += delta / 2;
                 researches++;
+
+                if (!requestedextraTime && last < stopAt && 6*elapsed > stopAt - last)
+                {
+                    requestedextraTime = 1;
+                    stopAt += 2*sp.extraTime;
+                    timeToMove += 2*sp.extraTime;
+                }
             }
             else
             {
@@ -185,10 +204,10 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                     best = list[foundBefore];
                 break;
             }
-            if (exitFlag || extraTimeUsed)
+            if (exitFlag || finishingTime)
                 break;
         }
-        if (exitFlag || extraTimeUsed)
+        if (exitFlag)
             break;
 
         sd.lastMove = best;
@@ -202,12 +221,16 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
             sd.consecutiveMove++;
         else
             sd.consecutiveMove = 0;
+
         if (abs(sd.lastScore - bestScore) < 11)
             sd.consecutiveScore++;
         else
             sd.consecutiveScore = 0;
-        if (best.score >= PLUS_MATE 
-            || (calledTiming && ((clock_t)(1.35f * elapsed) > sp.timeToMove)))
+
+        //A premature exit
+        if (best.score >= PLUS_MATE
+            || (playWithTime && ((clock_t)(1.35f * elapsed) > timeToMove))
+            || finishingTime)
             break;
     }
 
@@ -220,7 +243,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     printf("Queries: %llu\n", queries);
     #endif
 
-    calledTiming = 0;
+    playWithTime = 0;
     return best;
 }
 
@@ -266,7 +289,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
             else
             {
                 val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 1, 0, newHash, &rep, inC);
-                if (val > alpha && val < beta)
+                if (val > alpha)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, 1, 0, newHash, &rep, inC);
             }
             remHash(&rep);
@@ -322,12 +345,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (exitFlag)
         return 0;
-    if (calledTiming && (nodes & 4095) == 0 && clock() > stopAt)
+    if (playWithTime && (nodes & 4095) == 0 && clock() > stopAt)
     {
-        if (percentage > .86f && !extraTimeUsed)
+        if (percentage > .86f && !finishingTime)
         {
-            extraTimeUsed = 1;
-            stopAt += timeToMove / 20;
+            finishingTime = 1;
+            stopAt += timeToMove / 5;
         }
         else
         {
@@ -360,10 +383,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             switch (tableEntry->flag)
             {
                 case LO:
-                    alpha = max(alpha, table[index].val);
+                    alpha = max(alpha, tableEntry->val);
                     break;
                 case HI:
-                    beta = min(beta, table[index].val);
+                    beta = min(beta, tableEntry->val);
                     break;
                 case EXACT:
                     val = tableEntry->val;
@@ -465,7 +488,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int expSort = 0;
     if (expSort = (depth >= 5 && list[0].score < 290 && numMoves > 3))
     {
-        const int targD = min(pv? depth / 2 : depth / 4, 20);
+        const int targD = pv? depth / 2 : depth / 4;
         expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 
@@ -501,15 +524,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             else
             {
                 int reduction = 1;
-                if (depth > 1 && !inC)
+                if (depth > 1 && !inC && !isInC)
                 {
                     if (i > 3 + 2*pv)
                     {
                         int hv = history[1^b.stm][BASE_64(m.from, m.to)];
                         reduction += 1 - (!pv && improving) + depth / 3 - (hv > 1250);
                     }
-                    if (m.piece == KING && !IS_CAP(m) && !m.castle && POPCOUNT(b.allPieces) > 15)
-                        reduction+=2;
+
                     if (!pv && notImproving)
                         reduction++;
                     if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < 4))
@@ -735,7 +757,7 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
     assert(depth >= R);
     Repetition _rep = (Repetition) {.index = 0};
     b.stm ^= 1;
-    const int td = (depth < 6)? depth - R : depth / 4 + 1;
+    const int td = (depth < 6)? depth - R : depth / 3 + 1;
     const int val = -pvSearch(b, -beta, -beta + 1, td, MAX_PLY - 15, 1, changeTurn(prevHash), &_rep, 0);
     b.stm ^= 1;
 

@@ -177,22 +177,27 @@ static void go_(Board b, char* beg, Repetition* rep)
         //Play with time
         if (!sp.timeToMove)
         {
-            clock_t remTime   = b.stm? wtime : btime;
+            clock_t remTime   = max(b.stm? wtime : btime, 100) - 50; //To avoid problems with lag
             clock_t increment = b.stm? winc  : binc;
-            clock_t timeInSecs;
+            clock_t timeInSecs, timeInTicks, remTimeInTicks;
+            remTimeInTicks = remTime * CLOCKS_PER_SEC / 1000;
 
             if (movestogo)
-                timeInSecs = min(remTime / 5, remTime / (movestogo + 4) + (clock_t)((double)increment * .4));
+                timeInSecs = min(remTime / 5, remTime / (movestogo + 4) + (clock_t)((double)increment * .95));
             else if (increment)
                 timeInSecs = min(remTime / 5, remTime / 61 + (clock_t)((double)increment * .95));
             else
-                timeInSecs = remTime / 41;
+                timeInSecs = remTime / 51;
 
-            sp.timeToMove = (timeInSecs * CLOCKS_PER_SEC) / 1000;
-            assert(sp.timeToMove >= 0);
+            timeInTicks = timeInSecs * CLOCKS_PER_SEC / 1000;
+
+            sp.timeToMove = timeInTicks;
+            sp.extraTime = min(timeInTicks / 2, (remTimeInTicks - timeInTicks) / 4);
         }
     }
 
+    assert(sp.timeToMove >= 0);
+    assert(sp.extraTime >= 0);
     best = bestTime(b, *rep, sp);
 
     moveToText(best, mv);

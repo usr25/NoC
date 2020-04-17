@@ -17,7 +17,7 @@
 #include "../include/search.h"
 #include "../include/evaluation.h"
 
-#define NUM_VARS 19
+#define NUM_VARS 20
 
 
 typedef struct
@@ -222,6 +222,8 @@ static void setArray(const int* arr)
     BISH_MOB[1] = arr[35];
     KNIG_MOB[0] = arr[36];
     KNIG_MOB[1] = arr[37];
+    PIECES_MOV[0] = arr[38];
+    PIECES_MOV[1] = arr[39];
 }
 
 /* Saves the array into the harddrive, so in case it crashes no data is lost
