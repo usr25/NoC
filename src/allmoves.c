@@ -86,6 +86,7 @@ uint64_t pinnedPieces(Board* b, const int color)
     uint64_t obst, retrace;
     uint64_t pin = 0;
 
+    //Straight attacks, rooks and queens
     if (stra && (obst = b->color[color] & getRookMagicMoves(k, b->allPieces)))
     {
         const uint64_t inteUp = getUpMovesInt(k) & obst;
@@ -118,6 +119,7 @@ uint64_t pinnedPieces(Board* b, const int color)
                 pin |= inteLeft;
         }
     }
+    //Diagonal attacks, bishops and queens
     if (diag && (obst = b->color[color] & getBishMagicMoves(k, b->allPieces)))
     {
         const uint64_t inteUpRight = getUpRightMovesInt(k) & obst;
@@ -154,7 +156,7 @@ uint64_t pinnedPieces(Board* b, const int color)
     return pin;
 }
 
-/* Generates all legal moves if the king isn't in check or is there isn't any pinned piece
+/* Generates all legal moves if the king isn't in check or is there isn't a pinned piece
  * No move will leave the king in check except for enPassand, since the discoveries are harder to detect
  */
 static int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden)
@@ -270,6 +272,7 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
             REMOVE_LSB(tempMoves);
         }
 
+        //EnPassand moves
         if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
         {
             History h;
@@ -285,7 +288,6 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
             if (moveIsValidSliding(b, m, h)) *p++ = m;
         }
     }
-
 
 
     temp = b->piece[color][ROOK];
@@ -358,6 +360,7 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
             REMOVE_LSB(tempMoves);
         }
     }
+
 
     from = LSB_INDEX(b->piece[color][KING]);
     tempMoves = getKingMoves(from) & b->color[color | 2] & ~forbidden;

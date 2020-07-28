@@ -8,5 +8,6 @@ __attribute__((hot)) void assignScores(Board* b, Move* list, const int numMoves,
 __attribute__((hot)) void assignScoresQuiesce(Board* b, Move* list, const int numMoves);
 int compMoves(const Move* m1, const Move* m2);
 void sort(Move* start, Move* end);
+void moveToFst(Move* list, int idx);
 
 int history[2][4096];

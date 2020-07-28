@@ -31,7 +31,7 @@
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
 __attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, const int height, int null, const uint64_t prevHash, Repetition* rep, const int isInC);
 
-static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep);
+static void internalIterDeepening(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep);
 static Move tableLookUp(Board b, int* tbAv);
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
@@ -59,9 +59,9 @@ const Move NO_MOVE = (Move) {.from = -1, .to = -1};
 static clock_t stopAt = 0;
 static clock_t timeToMove = 0;
 static int playWithTime = 0;
-static int foundBefore = 0;
+static int foundBeforeTimesUp = 0;
 static int finishingTime = 0;
-static int requestedextraTime = 0;
+static int requestedExtraTime = 0;
 
 /* Info string */
 static uint64_t nodes = 0;
@@ -91,8 +91,8 @@ void initCall(void)
     exitFlag = 0;
     nodes = 0;
     finishingTime = 0;
-    requestedextraTime = 0;
-    foundBefore = 0;
+    requestedExtraTime = 0;
+    foundBeforeTimesUp = 0;
 
     initHistory();
     initKM();
@@ -153,6 +153,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     int bestScore = 0;
     int delta;
     int alpha = MINS_INF, beta = PLUS_INF;
+
     for (int depth = 1; depth <= sp.depth; ++depth)
     {
         delta = 45;
@@ -162,10 +163,10 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
             beta = bestScore + delta;
         }
 
+        sort(list, list+numMoves);
         while (1)
         {
-            foundBefore = 0;
-            sort(list, list+numMoves);
+            foundBeforeTimesUp = 0;
             temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
 
             last = clock();
@@ -177,9 +178,9 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                 delta += delta / 2;
                 researches++;
 
-                if (!requestedextraTime && last < stopAt && 4*elapsed > stopAt - last)
+                if (!requestedExtraTime && last < stopAt)
                 {
-                    requestedextraTime = 1;
+                    requestedExtraTime = 1;
                     stopAt += sp.extraTime;
                     timeToMove += sp.extraTime;
                 }
@@ -191,17 +192,17 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                 delta += delta / 2;
                 researches++;
 
-                if (!requestedextraTime && last < stopAt && 6*elapsed > stopAt - last)
+                if (!requestedExtraTime && last < stopAt)
                 {
-                    requestedextraTime = 1;
+                    requestedExtraTime = 1;
                     stopAt += 2*sp.extraTime;
                     timeToMove += 2*sp.extraTime;
                 }
             }
             else
             {
-                if (exitFlag && foundBefore)
-                    best = list[foundBefore];
+                if (exitFlag && foundBeforeTimesUp)
+                    best = list[foundBeforeTimesUp];
                 break;
             }
             if (exitFlag || finishingTime)
@@ -227,11 +228,13 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         else
             sd.consecutiveScore = 0;
 
-        //A premature exit
-        if (best.score >= PLUS_MATE
-            || (playWithTime && ((clock_t)(1.35f * elapsed) > timeToMove))
-            || finishingTime)
+        //A premature exit when we are playing with time
+        if (playWithTime &&
+               (best.score >= PLUS_MATE //We have found a mate
+            || (playWithTime && ((clock_t)(1.35f * elapsed) > timeToMove)) //There isn't enough time for another iter
+            || finishingTime)) //We have consumed the extra time
             break;
+
     }
 
     #ifdef DEBUG
@@ -260,10 +263,12 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     History h;
     int val, inC;
     uint64_t hash = hashPosition(&b), newHash;
+    int subtreeSize[NMOVES];
 
     evalStack[0] = eval(&b);
     for (int i = 0; i < numMoves; ++i)
     {
+        long initNodes = nodes;
         //If the move leads to being mated, break (since the moves are ordered based on score)
         if (list[i].score < MINS_MATE)
             break;
@@ -298,18 +303,35 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
         //For the sorting at later depths
         list[i].score = val;
+        subtreeSize[i] = (int)((nodes - initNodes) / 2);
 
         if (val > alpha)
         {
             if (!exitFlag)
-                foundBefore = i;
+                foundBeforeTimesUp = i;
             currBest = list[i];
             alpha = val;
 
             if (val >= beta)
+            {
+                if (!exitFlag)
+                    moveToFst(list, i);
                 break;
+            }
         }
     }
+    /*
+    if (!exitFlag)
+    {
+        for (int j = 0; j < numMoves; ++j)
+        {
+            list[j].score = subtreeSize[j];
+        }
+        moveToFst(list, foundBeforeTimesUp);
+        sort(list+1, list+numMoves);
+        assert(compMoves(&list[0], &currBest));
+    }
+    */
 
     return currBest;
 }
@@ -359,6 +381,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
     }
 
+    //Mate distance pruning
     const int origAlpha = alpha;
     alpha = max(-mate(height), alpha);
     beta = min(mate(height+1), beta);
@@ -445,6 +468,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         if (isDraw(&b, rep, newHash, IS_CAP(bestM)))
         {
             val = (height < 5)? 0 : 8 - (newHash & 15);
+            assert(val >= -10 && val <= 10);
         }
         else
         {
@@ -485,11 +509,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     assignScores(&b, list, numMoves, bestM, depth);
     sort(list, list+numMoves);
 
-    int expSort = 0;
-    if (expSort = (depth >= 5 && list[0].score < 290 && numMoves > 3))
+    int iid = 0;
+    if (iid = (depth >= 5 && list[0].score < 290 && numMoves > 3))
     {
         const int targD = pv? depth / 2 : depth / 4;
-        expensiveSort(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
+        internalIterDeepening(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 
     const int canBreak = depth <= 3 && ev + marginDepth[depth] <= alpha && !isInC;
@@ -646,10 +670,12 @@ int qsearch(Board b, int alpha, const int beta, const int d)
         else
             val = -qsearch(b, -beta, -alpha, d - 1 /*+ (list[i].capture < 3)*/);
 
-        if (val >= beta)
-            return beta;
         if (val > alpha)
+        {
             alpha = val;
+            if (val >= beta)
+                return beta;
+        }
 
         undoMove(&b, list[i], &h);
     }
@@ -659,7 +685,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
 
 /* In this function there are no assumptions made about the sorting of the list
  */
-static void expensiveSort(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
+static void internalIterDeepening(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
 {
     assert(beta >= alpha);
     assert(depth >= 1);
@@ -775,7 +801,7 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
         if (isRepetition(rep, newHash)) repe++;
         #endif
 
-        return rep->index >= 100 || isRepetition(rep, newHash) || isThreeRep(rep, newHash);
+        return rep->index >= 100 || b->fifty >= 100 || isRepetition(rep, newHash) || isThreeRep(rep, newHash);
     }
 
     return 0;

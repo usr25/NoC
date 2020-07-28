@@ -57,10 +57,9 @@ int main(const int argc, char** const argv)
         initGav("\0");
     #endif
 
-    //0, 1->53'9, 2->6'0s, 3->2:4, 4->1:7s, 5-> -
     //chooseTest(1);
 
     loop();
 
-    return 0;
+    exit(EXIT_SUCCESS);
 }

@@ -72,7 +72,7 @@ static const int isNumeric(char c)
     return c == '-' || (c >= '0' && c <= '9');
 }
 
-static const double sigmoid(const double v)
+const double sigmoid(const double v)
 {
     return 1.0 / (1.0 + exp(-v * 0.00518078)); //This factor is ln(10) * .85 / 400
 }

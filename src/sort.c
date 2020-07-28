@@ -278,3 +278,13 @@ void sort(Move* start, Move* end)
         *(q+1) = temp;
     }
 }
+
+void moveToFst(Move* ls, int idx)
+{
+    Move tmp = ls[idx--];
+    for (; idx >= 0; --idx)
+    {
+        ls[idx+1] = ls[idx];
+    }
+    ls[0] = tmp;
+}

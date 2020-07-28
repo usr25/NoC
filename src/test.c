@@ -222,7 +222,7 @@ static void parseFensFromFileEva(void)
         Repetition rep = (Repetition) {.index = 0};
         drawMove(bestTime(b, rep, (SearchParams) {.depth = depth}));
         printf("\n");
-        if (cnt % 10 == 0)
+        if ((cnt+1) % 10 == 0)
             printf("cnt: %d\n", cnt);
         cnt++;
         //Clean tts to avoid problems
@@ -283,18 +283,16 @@ static void slowEval(void)
     black &= ! compMove("7r/p3k3/1p2p2n/2p2p1R/2P5/4K2B/7P/8 b - -", "h8g8", depth, 4);
 
     white &= compMove("6k1/5pp1/6p1/8/7Q/2r5/K7/2r5 w - -", "h4d8", depth, 4); //Repetition draw
-    black &= compMove("2R5/k7/2R5/7q/8/6P1/5PP1/6K1 b -", "h5d1", depth, 4);
+    black &= compMove("2R5/k7/2R5/7q/8/6P1/5PP1/6K1 b - -", "h5d1", depth, 4);
 
     //Need depth >= 7
     white &= compMove("rnbqkbnr/pp2pppp/4P3/2pp4/3N4/8/PPPP1PPP/RNBQKB1R w KQkq -", "f1b5", depth, 4);
     black &= compMove("r1bqk2r/pp3ppp/2n2n2/3pp1B1/1b6/1BNP4/PPP1NPPP/R2QK2R b KQkq -", "d5d4", depth, 4);
 
-    depth = 10;
+    depth = 18;
 
     white &= compMove("8/ppp5/8/PPP5/8/8/5K1k/8 w - -", "b5b6", depth, 4); //Pawn breaks
     black &= compMove("7K/5k2/8/8/ppp5/8/PPP5/8 b - -", "b4b3", depth, 4);
-
-    //white &= compMove("3r1nk1/1b1R4/8/8/3B4/4K3/8/8 w - -", "d7g7", depth, 4); //Windmill
 
     printf("[+] White Eval: %d\n", white);
     printf("[+] Black Eval: %d\n", black);
@@ -358,7 +356,6 @@ static void slowTests(void)
 
 static void runTests(void)
 {
-    //TODO: Test the mate.c module
     //Hash
     printf("[+] Hash: %d\n",            testHashing());
 }
