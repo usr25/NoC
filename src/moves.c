@@ -6,37 +6,38 @@
 #include <assert.h>
 
 #include "../include/global.h"
+#include "../include/memoization.h"
 #include "../include/board.h"
 #include "../include/moves.h"
-#include "../include/memoization.h"
+#include "../include/boardmoves.h"
 #include "../include/io.h"
 #include "../include/magic.h"
 
 
-inline uint64_t posKingMoves(Board* b, const int color)
+inline uint64_t posKingMoves(const Board* b, const int color)
 {
     return b->color[color | 2] & getKingMoves(LSB_INDEX(b->piece[color][KING]));
 }
-inline uint64_t posKnightMoves(Board* b, const int color, const int lsb)
+inline uint64_t posKnightMoves(const Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & getKnightMoves(lsb);
 }
-inline uint64_t posRookMoves(Board* b, const int color, const int lsb)
+inline uint64_t posRookMoves(const Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & getRookMagicMoves(lsb, b->allPieces);
 }
-inline uint64_t posBishMoves(Board* b, const int color, const int lsb)
+inline uint64_t posBishMoves(const Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & getBishMagicMoves(lsb, b->allPieces);
 }
-inline uint64_t posQueenMoves(Board* b, const int color, const int lsb)
+inline uint64_t posQueenMoves(const Board* b, const int color, const int lsb)
 {
     return b->color[color | 2] & (getRookMagicMoves(lsb, b->allPieces) | getBishMagicMoves(lsb, b->allPieces));
 }
 
 /* All the possible pawn moves without including enPass
  */
-uint64_t posPawnMoves(Board* b, const int color, const int lsb)
+uint64_t posPawnMoves(const Board* b, const int color, const int lsb)
 {
     if (color)
     {
@@ -346,6 +347,14 @@ int givesCheck(const Board* b, const Move m)
         numChecks += (getBishMagicMoves(k, newPieces) & bi) != 0;
 
     return numChecks;
+}
+
+/* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves.
+ */
+int moveIsValidSliding(Board b, const Move m)
+{
+    makePermaMove(&b, m);
+    return !slidingCheck(&b, 1 ^ b.stm);
 }
 
 int moveIsValidBasic(const Board* b, const Move* m)

@@ -45,12 +45,12 @@ typedef struct
     int num;
 }AttacksOnK;
 
-uint64_t posKingMoves(Board* b, const int color);
-uint64_t posRookMoves(Board* b, const int color, const int lsb);
-uint64_t posBishMoves(Board* b, const int color, const int lsb);
-uint64_t posQueenMoves(Board* b, const int color, const int lsb);
-uint64_t posKnightMoves(Board* b, const int color, const int lsb);
-uint64_t posPawnMoves(Board* b, const int color, const int lsb);
+uint64_t posKingMoves(const Board* b, const int color);
+uint64_t posRookMoves(const Board* b, const int color, const int lsb);
+uint64_t posBishMoves(const Board* b, const int color, const int lsb);
+uint64_t posQueenMoves(const Board* b, const int color, const int lsb);
+uint64_t posKnightMoves(const Board* b, const int color, const int lsb);
+uint64_t posPawnMoves(const Board* b, const int color, const int lsb);
 
 uint64_t diagonal(const int lsb, const uint64_t allPieces);
 uint64_t straight(const int lsb, const uint64_t allPieces);
@@ -67,5 +67,9 @@ int isInCheck(const Board* b, const int kingsColor);
 int slidingCheck(const Board* b, const int kingsColor);
 int givesCheck(const Board* b, const Move m);
 int moveIsValidBasic(const Board* b, const Move* m);
+
+/* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves.
+ */
+int moveIsValidSliding(Board b, const Move m);
 
 #define IS_CAP(m) ((m).capture > 0)

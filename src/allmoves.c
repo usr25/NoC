@@ -22,7 +22,6 @@
 
 __attribute__((hot)) static int movesKingFree(Board* b, Move* list, const int color, const uint64_t forbidden);
 __attribute__((hot)) static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
-__attribute__((hot)) static int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned);
 __attribute__((hot)) static int movesQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned);
 __attribute__((hot)) static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned);
 
@@ -60,22 +59,12 @@ int legalMovesQuiesce(Board* b, Move* list)
         return movesQuiesce(b, list, forbidden, pinned) << 1;
 }
 
-/* Detects if there is a check given by the queen / bish / rook. To detect discoveries or illegal moves.
- */
-static inline int moveIsValidSliding(Board* b, const Move m, History h)
-{
-    makeMove(b, m, &h);
-    int chk = slidingCheck(b, 1 ^ b->stm);
-    undoMove(b, m, &h);
-    return !chk;
-}
-
 /* Returns a bitboard with a 1 for every pinned piece, works similarly to isInCheck
  *   1- Trace moves from the king as if it were a queen, but separating each direction
  *   2- Only pay attention to the lines in which the first intersection is with a piece of the king's color
  *   3- Retrace from that piece in the direction and detect if there is an enemy sliding piece which could give check
  */
-uint64_t pinnedPieces(Board* b, const int color)
+uint64_t pinnedPieces(const Board* b, const int color)
 {
     const int k = LSB_INDEX(b->piece[color][KING]);
     const int opp = 1 ^ color;
@@ -275,17 +264,15 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
         //EnPassand moves
         if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
         {
-            History h;
             Move m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-            if (moveIsValidSliding(b, m, h)) *p++ = m;
+            if (moveIsValidSliding(*b, m)) *p++ = m;
         }
         else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
         {
-            History h;
             Move m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-            if (moveIsValidSliding(b, m, h)) *p++ = m;
+            if (moveIsValidSliding(*b, m)) *p++ = m;
         }
     }
 
@@ -511,8 +498,6 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
     temp = b->piece[color][PAWN] & (color? NOT_SEVENTH_RANK : NOT_SECOND_RANK);
     while(temp)
     {
-        History h;
-
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
 
@@ -558,13 +543,13 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
         {
             Move m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-            if (moveIsValidSliding(b, m, h)) *p++ = m;
+            if (moveIsValidSliding(*b, m)) *p++ = m;
         }
         else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
         {
             Move m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-            if (moveIsValidSliding(b, m, h)) *p++ = m;
+            if (moveIsValidSliding(*b, m)) *p++ = m;
         }
     }
 
@@ -627,29 +612,26 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
     }
 
 
-    temp = b->piece[color][KNIGHT];
+    temp = b->piece[color][KNIGHT] & ~pinned;
     while(temp)
     {
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
 
-        if (!(pinned & POW2[from])) //Fun fact: A pinned knight can't move
-        {
-            tempMoves = posKnightMoves(b, color, from);
-            tempCaptures = tempMoves & oppPieces;
-            tempMoves ^= tempCaptures;
+        tempMoves = posKnightMoves(b, color, from);
+        tempCaptures = tempMoves & oppPieces;
+        tempMoves ^= tempCaptures;
 
-            while (tempCaptures)
-            {
-                to = LSB_INDEX(tempCaptures);
-                *p++ = (Move) {.piece = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-                REMOVE_LSB(tempCaptures);
-            }
-            while(tempMoves)
-            {
-                *p++ = (Move) {.piece = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
-                REMOVE_LSB(tempMoves);
-            }
+        while (tempCaptures)
+        {
+            to = LSB_INDEX(tempCaptures);
+            *p++ = (Move) {.piece = KNIGHT, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+            REMOVE_LSB(tempCaptures);
+        }
+        while(tempMoves)
+        {
+            *p++ = (Move) {.piece = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
+            REMOVE_LSB(tempMoves);
         }
     }
 
@@ -660,14 +642,13 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
  * Notice that when the king is in check no pinned piece can move 
  * and that if the number of attackers is greater than 1 the only option is to move the king
  */
-static int movesCheck(Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
+int movesCheck(const Board* b, Move* list, const int color, const uint64_t forbidden, const uint64_t pinned)
 {
     Move* p = list;
     const int opp = 1 ^ b->stm;
     const uint64_t oppPieces = b->color[opp];
     int from, to;
     uint64_t temp, tempMoves, tempCaptures;
-    History h;
     Move m;
 
     const AttacksOnK att = getCheckTiles(b, color);
@@ -761,13 +742,13 @@ static int movesCheck(Board* b, Move* list, const int color, const uint64_t forb
             {
                 m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-                if (moveIsValidSliding(b, m, h)) *p++ = m;
+                if (moveIsValidSliding(*b, m)) *p++ = m;
             }
             else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
             {
                 m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-                if (moveIsValidSliding(b, m, h)) *p++ = m;
+                if (moveIsValidSliding(*b, m)) *p++ = m;
             }
         }
 
@@ -950,14 +931,12 @@ static int movesQuiesce(Board* b, Move* list, const uint64_t forbidden, const ui
         if (b->enPass - from == 1 && (from & 7) != 7 && (b->piece[opp][PAWN] & POW2[b->enPass]))
         {
             Move m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * b->stm - 1) * 8, .enPass = b->enPass, .score = 101};
-            History h;
-            if (moveIsValidSliding(b, m, h)) *p++ = m;
+            if (moveIsValidSliding(*b, m)) *p++ = m;
         }
         else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
         {
             Move m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * b->stm - 1) * 8, .enPass = b->enPass, .score = 101};
-            History h;
-            if (moveIsValidSliding(b, m, h)) *p++ = m;
+            if (moveIsValidSliding(*b, m)) *p++ = m;
         }
     }
 
@@ -1067,7 +1046,6 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
     int from, to;
     uint64_t temp, tempMoves, tempCaptures;
 
-    History h;
     Move m;
 
     from = LSB_INDEX(b->piece[color][KING]);
@@ -1137,13 +1115,13 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
             {
                 m = (Move) {.piece = PAWN, .from = from, .to = from + 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-                if (moveIsValidSliding(b, m, h)) *p++ = m;
+                if (moveIsValidSliding(*b, m)) *p++ = m;
             }
             else if (b->enPass - from == -1 && (from & 7) && (b->piece[opp][PAWN] & POW2[b->enPass]))
             {
                 m = (Move) {.piece = PAWN, .from = from, .to = from - 1 + (2 * color - 1) * 8, .enPass = b->enPass, .score = 101};
 
-                if (moveIsValidSliding(b, m, h)) *p++ = m;
+                if (moveIsValidSliding(*b, m)) *p++ = m;
             }
         }
 

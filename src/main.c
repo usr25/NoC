@@ -19,6 +19,7 @@
 #include "../include/evaluation.h"
 #include "../include/search.h"
 #include "../include/sort.h"
+#include "../include/movegen.h"
 #include "../include/perft.h"
 #ifdef USE_TB
 #include "../include/gaviota.h"

@@ -13,6 +13,7 @@
 #include "../include/boardmoves.h"
 #include "../include/memoization.h"
 #include "../include/allmoves.h"
+#include "../include/movegen.h"
 #include "../include/hash.h"
 #include "../include/sort.h"
 #include "../include/search.h"

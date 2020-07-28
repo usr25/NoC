@@ -7,8 +7,10 @@
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 #include "../include/allmoves.h"
+#include "../include/movegen.h"
 #include "../include/hash.h"
 #include "../include/io.h"
+#include "../include/perft.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -16,6 +18,8 @@
 
 uint64_t perftRecursive(Board b, const int depth)
 {
+    if (depth == 0) return 1;
+
     Move moves[NMOVES];
     History h;
     uint64_t tot = 0;
@@ -43,7 +47,7 @@ uint64_t perft(Board b, const int depth, const int divide)
 
     Move moves[NMOVES];
     History h;
-    uint64_t tot = 0;
+    uint64_t tot = 0, temp;
 
     const int numMoves = legalMoves(&b, moves) >> 1;
 
@@ -55,17 +59,48 @@ uint64_t perft(Board b, const int depth, const int divide)
         assert(moveIsValidBasic(&b, &moves[i]));
         makeMove(&b, moves[i], &h);
 
-        int temp = perftRecursive(b, depth - 1);
+        temp = perftRecursive(b, depth-1);
 
         if (divide)
         {
             drawMove(moves[i]);
-            printf(": %d\n", temp);
+            printf(": %llu\n", temp);
         }
 
         tot += temp;
 
         undoMove(&b, moves[i], &h);
+    }
+
+    return tot;
+}
+
+uint64_t perftMovegen(Board b, const int depth, const int divide) {
+
+    if (depth == 0) return 1;
+
+    MoveGen mg = newMG(&b);
+    Move m;
+    History h;
+    uint64_t tot = 0, temp = 0;
+
+    while (1) {
+        m = next(&mg, &b);
+        if (mg.state == Exhausted) break;
+        assert(m.from != -1);
+        makeMove(&b, m, &h);
+
+        temp = perftMovegen(b, depth-1, 0);
+
+        if (divide)
+        {
+            drawMove(m);
+            printf(": %llu\n", temp);
+        }
+
+        tot += temp;
+
+        undoMove(&b, m, &h);
     }
 
     return tot;

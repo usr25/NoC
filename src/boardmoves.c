@@ -15,7 +15,7 @@
 /* Returns the piece in the determined sqr, pos has to be a bitboard
  * Returns NO_PIECE if there is no piece
  */
-inline int pieceAt(Board* const b, const uint64_t pos, const int color)
+inline int pieceAt(const Board* const b, const uint64_t pos, const int color)
 {
     if (pos & b->piece[color][PAWN])     return PAWN;
     else if (pos & b->piece[color][ROOK]) return ROOK;

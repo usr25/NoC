@@ -299,7 +299,7 @@ static void slowEval(void)
 }
 
 //This are deep perfts to ensure that everything is working, use this as well to benchmark
-static void slowTests(void)
+static void perftTest(void)
 {
     printf("\n---= This will take a long time =---\n");
     Board b;
@@ -435,7 +435,7 @@ void chooseTest(const int mode)
             testHashingPerfts();
             break;
         case 1:
-            slowTests();
+            perftTest();
             break;
         case 2:
             slowEval();
