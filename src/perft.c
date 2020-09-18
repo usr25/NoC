@@ -59,7 +59,7 @@ uint64_t perft(Board b, const int depth, const int divide)
         assert(moveIsValidBasic(&b, &moves[i]));
         makeMove(&b, moves[i], &h);
 
-        temp = perftRecursive(b, depth-1);
+        temp = perftMovegen(b, depth-1, 0);
 
         if (divide)
         {
@@ -79,14 +79,20 @@ uint64_t perftMovegen(Board b, const int depth, const int divide) {
 
     if (depth == 0) return 1;
 
-    MoveGen mg = newMG(&b);
+    MoveGen mg = newMG(&b, 0, (Move){.from = -1});
     Move m;
     History h;
     uint64_t tot = 0, temp = 0;
 
+    int i = 0, t = 0, sNMoves = 0;
     while (1) {
+        assert(mg.nmoves >= 0);
         m = next(&mg, &b);
         if (mg.state == Exhausted) break;
+        if (mg.currmove == 1){
+            t++;
+            sNMoves += mg.nmoves;
+        }
         assert(m.from != -1);
         makeMove(&b, m, &h);
 
@@ -101,7 +107,11 @@ uint64_t perftMovegen(Board b, const int depth, const int divide) {
         tot += temp;
 
         undoMove(&b, m, &h);
+        i++;
     }
+
+    assert(t <= 2);
+    assert(sNMoves == i && sNMoves == mg.tot);
 
     return tot;
 }

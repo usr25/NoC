@@ -18,27 +18,30 @@
 
 void genTacticals(MoveGen* mg, const Board* b);
 
-void addTactsPawn(MoveGen* mg, const Board* b, const int onlyTacticals);
-void addTactsKnight(MoveGen* mg, const Board* b, const int onlyTacticals);
-void addTactsKing(MoveGen* mg, const Board* b, const int onlyTacticals);
-void addTacts(MoveGen* mg, const Board* b, const int piece, const int onlyTacticals);
+void addPawn(MoveGen* mg, const Board* b, const int onlyTacticals);
+void addKnight(MoveGen* mg, const Board* b, const int onlyTacticals);
+void addKing(MoveGen* mg, const Board* b, const int onlyTacticals);
+void addSlidings(MoveGen* mg, const Board* b, const int piece, const int onlyTacticals);
 
 void genQuiets(MoveGen* mg, const Board* b);
 
-MoveGen newMG(const Board* b) {
-    MoveGen mg = (MoveGen){.nmoves = 0, .currmove = 0, .tot = 0, .state = Uninitialized};
+MoveGen newMG(const Board* b, const int qsearch, const Move bestM) {
+    MoveGen mg = (MoveGen){.qsearch = qsearch, .nmoves = 0, .currmove = 0, .tot = 0, .state = Uninitialized, .bestMoveIdx = -1};
 
     mg.forbidden = allSlidingAttacks(b, 1 ^ b->stm, b->allPieces ^ b->piece[b->stm][KING]) | controlledKingPawnKnight(b, 1 ^ b->stm);
     mg.pinned = pinnedPieces(b, b->stm);
 
     if (mg.forbidden & b->piece[b->stm][KING]) {
         mg.nmoves = movesCheck(b, mg.moves, b->stm, mg.forbidden, mg.pinned);
-        mg.tot = mg.nmoves;
         mg.state = Quiet;
     } else {
         genTacticals(&mg, b);
-        if (mg.state == Uninitialized)
-            genQuiets(&mg, b);
+        if (mg.state == Uninitialized) {
+            if (!mg.qsearch)
+                genQuiets(&mg, b);
+            else
+                mg.state = Exhausted;
+        }
     }
 
     assert(mg.state != Uninitialized);
@@ -50,19 +53,18 @@ void genTacticals(MoveGen* mg, const Board* b) {
 
     mg->nmoves = 0;
 
-    addTactsPawn(mg, b, 1);
-    addTactsKnight(mg, b, 1);
+    addPawn(mg, b, 1);
+    addKnight(mg, b, 1);
     for (int i = BISH; i >= QUEEN; --i)
     {
-        addTacts(mg, b, i, 1);
+        addSlidings(mg, b, i, 1);
     }
-    addTactsKing(mg, b, 1);
+    addKing(mg, b, 1);
 
     mg->state = mg->nmoves? Tactical : Uninitialized;
-    mg->tot += mg->nmoves;
 }
 
-void addTactsPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
+void addPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
     Move* p = mg->moves + mg->nmoves;
     //Promoting
     uint64_t temp = b->piece[b->stm][PAWN] & (b->stm? SEVENTH_RANK : SECOND_RANK); 
@@ -76,7 +78,7 @@ void addTactsPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
     const uint64_t pinDiag = getDiagMoves(k);
 
     //Promoting pawns
-    while (onlyTacticals && temp)
+    while (temp)
     {
         from = LSB_INDEX(temp);
         REMOVE_LSB(temp);
@@ -111,8 +113,12 @@ void addTactsPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
             to = LSB_INDEX(tempCaptures);
             int capt = pieceAt(b, POW2[to], opp); 
 
-            for (int i = QUEEN; i <= KNIGHT; ++i)
-                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .capture = capt, .score = 650};
+            if (onlyTacticals){
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt, .score = 650};
+            } else {
+                for (int i = ROOK; i <= KNIGHT; ++i)
+                    *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .capture = capt, .score = 550};
+            }
 
             REMOVE_LSB(tempCaptures);
         }
@@ -120,8 +126,12 @@ void addTactsPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
         {
             to = LSB_INDEX(tempMoves);
 
-            for (int i = QUEEN; i <= KNIGHT; ++i)
-                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .score = 600};
+            if (onlyTacticals){
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .score = 650};
+            } else {
+                for (int i = ROOK; i <= KNIGHT; ++i)
+                    *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .score = 550};
+            }
 
             REMOVE_LSB(tempMoves);
         }
@@ -199,7 +209,7 @@ void addTactsPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
     mg->nmoves += p - (mg->moves + mg->nmoves);
 }
 
-void addTactsKnight(MoveGen* mg, const Board* b, const int onlyTacticals) {
+void addKnight(MoveGen* mg, const Board* b, const int onlyTacticals) {
     Move* p = mg->moves + mg->nmoves;
     uint64_t temp = b->piece[b->stm][KNIGHT] & ~mg->pinned;
     int from, to;
@@ -235,7 +245,7 @@ void addTactsKnight(MoveGen* mg, const Board* b, const int onlyTacticals) {
     mg->nmoves += p - (mg->moves + mg->nmoves);
 }
 
-void addTactsKing(MoveGen* mg, const Board* b, const int onlyTacticals) {
+void addKing(MoveGen* mg, const Board* b, const int onlyTacticals) {
     Move* p = mg->moves + mg->nmoves;
 
     const int castle = canCastle(b, b->stm, mg->forbidden);
@@ -273,7 +283,7 @@ void addTactsKing(MoveGen* mg, const Board* b, const int onlyTacticals) {
     mg->nmoves += p - (mg->moves + mg->nmoves);
 }
 
-void addTacts(MoveGen* mg, const Board* b, const int piece, const int onlyTacticals) {
+void addSlidings(MoveGen* mg, const Board* b, const int piece, const int onlyTacticals) {
     Move* p = mg->moves + mg->nmoves;
     uint64_t temp = b->piece[b->stm][piece];
     int from, to;
@@ -344,32 +354,35 @@ void addTacts(MoveGen* mg, const Board* b, const int piece, const int onlyTactic
 
 void genQuiets(MoveGen* mg, const Board* b) {
     mg->nmoves = 0;
-    addTactsPawn(mg, b, 0);
-    addTactsKnight(mg, b, 0);
+    mg->currmove = 0;
+
+    addPawn(mg, b, 0);
+    addKnight(mg, b, 0);
     for (int i = BISH; i >= QUEEN; --i)
     {
-        addTacts(mg, b, i, 0);
+        addSlidings(mg, b, i, 0);
     }
-    addTactsKing(mg, b, 0);
+    addKing(mg, b, 0);
 
     mg->state = mg->nmoves? Quiet : Exhausted;
-    mg->tot += mg->nmoves;
-    mg->currmove = 0;
 }
 
 Move next(MoveGen* mg, const Board* b) {
     assert(mg->state != Uninitialized);
     //We have finished the current batch of moves
     if (mg->currmove >= mg->nmoves) {
-        if (mg->state == Tactical){
+        if (mg->state == Tactical && !mg->qsearch){
             genQuiets(mg, b);
-            if (mg->nmoves)
+            if (mg->nmoves){
+                mg->tot++;
                 return mg->moves[mg->currmove++];
+            }
         } else {
             mg->state = Exhausted;
         }
         return (Move) {.from = -1};
     } else {
+        mg->tot++;
         return mg->moves[mg->currmove++];
     }
 }

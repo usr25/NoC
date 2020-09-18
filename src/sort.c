@@ -19,7 +19,6 @@
 #include "../include/evaluation.h"
 
 static int smallestAttackerSqr(const Board* b, const int sqr, const int col, const uint64_t diag, const uint64_t stra);
-static inline int seeCapture(Board b, const Move m);
 __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr, const uint64_t diag, const uint64_t stra);
 
 #define NUM_KM 2
@@ -55,7 +54,7 @@ void initKM(void)
     }
 }
 
-static inline int seeCapture(Board b, const Move m)
+int seeCapture(Board b, const Move m)
 {
     makePermaMove(&b, m);
     return pVal[m.capture] - see(&b, m.to, m.piece, getDiagMoves(m.to), getStraMoves(m.to));
@@ -196,14 +195,11 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
     Move* end = list + numMoves;
     for (Move* curr = list; curr != end; ++curr)
     {
-        if(IS_CAP(*curr))
+        if(IS_CAP(*curr) && !(curr->piece == PAWN && curr->promotion != 0))
         {
             //TODO: Add bonus if it captures the last piece to move
             //TODO: That could be improved using bbs of the last pieces moved
-            if (curr->piece == PAWN)
-                curr->score += pVal[curr->capture];
-            else
-                curr->score += 69 + seeCapture(*b, *curr);
+            curr->score = seeCapture(*b, *curr);
         }
     }
 }

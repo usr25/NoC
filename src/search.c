@@ -13,7 +13,6 @@
 #include "../include/boardmoves.h"
 #include "../include/memoization.h"
 #include "../include/allmoves.h"
-#include "../include/movegen.h"
 #include "../include/hash.h"
 #include "../include/sort.h"
 #include "../include/search.h"
@@ -430,6 +429,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         ev = eval(&b);
     evalStack[height] = ev;
 
+    int fprune = 0;
+    const int fmargin[8] = {0, 150, 250, 350, 450, 550, 650, 750};
     if (!isInC && !pv)
     {
         // Razoring
@@ -455,6 +456,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 return beta;
             }
         }
+
+        //Futility pruning
+        if (depth <= 7 && abs(alpha) <= 9000 && ev + fmargin[depth] <= alpha)
+        	fprune = 1;
     }
 
     uint64_t newHash;
@@ -523,13 +528,22 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int inC;
     Move m;
 
+
     for (int i = ttHit; i < numMoves; ++i)
     {
+	    int SEEscore = 0;
         m = list[i];
         moveStack[height] = m;
         assert(RANGE_64(m.from) && RANGE_64(m.to));
         if (canBreak && !IS_CAP(m) && (i > 3 + depth || (i > 3 && !pv)))
             break;
+
+        if (IS_CAP(m) && m.piece != PAWN && !inC) {
+    		SEEscore = seeCapture(b, m);
+    		if (depth <= 8 && best > MINS_MATE && SEEscore < -80*depth*depth){
+    			continue;
+    		}
+    	}
 
         makeMove(&b, m, &h);
         newHash = makeMoveHash(prevHash, &b, m, h);
@@ -661,7 +675,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
 
     for (int i = 0; i < numMoves; ++i)
     {
-        if (!(nMvsAndChck & 1) && i > 2 && list[i].score < 10 && score + 145 <= alpha)
+        if (!(nMvsAndChck & 1) && i > 2 && list[i].score + score < alpha)
             break;
 
         makeMove(&b, list[i], &h);
