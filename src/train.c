@@ -106,7 +106,9 @@ void setVariables(const int argc, char** const argv)
     }
 
     positions = malloc(num_pos * sizeof(FenResult));
+    CHECK_MALLOC(positions);
     acc = malloc(num_thr * sizeof(double));
+    CHECK_MALLOC(acc);
 }
 
 /* Reads all the info from path and parses the values that will be used

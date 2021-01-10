@@ -1,6 +1,9 @@
 #define ENGINE_AUTHOR "Jorge"
 #define ENGINE_NAME "NoC 9.20 Assert"
 
+#define CHECK_MALLOC(ptr) if (!(ptr)) { fprintf(stderr, "Malloc failed in %s %d\n", __FILE__, __LINE__); \
+                            exit(66);};
+
 #define REMOVE_LSB(bb) bb &= bb - 1
 #define POPCOUNT(ll) __builtin_popcountll(ll)
 #define LSB_INDEX(ll) __builtin_ctzll(ll)

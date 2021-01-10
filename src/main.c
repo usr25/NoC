@@ -27,6 +27,7 @@
 #ifdef TRAIN
 #include "../include/train.h"
 #endif
+#include "../include/nnue.h"
 
 //TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove and implement syzygy
 int main(const int argc, char** const argv)
@@ -61,6 +62,9 @@ int main(const int argc, char** const argv)
     //chooseTest(1);
 
     loop();
+
+    //NNUE n = loadNNUE("nn-f4838ada61cc.nnue");
+    //freeNNUE(&n);
 
     exit(EXIT_SUCCESS);
 }
