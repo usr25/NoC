@@ -62,9 +62,13 @@ int main(const int argc, char** const argv)
     //chooseTest(1);
 
     loop();
+/*
+    NNUE nn = loadNNUE("nn-f4838ada61cc.nnue");
+    Board b = defaultBoard();
 
-    //NNUE n = loadNNUE("nn-f4838ada61cc.nnue");
-    //freeNNUE(&n);
+    printf("NNUE eval: %d\n", evaluate(&nn, b));
 
+    freeNNUE(&nn);
+*/
     exit(EXIT_SUCCESS);
 }

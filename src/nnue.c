@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "../include/global.h"
+#include "../include/board.h"
 #include "../include/nnue.h"
 
 #define CHECK_READ(read,correct) if (read != correct) {fprintf(stderr, "Unsuccessful read in %s %d\n", __FILE__, __LINE__); \
@@ -24,6 +26,27 @@ const uint32_t FTHeader = 0x5d69d7b8;
 const uint32_t NTHeader = 0x63337156;
 const uint32_t NNUEHash = 0x3e5aa6eeU;
 const uint32_t ArchSize = 177;
+
+enum {
+  PS_W_PAWN   =  1,
+  PS_B_PAWN   =  1 * 64 + 1,
+  PS_W_KNIGHT =  2 * 64 + 1,
+  PS_B_KNIGHT =  3 * 64 + 1,
+  PS_W_BISHOP =  4 * 64 + 1,
+  PS_B_BISHOP =  5 * 64 + 1,
+  PS_W_ROOK   =  6 * 64 + 1,
+  PS_B_ROOK   =  7 * 64 + 1,
+  PS_W_QUEEN  =  8 * 64 + 1,
+  PS_B_QUEEN  =  9 * 64 + 1,
+  PS_END      = 10 * 64 + 1
+};
+
+const uint32_t PieceToIndex[2][16] = {
+  { 0, PS_B_PAWN, PS_B_KNIGHT, PS_B_BISHOP, PS_B_ROOK, PS_B_QUEEN, 0, 0,
+    0, PS_W_PAWN, PS_W_KNIGHT, PS_W_BISHOP, PS_W_ROOK, PS_W_QUEEN, 0, 0 },
+  { 0, PS_W_PAWN, PS_W_KNIGHT, PS_W_BISHOP, PS_W_ROOK, PS_W_QUEEN, 0, 0,
+    0, PS_B_PAWN, PS_B_KNIGHT, PS_B_BISHOP, PS_B_ROOK, PS_B_QUEEN, 0, 0 }
+};
 
 NNUE loadNNUE(const char* path)
 {
@@ -134,14 +157,13 @@ void readParams(FILE* f, NNUE* nn)
     CHECK_READ(successfulRead, dimensions[4]);
     readWeights(f, nn->outputW, 1, 1);
 
-    int j;
-    int i = 0;
-    while (fread(&j, sizeof(int), 1, f))
-        i++;
+    int ignore, cnt = 0;
+    while (fread(&ignore, sizeof(int), 1, f))
+        cnt++;
 
-    if (i)
+    if (cnt)
     {
-        fprintf(stderr, "NNUE file hasn't been read completely, %d ints remeain\n", i);
+        fprintf(stderr, "NNUE file hasn't been read completely, %d ints remeain\n", cnt);
         exit(10);
     }
 }
@@ -161,12 +183,14 @@ void readWeights(FILE* f, weight_t* ws, const int dims, const int isOutput)
             int8_t a;
             int s = fread(&a, 1, 1, f);
             CHECK_READ(s, 1);
+            //Output is the same whether it is sparse or regular
             int idx = isOutput? i*dims+j : getIdx(i,j,dims);
             ws[idx] = (weight_t)a;
         }
     }
 }
 
+//TODO: make this a "save nn into binary file" function
 void showNNUE(const NNUE* nn)
 {
     //./noc | tail --lines=+9 | sha256sum
@@ -223,4 +247,70 @@ void freeNNUE(NNUE* nn)
 {
     free(nn->ftBiases);
     free(nn->ftWeights);
+}
+
+unsigned makeIndex(const int c, const int sq, const int pc, const int ksq)
+{
+    return sq + PieceToIndex[c][pc] + PS_END*ksq;
+}
+
+//Sqrs aren't the same in this engine than in sf
+//also, flip it if it is the opposing side
+int toSf(const int c, const int sq)
+{
+    int col = sq & 7;
+    int row = sq >> 3;
+    return ((row << 3) + (7-col))^(c==WHITE? 0 : 0x3f);
+}
+
+//Calculates the input layer for a given color (king-piece, king is of color)
+int16_t* inputLayer(const NNUE* nn, const Board b, const int color)
+{
+    assert(POPCOUNT(b.allPieces) <= 32);
+    int16_t* inp = malloc(sizeof(int16_t)*kHalfDimensionFT);
+    unsigned actives[30];
+    CHECK_MALLOC(inp);
+    int numActives = 0;
+
+    memcpy(inp, nn->ftBiases, sizeof(int16_t)*kHalfDimensionFT);
+
+    int ksq = toSf(color, LSB_INDEX(b.piece[color][KING]));
+
+    for (int c = BLACK; c <= WHITE; ++c)
+    {
+        for (int piece = QUEEN; piece <= PAWN; ++piece)
+        {
+            int sfPc = (c==WHITE? 6 : 14) - piece;
+            uint64_t bb = b.piece[c][piece];
+            while (bb)
+            {
+                int sq = toSf(color, LSB_INDEX(bb));
+                int idx = makeIndex(color, sq, sfPc, ksq);
+                actives[numActives++] = idx;
+                REMOVE_LSB(bb);
+            }
+        }
+    }
+
+    assert(numActives == POPCOUNT(b.allPieces)-2);
+
+    for (int i = 0; i < numActives; ++i)
+    {
+        int offset = kHalfDimensionFT * actives[i];
+        for (int j = 0; j < kHalfDimensionFT; ++j)
+            inp[j] += nn->ftWeights[offset+j];
+    }
+
+    return inp;
+}
+
+//TODO: The network logic is needed to generate the output
+int evaluate(const NNUE* nn, const Board b)
+{
+    int16_t* white = inputLayer(nn, b, WHITE);
+    int16_t* black = inputLayer(nn, b, BLACK);
+
+    free(white);
+    free(black);
+    return 1;
 }
