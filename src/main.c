@@ -29,6 +29,10 @@
 #endif
 #include "../include/nnue.h"
 
+#ifndef NNUE_PATH
+#define NNUE_PATH "nn-f4838ada61cc.nnue"
+#endif
+
 //TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove and implement syzygy
 int main(const int argc, char** const argv)
 {
@@ -62,13 +66,6 @@ int main(const int argc, char** const argv)
     //chooseTest(1);
 
     loop();
-/*
-    NNUE nn = loadNNUE("nn-f4838ada61cc.nnue");
-    Board b = defaultBoard();
 
-    printf("NNUE eval: %d\n", evaluate(&nn, b));
-
-    freeNNUE(&nn);
-*/
     exit(EXIT_SUCCESS);
 }

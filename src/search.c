@@ -20,6 +20,9 @@
 #include "../include/mate.h"
 #include "../include/uci.h"
 #include "../include/io.h"
+#ifdef USE_NNUE
+#include "../include/nnue.h"
+#endif
 #ifdef USE_TB
 #include "../include/gaviota.h"
 #endif
@@ -78,6 +81,10 @@ static uint64_t queries = 0;
 
 static int exitFlag = 0;
 
+#ifdef USE_NNUE
+static NNUE nn;
+#endif
+
 void initCall(void)
 {
     queries = 0;
@@ -98,6 +105,12 @@ void initCall(void)
     initKM();
 }
 
+void initSearch(const char* path)
+{
+    #ifdef USE_NNUE
+    nn = loadNNUE(path);
+    #endif
+}
 
 static int us;
 Move bestTime(Board b, Repetition rep, SearchParams sp)
@@ -265,7 +278,12 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     uint64_t hash = hashPosition(&b), newHash;
     int subtreeSize[NMOVES];
 
+    #ifdef USE_NNUE
+    evalStack[0] = evaluateNNUE(&nn, b);
+    #else
     evalStack[0] = eval(&b);
+    #endif
+
     for (int i = 0; i < numMoves; ++i)
     {
         long initNodes = nodes;
@@ -367,7 +385,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (exitFlag)
         return 0;
-    if (playWithTime && (nodes & 4095) == 0 && clock() > stopAt)
+    if (playWithTime && (nodes & 1023) == 0 && clock() > stopAt)
     {
         if (percentage > .86f && !finishingTime)
         {
@@ -389,7 +407,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         return alpha;
 
     if (height >= MAX_PLY)
+        #ifdef USE_NNUE
+        return evaluateNNUE(&nn, b);
+        #else
         return eval(&b);
+        #endif
 
     if (isInC && (depth < 5 || IS_CAP(moveStack[height-1])))
         depth++;
@@ -426,7 +448,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
 
     if (!(isInC || ttHit))
+        #ifdef USE_NNUE
+        ev = evaluateNNUE(&nn, b);
+        #else
         ev = eval(&b);
+        #endif
     evalStack[height] = ev;
 
     int fprune = 0;
@@ -651,7 +677,11 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     ++qsearchNodes;
     #endif
 
+    #ifdef USE_NNUE
+    const int score = evaluateNNUE(&nn, b);
+    #else
     const int score = eval(&b);
+    #endif
 
     if (score >= beta)
         return beta;

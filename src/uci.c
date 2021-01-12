@@ -19,6 +19,7 @@
 #include "../include/evaluation.h"
 #include "../include/uci.h"
 #include "../include/mate.h"
+#include "../include/nnue.h"
 
 #define LEN 4096
 
@@ -33,10 +34,15 @@ static int move_(Board* b, char* beg, Repetition* rep);
 static Board gen_(char* beg, Repetition* rep);
 static Board gen_def(char* beg, Repetition* rep);
 
+#ifndef NNUE_PATH
+#define NNUE_PATH "nn-f4838ada61cc.nnue"
+#endif
+
 /* Main loop, listens to user input and performs the desired actions
  */
 void loop(void)
 {
+    initSearch(NNUE_PATH);
     Board b = defaultBoard();
     Repetition rep = (Repetition) {.index = 0};
 
@@ -87,6 +93,19 @@ void loop(void)
         else if (strncmp(beg, "mate", 4) == 0)
             mate_(b, atoi(beg + 5));
 
+        else if (strncmp(beg, "loadnnue", 8) == 0)
+        {
+            #ifdef USE_NNUE
+            char* b = beg;
+            while (*b != '\n') b++;
+            *b = '\0';
+            initSearch(beg + 9);
+            #else
+            fprintf(stderr, "USE_NNUE hasn't been defined, not using NNUE\n");
+            fflush(stderr);
+            #endif
+        }
+
         else if (strncmp(beg, "quit", 4) == 0)
             quit = 1;
 
@@ -133,7 +152,13 @@ static void mate_(Board b, int depth)
 }
 static void eval_(Board b)
 {
-    fprintf(stdout, "%d\n", eval(&b));
+    //TODO: Implement this once nn is in nnue.c
+    //const int ev = evaluateNNUE(&nn, b);
+    #ifdef USE_NNUE
+    #else
+    #endif
+    const int ev = eval(&b);
+    fprintf(stdout, "%d\n", ev);
     fflush(stdout);
 }
 static void go_(Board b, char* beg, Repetition* rep)
@@ -317,6 +342,7 @@ static void help_(void)
     fprintf(stdout, "print...........Draw the position on the screen\n");
     fprintf(stdout, "perft #.........Count the number of legal positions at depth #\n");
     fprintf(stdout, "mate #..........Determine the shortest mate within # plies\n");
+    fprintf(stdout, "loadnnue <path>.Load the NNUE file <path>\n");
     fprintf(stdout, "go\n");
     fprintf(stdout, "   depth #......Analyze at depth\n");
     fprintf(stdout, "   wtime #......Analyze until the time runs out\n");

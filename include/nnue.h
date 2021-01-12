@@ -21,4 +21,4 @@ static const unsigned int NNUEVersion = 0x7AF32F16u;
 
 NNUE loadNNUE(const char* path);
 void freeNNUE(NNUE* nn);
-int evaluate(const NNUE* nn, const Board b);
+int evaluateNNUE(const NNUE* nn, const Board b);

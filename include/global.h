@@ -1,5 +1,5 @@
 #define ENGINE_AUTHOR "Jorge"
-#define ENGINE_NAME "NoC 9.20 Assert"
+#define ENGINE_NAME "NoC 9.20 NNUE"
 
 #define CHECK_MALLOC(ptr) if (!(ptr)) { fprintf(stderr, "Malloc failed in %s %d\n", __FILE__, __LINE__); \
                             exit(66);};

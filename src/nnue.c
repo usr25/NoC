@@ -11,8 +11,6 @@
 #define CHECK_READ(read,correct) if (read != correct) {fprintf(stderr, "Unsuccessful read in %s %d\n", __FILE__, __LINE__); \
                                 exit(5);}
 
-//#define TEST_NNUE_PARSING
-
 void readHeaders(FILE* f, NNUE* nn);
 void readParams(FILE* f, NNUE* nn);
 void readWeights(FILE* f, weight_t* nn, const int dims, const int isOutput);
@@ -26,6 +24,10 @@ const uint32_t FTHeader = 0x5d69d7b8;
 const uint32_t NTHeader = 0x63337156;
 const uint32_t NNUEHash = 0x3e5aa6eeU;
 const uint32_t ArchSize = 177;
+
+const int FV_SCALE = 16;
+
+//TODO: Make the nnue a static variable here
 
 enum {
   PS_W_PAWN   =  1,
@@ -48,6 +50,11 @@ const uint32_t PieceToIndex[2][16] = {
     0, PS_B_PAWN, PS_B_KNIGHT, PS_B_BISHOP, PS_B_ROOK, PS_B_QUEEN, 0, 0 }
 };
 
+const int clip(const int v)
+{
+    return v<0? 0 : (v>127? 127 : v);
+}
+
 NNUE loadNNUE(const char* path)
 {
     assert(sizeof(uint32_t) == 4);
@@ -65,12 +72,12 @@ NNUE loadNNUE(const char* path)
         exit(5);
     }
 
-    #ifdef DEBUG
+    #ifdef NNUE_DEBUG
         printf("Loading NNUE %s\n", path);
     #endif
 
-    nn.ftBiases = (uint16_t*)malloc(sizeof(uint16_t)*kHalfDimensionFT);
-    nn.ftWeights = (uint16_t*)malloc(sizeof(uint16_t)*kHalfDimensionFT*kInputDimensionsFT);
+    nn.ftBiases = (int16_t*)malloc(sizeof(int16_t)*kHalfDimensionFT);
+    nn.ftWeights = (int16_t*)malloc(sizeof(int16_t)*kHalfDimensionFT*kInputDimensionsFT);
     CHECK_MALLOC(nn.ftBiases);
     CHECK_MALLOC(nn.ftWeights);
 
@@ -79,9 +86,12 @@ NNUE loadNNUE(const char* path)
 
     fclose(f);
 
-    #ifdef TEST_NNUE_PARSING
-    showNNUE(&nn);
+    #ifdef NNUE_DEBUG
+    if (0)
+        showNNUE(&nn);
     #endif
+
+    printf("%s NNUE loaded\n", path);
 
     return nn;
 }
@@ -106,7 +116,7 @@ void readHeaders(FILE* f, NNUE* nn)
     successfulRead = fread(architecture, sizeof(char), ArchSize, f);
     CHECK_READ(successfulRead, ArchSize);
 
-    #ifdef DEBUG
+    #ifdef NNUE_DEBUG
         printf("Version: %u\n", version);
         printf("Hash: %u\n", hash);
         printf("Size: %u\n", size);
@@ -125,7 +135,8 @@ void readParams(FILE* f, NNUE* nn)
     successfulRead = fread(&header, sizeof(uint32_t), 1, f);
     CHECK_READ(successfulRead, 1);
     assert(header == FTHeader);
-    #ifdef DEBUG
+
+    #ifdef NNUE_DEBUG
         printf("Header_FT: %u\n", header);
     #endif
 
@@ -141,7 +152,8 @@ void readParams(FILE* f, NNUE* nn)
     successfulRead = fread(&header, sizeof(uint32_t), 1, f);
     CHECK_READ(successfulRead, 1);
     assert(header == NTHeader);
-    #ifdef DEBUG
+
+    #ifdef NNUE_DEBUG
         printf("Header_Network: %u\n", header);
     #endif
 
@@ -251,7 +263,7 @@ void freeNNUE(NNUE* nn)
 
 unsigned makeIndex(const int c, const int sq, const int pc, const int ksq)
 {
-    return sq + PieceToIndex[c][pc] + PS_END*ksq;
+    return sq + PieceToIndex[c][pc] + PS_END * ksq;
 }
 
 //Sqrs aren't the same in this engine than in sf
@@ -260,19 +272,17 @@ int toSf(const int c, const int sq)
 {
     int col = sq & 7;
     int row = sq >> 3;
-    return ((row << 3) + (7-col))^(c==WHITE? 0 : 0x3f);
+    return ((row << 3) + (7 - col))^(c==WHITE? 0 : 0x3f);
 }
 
 //Calculates the input layer for a given color (king-piece, king is of color)
-int16_t* inputLayer(const NNUE* nn, const Board b, const int color)
+int32_t* inputLayer(const NNUE* nn, const Board b, const int color, int32_t* inp)
 {
     assert(POPCOUNT(b.allPieces) <= 32);
-    int16_t* inp = malloc(sizeof(int16_t)*kHalfDimensionFT);
     unsigned actives[30];
-    CHECK_MALLOC(inp);
     int numActives = 0;
 
-    memcpy(inp, nn->ftBiases, sizeof(int16_t)*kHalfDimensionFT);
+    //memcpy(inp, nn->ftBiases, sizeof(int16_t)*kHalfDimensionFT);
 
     int ksq = toSf(color, LSB_INDEX(b.piece[color][KING]));
 
@@ -294,23 +304,59 @@ int16_t* inputLayer(const NNUE* nn, const Board b, const int color)
 
     assert(numActives == POPCOUNT(b.allPieces)-2);
 
+    for (int i = 0; i < kHalfDimensionFT; ++i)
+    {
+        inp[i] = nn->ftBiases[i];
+    }
+
     for (int i = 0; i < numActives; ++i)
     {
         int offset = kHalfDimensionFT * actives[i];
         for (int j = 0; j < kHalfDimensionFT; ++j)
             inp[j] += nn->ftWeights[offset+j];
     }
+    for (int i = 0; i < kHalfDimensionFT; ++i)
+    {
+        inp[i] = clip(inp[i]);
+    }
 
     return inp;
 }
 
-//TODO: The network logic is needed to generate the output
-int evaluate(const NNUE* nn, const Board b)
+void propagate(const int32_t* prevLayer, const int prevSize, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
 {
-    int16_t* white = inputLayer(nn, b, WHITE);
-    int16_t* black = inputLayer(nn, b, BLACK);
+    for (int i = 0; i < nextSize; ++i)
+    {
+        int sum = bs[i];
+        for (int j = 0; j < prevSize; ++j)
+        {
+            sum += prevLayer[j]*(int8_t)ws[i*prevSize+j];
+        }
+        nextLayer[i] = clip(sum/64);
+    }
+}
 
-    free(white);
-    free(black);
-    return 1;
+int32_t output(const int32_t* prevLayer, const int prevSize, const weight_t* ws, int32_t out)
+{
+    for (int i = 0; i < prevSize; ++i)
+        out += ws[i] * prevLayer[i];
+
+    return out;
+}
+
+static int32_t nInput[512];
+static int32_t hiddenLayer1[32];
+static int32_t hiddenLayer2[32];
+
+int evaluateNNUE(const NNUE* nn, const Board b)
+{
+    inputLayer(nn, b, b.stm, nInput);
+    inputLayer(nn, b, 1^b.stm, nInput + kHalfDimensionFT);
+
+    propagate(nInput, 2*kHalfDimensionFT, hiddenLayer1, 32, nn->weights1, nn->biases1);
+    propagate(hiddenLayer1, 32, hiddenLayer2, 32, nn->weights2, nn->biases2);
+
+    int32_t out = output(hiddenLayer2, 32, nn->outputW, *(nn->outputB));
+
+    return out / FV_SCALE;
 }
