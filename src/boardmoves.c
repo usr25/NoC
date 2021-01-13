@@ -82,6 +82,8 @@ void makeMove(Board* b, const Move move, History* h)
 
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
+    //assert(pieceAt(b, POW2[move.from], b->stm) == move.piece);
+
     //Save the data
     h->castleInfo = b->castleInfo;
     h->allPieces = b->allPieces;

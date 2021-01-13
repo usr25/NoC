@@ -10,7 +10,6 @@
 
 #include "../include/global.h"
 #include "../include/board.h"
-#include "../include/perft.h"
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 #include "../include/hash.h"
@@ -20,6 +19,7 @@
 #include "../include/uci.h"
 #include "../include/mate.h"
 #include "../include/nnue.h"
+#include "../include/perft.h"
 
 #define LEN 4096
 
@@ -35,14 +35,16 @@ static Board gen_(char* beg, Repetition* rep);
 static Board gen_def(char* beg, Repetition* rep);
 
 #ifndef NNUE_PATH
-#define NNUE_PATH "nn-f4838ada61cc.nnue"
+#define NNUE_PATH "/home/j/Desktop/Chess/Engine/nn-f4838ada61cc.nnue"
 #endif
 
 /* Main loop, listens to user input and performs the desired actions
  */
 void loop(void)
 {
-    initSearch(NNUE_PATH);
+    #ifdef USE_NNUE
+    initNNUE(NNUE_PATH);
+    #endif
     Board b = defaultBoard();
     Repetition rep = (Repetition) {.index = 0};
 
@@ -99,7 +101,7 @@ void loop(void)
             char* b = beg;
             while (*b != '\n') b++;
             *b = '\0';
-            initSearch(beg + 9);
+            initNNUE(beg + 9);
             #else
             fprintf(stderr, "USE_NNUE hasn't been defined, not using NNUE\n");
             fflush(stderr);
@@ -134,7 +136,7 @@ static void isready(void)
 static void perft_(Board b, int depth)
 {
     clock_t startTime = clock();
-    fprintf(stdout, "Node count: %llu\n", perft(b, depth, 1));
+    fprintf(stdout, "Node count: %lu\n", perft(b, depth, 1));
     fprintf(stdout, "Time taken: %fs\n", (double)(clock() - startTime) / CLOCKS_PER_SEC);
     fflush (stdout);
 }
@@ -153,11 +155,11 @@ static void mate_(Board b, int depth)
 static void eval_(Board b)
 {
     //TODO: Implement this once nn is in nnue.c
-    //const int ev = evaluateNNUE(&nn, b);
     #ifdef USE_NNUE
+    const int ev = evaluateNNUE(&b, 0);
     #else
-    #endif
     const int ev = eval(&b);
+    #endif
     fprintf(stdout, "%d\n", ev);
     fflush(stdout);
 }
@@ -269,6 +271,18 @@ static int move_(Board* b, char* beg, Repetition* rep)
         }
     }
 
+    if (m.piece < KING || m.piece > PAWN || ((m.capture < KING || m.capture > PAWN) && m.capture != NO_PIECE))
+    {
+        printf("%d\n", b->stm);
+        printf("%s\n", beg);
+        printf("%d\n", m.piece);
+        drawPosition(*b, 1);
+        drawBitboard(b->piece[WHITE][BISH]);
+        drawBitboard(b->piece[WHITE][PAWN]);
+        drawBitboard(b->piece[BLACK][PAWN]);
+        drawBitboard(b->allPieces);
+    }
+
     makePermaMove(b, m);
 
     if (m.piece == PAWN || IS_CAP(m))
@@ -323,7 +337,7 @@ void infoString(const Move m, const int depth, const uint64_t nodes, const clock
 {
     char mv[6] = "";
     moveToText(m, mv);
-    fprintf(stdout, "info score cp %d depth %d time %lu nodes %llu nps %llu pv %s\n", 
+    fprintf(stdout, "info score cp %d depth %d time %lu nodes %lu nps %lu pv %s\n", 
         100 * m.score / V_PAWN[0], depth, duration, nodes, 1000 * nodes / (duration + 1), mv);
     fflush(stdout);
 }

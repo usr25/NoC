@@ -20,14 +20,13 @@
 #include "../include/search.h"
 #include "../include/sort.h"
 #include "../include/movegen.h"
-#include "../include/perft.h"
+#include "../include/nnue.h"
 #ifdef USE_TB
 #include "../include/gaviota.h"
 #endif
 #ifdef TRAIN
 #include "../include/train.h"
 #endif
-#include "../include/nnue.h"
 
 #ifndef NNUE_PATH
 #define NNUE_PATH "nn-f4838ada61cc.nnue"
@@ -63,7 +62,7 @@ int main(const int argc, char** const argv)
         initGav("\0");
     #endif
 
-    //chooseTest(1);
+    //chooseTest(6);
 
     loop();
 

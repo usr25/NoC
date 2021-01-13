@@ -2,6 +2,11 @@
  * Generates the perft for any given position
  */
 
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "../include/global.h"
 #include "../include/board.h"
 #include "../include/moves.h"
@@ -10,10 +15,8 @@
 #include "../include/movegen.h"
 #include "../include/hash.h"
 #include "../include/io.h"
+#include "../include/nnue.h"
 #include "../include/perft.h"
-
-#include <stdio.h>
-#include <assert.h>
 
 
 uint64_t perftRecursive(Board b, const int depth)
@@ -59,12 +62,12 @@ uint64_t perft(Board b, const int depth, const int divide)
         assert(moveIsValidBasic(&b, &moves[i]));
         makeMove(&b, moves[i], &h);
 
-        temp = perftMovegen(b, depth-1, 0);
+        temp = perftRecursive(b, depth-1);
 
         if (divide)
         {
             drawMove(moves[i]);
-            printf(": %llu\n", temp);
+            printf(": %lu\n", temp);
         }
 
         tot += temp;
@@ -101,7 +104,7 @@ uint64_t perftMovegen(Board b, const int depth, const int divide) {
         if (divide)
         {
             drawMove(m);
-            printf(": %llu\n", temp);
+            printf(": %lu\n", temp);
         }
 
         tot += temp;
@@ -137,6 +140,95 @@ int hashPerft(Board b, const int depth, const uint64_t prevHash)
             return 0;
 
         undoMove(&b, moves[i], &h);
+    }
+
+    return 1;
+}
+
+static NNUE dummy;
+
+void initDummy(void)
+{
+    dummy = (NNUE) {};
+    dummy.ftBiases = (int16_t*)malloc(sizeof(int16_t)*kHalfDimensionFT);
+    dummy.ftWeights = (int16_t*)malloc(sizeof(int16_t)*kHalfDimensionFT*kInputDimensionsFT);
+    CHECK_MALLOC(dummy.ftBiases);
+    CHECK_MALLOC(dummy.ftWeights);
+
+    for (int i = 0; i < kHalfDimensionFT; ++i)
+    {
+        dummy.ftBiases[i] += (int16_t)((i*23+i-81) & 65535);
+        for (int j = 0; j < kInputDimensionsFT; ++j)
+            dummy.ftWeights[i*kInputDimensionsFT+j] = (int16_t)((j*23+i+1+j) & 65535);
+    }
+}
+
+void freeDummy(void)
+{
+    freeNNUE(&dummy);
+}
+
+int nnuePerft(Board b, const int depth, int32_t* test)
+{
+    if (depth == 0) return 1;
+
+    Move moves[NMOVES];
+    History h;
+
+    const int numMoves = legalMoves(&b, moves) >> 1;
+    int32_t* nInputBef = malloc(sizeof(int32_t)*512);
+    int32_t* nInputAft = malloc(sizeof(int32_t)*512);
+    CHECK_MALLOC(nInputBef);
+    CHECK_MALLOC(nInputAft);
+
+    inputLayer(&dummy, &b, WHITE, nInputBef);
+    inputLayer(&dummy, &b, BLACK, nInputBef + 256);
+
+    if (test == NULL)
+    {
+        test = malloc(sizeof(int32_t)*512);
+        CHECK_MALLOC(test);
+        memcpy(test, nInputBef, sizeof(int32_t)*512);
+    }
+
+    for (int i = 0; i < numMoves; ++i)
+    {
+        NNUEChangeQueue q = (NNUEChangeQueue){.idx = 0};
+        determineChanges(moves[i], &q, b.stm);
+        assert(q.idx < 5);
+
+        makeMove(&b, moves[i], &h);
+
+        inputLayer(&dummy, &b, WHITE, nInputAft);
+        inputLayer(&dummy, &b, BLACK, nInputAft + 256);
+
+        applyChanges(&dummy, &b, &q, WHITE, test);
+        applyChanges(&dummy, &b, &q, BLACK, test + 256);
+
+        for (int i = 0; i < 512; ++i)
+        {
+            if (test[i] != nInputAft[i])
+                return 0;
+        }
+
+        if (!nnuePerft(b, depth - 1, test))
+            return 0;
+
+        undoMove(&b, moves[i], &h);
+
+        assert(q.idx < 5);
+
+        for (int i = 0; i < q.idx; ++i)
+            q.changes[i].appears ^= 1;
+
+        applyChanges(&dummy, &b, &q, WHITE, test);
+        applyChanges(&dummy, &b, &q, BLACK, test + 256);
+
+        for (int i = 0; i < 512; ++i)
+        {
+            if (test[i] != nInputBef[i])
+                return 0;
+        }
     }
 
     return 1;

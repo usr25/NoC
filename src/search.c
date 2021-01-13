@@ -20,9 +20,7 @@
 #include "../include/mate.h"
 #include "../include/uci.h"
 #include "../include/io.h"
-#ifdef USE_NNUE
 #include "../include/nnue.h"
-#endif
 #ifdef USE_TB
 #include "../include/gaviota.h"
 #endif
@@ -81,10 +79,6 @@ static uint64_t queries = 0;
 
 static int exitFlag = 0;
 
-#ifdef USE_NNUE
-static NNUE nn;
-#endif
-
 void initCall(void)
 {
     queries = 0;
@@ -103,13 +97,6 @@ void initCall(void)
 
     initHistory();
     initKM();
-}
-
-void initSearch(const char* path)
-{
-    #ifdef USE_NNUE
-    nn = loadNNUE(path);
-    #endif
 }
 
 static int us;
@@ -278,14 +265,20 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     uint64_t hash = hashPosition(&b), newHash;
     int subtreeSize[NMOVES];
 
+    initQueueEval(&b);
+
     #ifdef USE_NNUE
-    evalStack[0] = evaluateNNUE(&nn, b);
+    evalStack[0] = evaluateNNUE(&b, 1);
     #else
     evalStack[0] = eval(&b);
     #endif
 
+    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+
     for (int i = 0; i < numMoves; ++i)
     {
+        q.idx = 0;
+
         long initNodes = nodes;
         //If the move leads to being mated, break (since the moves are ordered based on score)
         if (list[i].score < MINS_MATE)
@@ -294,7 +287,11 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
         percentage = i / (double) numMoves;
         assert(percentage >= 0 && percentage <= 1.1);
+
         makeMove(&b, list[i], &h);
+
+        updateDo(&q, list[i], &b);
+
         newHash = makeMoveHash(hash, &b, list[i], h);
         inC = isInCheck(&b, b.stm);
 
@@ -317,7 +314,10 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
             }
             remHash(&rep);
         }
+
         undoMove(&b, list[i], &h);
+
+        updateUndo(&q, &b);
 
         //For the sorting at later depths
         list[i].score = val;
@@ -408,7 +408,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (height >= MAX_PLY)
         #ifdef USE_NNUE
-        return evaluateNNUE(&nn, b);
+        return evaluateNNUE(&b, 1);
         #else
         return eval(&b);
         #endif
@@ -449,7 +449,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (!(isInC || ttHit))
         #ifdef USE_NNUE
-        ev = evaluateNNUE(&nn, b);
+        ev = evaluateNNUE(&b, 1);
         #else
         ev = eval(&b);
         #endif
@@ -492,6 +492,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int best = MINS_INF;
     const int newHeight = height + 1;
     History h;
+
+    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+    int undo = 0;
+
+    /*
     if (ttHit)
     {
         makeMove(&b, bestM, &h);
@@ -504,11 +509,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         else
         {
+            updateDo(&q, bestM, &b);
+            undo = 1;
             addHash(rep, newHash);
             val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
         }
         undoMove(&b, bestM, &h);
+        if (undo) updateUndo(&q, &b);
 
         best = val;
         if (best > alpha)
@@ -529,6 +537,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             }
         }
     }
+    */
 
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
@@ -554,9 +563,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int inC;
     Move m;
 
-
-    for (int i = ttHit; i < numMoves; ++i)
+    const int prev = b.stm;
+    for (int i = /*ttHit*/0; i < numMoves; ++i)
     {
+        q.idx = 0;
+        undo = 0;
+
 	    int SEEscore = 0;
         m = list[i];
         moveStack[height] = m;
@@ -564,16 +576,19 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         if (canBreak && !IS_CAP(m) && (i > 3 + depth || (i > 3 && !pv)))
             break;
 
-        if (IS_CAP(m) && m.piece != PAWN && !inC) {
-    		SEEscore = seeCapture(b, m);
-    		if (depth <= 8 && best > MINS_MATE && SEEscore < -80*depth*depth){
-    			continue;
-    		}
-    	}
-
+        assert(b.stm == prev);
         makeMove(&b, m, &h);
-        newHash = makeMoveHash(prevHash, &b, m, h);
+
         inC = isInCheck(&b, b.stm);
+
+        if (0 && IS_CAP(m) && m.piece != PAWN && !inC) {
+            SEEscore = seeCapture(b, m);
+            if (depth <= 8 && best > MINS_MATE && SEEscore < -80*depth*depth){
+                continue;
+            }
+        }
+
+        newHash = makeMoveHash(prevHash, &b, m, h);
 
         if (isDraw(&b, rep, newHash, IS_CAP(m)))
         {
@@ -581,6 +596,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         else
         {
+            updateDo(&q, m, &b);
+            undo = 1;
+
             addHash(rep, newHash);
             if (i == 0)
             {
@@ -618,10 +636,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 if (pv && val > alpha && val < beta)
                     val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
             }
+
             remHash(rep);
             assert(rep->index >= 0);
             assert(compMoves(&moveStack[height], &m) && moveStack[height].piece == m.piece);
         }
+
+        undoMove(&b, m, &h);
+        if (undo) updateUndo(&q, &b);
 
         if (val > best)
         {
@@ -640,21 +662,19 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                     if (!IS_CAP(bestM))
                     {
-                        addHistory(bestM.from, bestM.to, depth*depth, 1^b.stm);
+                        addHistory(bestM.from, bestM.to, depth*depth, b.stm);
                         addKM(bestM, depth);
                     }
 
                     if (depth < 6)
                     {
                         for (int j = 0; j < i; ++j)
-                            decHistory(list[j].from, list[j].to, (!IS_CAP(list[j]))*depth, 1^b.stm);
+                            decHistory(list[j].from, list[j].to, (!IS_CAP(list[j]))*depth, b.stm);
                     }
                     break;
                 }
             }
         }
-
-        undoMove(&b, m, &h);
     }
 
     end: ;
@@ -678,7 +698,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     #endif
 
     #ifdef USE_NNUE
-    const int score = evaluateNNUE(&nn, b);
+    const int score = evaluateNNUE(&b, 1);
     #else
     const int score = eval(&b);
     #endif
@@ -703,17 +723,30 @@ int qsearch(Board b, int alpha, const int beta, const int d)
 
     int val;
 
+    int undo = 0;
+    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+
     for (int i = 0; i < numMoves; ++i)
     {
+        undo = 0;
         if (!(nMvsAndChck & 1) && i > 2 && list[i].score + score < alpha)
             break;
 
+        q.idx = 0;
         makeMove(&b, list[i], &h);
 
         if (insuffMat(&b)) //No need to check for 3 fold rep
             val = 0;
         else
+        {
+            updateDo(&q, list[i], &b);
+            undo = 1;
             val = -qsearch(b, -beta, -alpha, d - 1 /*+ (list[i].capture < 3)*/);
+        }
+
+        undoMove(&b, list[i], &h);
+
+        if (undo) updateUndo(&q, &b);
 
         if (val > alpha)
         {
@@ -721,8 +754,6 @@ int qsearch(Board b, int alpha, const int beta, const int d)
             if (val >= beta)
                 return beta;
         }
-
-        undoMove(&b, list[i], &h);
     }
 
     return alpha;
@@ -740,9 +771,16 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
     int val;
 
     History h;
+    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+
+    int undo;
     for (int i = 0; i < numMoves; ++i)
     {
+        q.idx = 0;
+        undo = 0;
+
         makeMove(&b, list[i], &h);
+
         newHash = makeMoveHash(prevHash, &b, list[i], h);
 
         if (isDraw(&b, rep, newHash, IS_CAP(list[i])))
@@ -751,6 +789,8 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
         }
         else
         {
+            updateDo(&q, list[i], &b);
+            undo = 1;
             addHash(rep, newHash);
             val = -pvSearch(b, -beta, -alpha, depth - 1, height, 1, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
@@ -759,6 +799,7 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
         list[i].score = val;
 
         undoMove(&b, list[i], &h);
+        if (undo) updateUndo(&q, &b);
     }
 
     sort(list, list+numMoves);

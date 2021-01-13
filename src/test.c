@@ -16,6 +16,7 @@
 #include "../include/evaluation.h"
 #include "../include/hash.h"
 #include "../include/search.h"
+#include "../include/nnue.h"
 #include "../include/perft.h"
 #ifdef USE_TB
 #include "../include/gaviota.h"
@@ -195,7 +196,7 @@ static void parseFensFromFilePerft(void)
     }
 
     fclose(fp);
-    printf("Evaluated %d positions and %llu nodes\n", cnt, tot);
+    printf("Evaluated %d positions and %lu nodes\n", cnt, tot);
 }
 static void parseFensFromFileEva(void)
 {
@@ -426,6 +427,46 @@ static void testGav(void)
 }
 #endif
 
+static int testNNUEInPos(char* fen)
+{
+    int a;
+    Board b = genFromFen(fen, &a);
+
+    return nnuePerft(b, 3, NULL);
+}
+
+static void testNNUE(void)
+{
+    initDummy();
+    printf("Initialized\n");
+
+    int passes = 1;
+    passes &= testNNUEInPos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0");
+    passes &= testNNUEInPos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0");
+
+    passes &= testNNUEInPos("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq -");
+    passes &= testNNUEInPos("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR b KQkq -");
+
+    passes &= testNNUEInPos("8/1p3k2/7K/8/2P5/8/8/8 w - -");
+    passes &= testNNUEInPos("8/1p3k2/7K/8/2P5/8/8/8 b - -");
+
+    passes &= testNNUEInPos("8/5K2/5PR1/7k/7p/5P2/6P1/8 w - -");
+    passes &= testNNUEInPos("8/5K2/5PR1/7k/7p/5P2/6P1/8 b - -");
+
+    passes &= testNNUEInPos("r3k3/8/8/8/8/3b4/8/R3K2R w KQkq -");
+    passes &= testNNUEInPos("r3k3/8/8/8/8/3b4/8/R3K2R b KQkq -");
+
+    passes &= testNNUEInPos("8/5k2/P4P1K/8/8/8/4p3/8 w - -");
+    passes &= testNNUEInPos("8/5k2/P4P1K/8/8/8/4p3/8 b - -");
+
+    passes &= testNNUEInPos("r3k2r/Pppp1pp1/1b3nbN/nP6/BBP1P3/q4N2/Pp1P3K/R2Q1R2 b kq -");
+    passes &= testNNUEInPos("r3k2r/Pppp1pp1/1b3nbN/nP6/BBP1P3/q4N2/Pp1P3K/R2Q1R2 w kq -");
+
+    freeDummy();
+
+    printf("NNUE updating works: %d\n", passes);
+}
+
 void chooseTest(const int mode)
 {
     switch (mode)
@@ -453,7 +494,10 @@ void chooseTest(const int mode)
             printf("[-] ERROR: USE_TB hasn't been defined, this test can't be performed\n");
             #endif
             break;
+        case 6:
+            testNNUE();
+            break;
         default:
-            printf("Choose mode [0..5]\n");
+            printf("Choose mode [0..6]\n");
     }
 }
