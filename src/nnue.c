@@ -281,11 +281,9 @@ inline const int makeIndex(const int c, const int sq, const int pc, const int ks
 
 //Sqrs aren't the same in this engine than in sf
 //also, flip it if it is the opposing side
-const int toSf(const int c, const int sq)
+inline const int toSf(const int c, const int sq)
 {
-    const int col = sq & 7;
-    const int row = sq >> 3;
-    return ((row << 3) + (7 ^ col))^(c? 0 : 0x3f);
+    return (7 ^ sq) ^ (c? 0 : 0x3f);
 }
 
 //Calculates the input layer for a given color (king-piece, king is of color)
@@ -319,6 +317,10 @@ void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* 
     for (int i = 0; i < kHalfDimensionFT; ++i)
         inp[i] = nn->ftBiases[i];
 
+    //TODO: Try this vectorization
+    //int32_t* doubleInput = (int32_t*)inp;
+    //int32_t* doubleWeights = (int32_t*)nn->ftWeights;
+
     for (int i = 0; i < numActives; ++i)
     {
         const int offset = kHalfDimensionFT * actives[i];
@@ -327,22 +329,28 @@ void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* 
     }
 }
 
-void propagate(const int32_t* prevLayer, const int prevSize, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
+static void propagate(const int32_t* prevLayer, const int prevSize, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
 {
+    int sum, offset;
     for (int i = 0; i < nextSize; ++i)
     {
-        int sum = bs[i];
+        sum = bs[i];
+        offset = i*prevSize;
         for (int j = 0; j < prevSize; ++j)
-            sum += prevLayer[j]*(int8_t)ws[i*prevSize+j];
+            sum += prevLayer[j]*ws[offset+j];
         nextLayer[i] = clip64(sum);
     }
 }
 
-void propagateInput(const int32_t* input, const int stm, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
+static int32_t clippedInput[512];
+static void propagateInput(const int32_t* input, const int stm, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
 {
     assert(stm == 1 || stm == 0);
     const int offset = (1^stm)*kHalfDimensionFT;
     const int offset2 = kHalfDimensionFT ^ offset;
+
+    for (int i = 0; i < 512; ++i)
+        clippedInput[i] = clip(input[i]);
 
     int idx, j, sum;
     for (int i = 0; i < nextSize; ++i)
@@ -350,14 +358,15 @@ void propagateInput(const int32_t* input, const int stm, int32_t* nextLayer, con
         sum = bs[i];
         idx = i*512;
         for (j = 0; j < kHalfDimensionFT; ++j)
-            sum += clip(input[offset+j])*ws[idx+j];
+            sum += clippedInput[offset+j]*ws[idx+j];
+        idx += kHalfDimensionFT;
         for (j = 0; j < kHalfDimensionFT; ++j)
-            sum += clip(input[offset2+j])*ws[idx+j+256];
+            sum += clippedInput[offset2+j]*ws[idx+j];
         nextLayer[i] = clip64(sum);
     }
 }
 
-int32_t output(const int32_t* prevLayer, const int prevSize, const weight_t* ws, int32_t out)
+static int32_t output(const int32_t* prevLayer, const int prevSize, const weight_t* ws, int32_t out)
 {
     for (int i = 0; i < prevSize; ++i)
         out += ws[i] * prevLayer[i];
@@ -402,9 +411,9 @@ void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, 
     for (int i = 0; i < queue->idx; ++i)
     {
         const int c = queue->changes[i].color;
-        int sfPc = (c?6:14) - queue->changes[i].piece;
-        int sq = toSf(color, queue->changes[i].sqr);
-        int offset = kHalfDimensionFT * makeIndex(color, sq, sfPc, ksq);
+        const int sfPc = (c?6:14) - queue->changes[i].piece;
+        const int sq = toSf(color, queue->changes[i].sqr);
+        const int offset = kHalfDimensionFT * makeIndex(color, sq, sfPc, ksq);
 
         if (queue->changes[i].appears)
         {
@@ -477,7 +486,7 @@ int evaluateAcc(const NNUE* nn, const Board* const b)
 
     #ifdef TEST_ACC
     inputLayer(nn, b, WHITE, testInput);
-    inputLayer(nn, b, BLACK, testInput+256);
+    inputLayer(nn, b, BLACK, testInput+kHalfDimensionFT);
 
     for (int i = 0; i < 512; ++i)
         assert(testInput[i] == nInput[i]);
@@ -486,7 +495,7 @@ int evaluateAcc(const NNUE* nn, const Board* const b)
     propagateInput(nInput, b->stm, hiddenLayer1, dimensions[2], nn->weights1, nn->biases1);
     propagate(hiddenLayer1, dimensions[2], hiddenLayer2, dimensions[3], nn->weights2, nn->biases2);
 
-    int32_t out = output(hiddenLayer2, dimensions[3], nn->outputW, *(nn->outputB));
+    const int32_t out = output(hiddenLayer2, dimensions[3], nn->outputW, *(nn->outputB));
 
     return out / FV_SCALE;
 }
