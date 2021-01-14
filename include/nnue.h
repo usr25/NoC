@@ -36,7 +36,7 @@ static const unsigned int NNUEVersion = 0x7AF32F16u;
 void initNNUE(const char* path);
 NNUE loadNNUE(const char* path);
 void freeNNUE(NNUE* nn);
-int32_t* inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* inp);
+void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* inp);
 int evaluate(const NNUE* nnue, const Board* b);
 int evaluateNNUE(const Board* b, const int useAcc);
 void determineChanges(const Move m, NNUEChangeQueue* queue, const int color);

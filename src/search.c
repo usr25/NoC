@@ -265,9 +265,8 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     uint64_t hash = hashPosition(&b), newHash;
     int subtreeSize[NMOVES];
 
-    initQueueEval(&b);
-
     #ifdef USE_NNUE
+    initQueueEval(&b);
     evalStack[0] = evaluateNNUE(&b, 1);
     #else
     evalStack[0] = eval(&b);
@@ -277,8 +276,6 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
     for (int i = 0; i < numMoves; ++i)
     {
-        q.idx = 0;
-
         long initNodes = nodes;
         //If the move leads to being mated, break (since the moves are ordered based on score)
         if (list[i].score < MINS_MATE)
@@ -566,7 +563,6 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int prev = b.stm;
     for (int i = /*ttHit*/0; i < numMoves; ++i)
     {
-        q.idx = 0;
         undo = 0;
 
 	    int SEEscore = 0;
@@ -732,7 +728,6 @@ int qsearch(Board b, int alpha, const int beta, const int d)
         if (!(nMvsAndChck & 1) && i > 2 && list[i].score + score < alpha)
             break;
 
-        q.idx = 0;
         makeMove(&b, list[i], &h);
 
         if (insuffMat(&b)) //No need to check for 3 fold rep
@@ -776,7 +771,6 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
     int undo;
     for (int i = 0; i < numMoves; ++i)
     {
-        q.idx = 0;
         undo = 0;
 
         makeMove(&b, list[i], &h);

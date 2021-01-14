@@ -8,9 +8,16 @@
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 #include "../include/nnue.h"
+#ifdef SPARSE
+#include "../include/sparsennue.h"
+#else
+#include "../include/regularnnue.h"
+#endif
 
 #define CHECK_READ(read,correct) if (read != correct) {fprintf(stderr, "Unsuccessful read in %s %d\n", __FILE__, __LINE__); \
                                 exit(5);}
+
+//#define TEST_ACC
 
 void readHeaders(FILE* f, NNUE* nn);
 void readParams(FILE* f, NNUE* nn);
@@ -49,15 +56,16 @@ const uint32_t PieceToIndex[2][16] = {
     0, PS_B_PAWN, PS_B_KNIGHT, PS_B_BISHOP, PS_B_ROOK, PS_B_QUEEN, 0, 0 }
 };
 
-const int clip(int v, const int sh)
+inline const int clip64(const int v)
 {
-    if (v < 0)
-        return 0;
-    v >>= sh;
-    if (v > 127)
-        return 127;
-    return v;
-    //return v<0? 0 : (v>127? 127 : v);
+    if (v <= 0) return 0;
+    if (v >= 127<<6) return 127;
+    return v >> 6;
+}
+
+inline const int clip(const int v)
+{
+    return v >= 127? 127 : (v <= 0? 0 : v);
 }
 
 void initNNUE(const char* path)
@@ -189,13 +197,6 @@ void readParams(FILE* f, NNUE* nn)
         fprintf(stderr, "NNUE file hasn't been read completely, %d ints remeain\n", cnt);
         exit(10);
     }
-
-}
-
-//This is depends on sparse/regular
-const int getIdx(const int i, const int j, const int dim)
-{
-    return i*dim+j;
 }
 
 void readWeights(FILE* f, weight_t* ws, const int dims, const int isOutput)
@@ -273,25 +274,25 @@ void freeNNUE(NNUE* nn)
     free(nn->ftWeights);
 }
 
-unsigned makeIndex(const int c, const int sq, const int pc, const int ksq)
+inline const int makeIndex(const int c, const int sq, const int pc, const int ksq)
 {
     return sq + PieceToIndex[c][pc] + PS_END * ksq;
 }
 
 //Sqrs aren't the same in this engine than in sf
 //also, flip it if it is the opposing side
-int toSf(const int c, const int sq)
+const int toSf(const int c, const int sq)
 {
-    int col = sq & 7;
-    int row = sq >> 3;
-    return ((row << 3) + (7 - col))^(c==WHITE? 0 : 0x3f);
+    const int col = sq & 7;
+    const int row = sq >> 3;
+    return ((row << 3) + (7 ^ col))^(c? 0 : 0x3f);
 }
 
 //Calculates the input layer for a given color (king-piece, king is of color)
-int32_t* inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* inp)
+void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* inp)
 {
     assert(POPCOUNT(b->allPieces) <= 32);
-    unsigned actives[30];
+    int actives[30];
     int numActives = 0;
 
     //memcpy(inp, nn->ftBiases, sizeof(int16_t)*kHalfDimensionFT);
@@ -302,13 +303,12 @@ int32_t* inputLayer(const NNUE* nn, const Board* const b, const int color, int32
     {
         for (int piece = QUEEN; piece <= PAWN; ++piece)
         {
-            int sfPc = (c==WHITE? 6 : 14) - piece;
+            const int sfPc = (c==WHITE? 6 : 14) - piece;
             uint64_t bb = b->piece[c][piece];
             while (bb)
             {
                 int sq = toSf(color, LSB_INDEX(bb));
-                int idx = makeIndex(color, sq, sfPc, ksq);
-                actives[numActives++] = idx;
+                actives[numActives++] = makeIndex(color, sq, sfPc, ksq);
                 REMOVE_LSB(bb);
             }
         }
@@ -317,24 +317,14 @@ int32_t* inputLayer(const NNUE* nn, const Board* const b, const int color, int32
     assert(numActives == POPCOUNT(b->allPieces)-2);
 
     for (int i = 0; i < kHalfDimensionFT; ++i)
-    {
         inp[i] = nn->ftBiases[i];
-    }
 
     for (int i = 0; i < numActives; ++i)
     {
-        int offset = kHalfDimensionFT * actives[i];
+        const int offset = kHalfDimensionFT * actives[i];
         for (int j = 0; j < kHalfDimensionFT; ++j)
             inp[j] += nn->ftWeights[offset+j];
     }
-    /*
-    for (int i = 0; i < kHalfDimensionFT; ++i)
-    {
-        inp[i] = clip(inp[i]);
-    }
-    */
-
-    return inp;
 }
 
 void propagate(const int32_t* prevLayer, const int prevSize, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
@@ -343,10 +333,8 @@ void propagate(const int32_t* prevLayer, const int prevSize, int32_t* nextLayer,
     {
         int sum = bs[i];
         for (int j = 0; j < prevSize; ++j)
-        {
             sum += prevLayer[j]*(int8_t)ws[i*prevSize+j];
-        }
-        nextLayer[i] = clip(sum, 6);
+        nextLayer[i] = clip64(sum);
     }
 }
 
@@ -356,14 +344,16 @@ void propagateInput(const int32_t* input, const int stm, int32_t* nextLayer, con
     const int offset = (1^stm)*kHalfDimensionFT;
     const int offset2 = kHalfDimensionFT ^ offset;
 
+    int idx, j, sum;
     for (int i = 0; i < nextSize; ++i)
     {
-        int sum = bs[i];
-        for (int j = 0; j < kHalfDimensionFT; ++j)
-            sum += clip(input[offset+j], 0)*(int8_t)ws[i*512+j];
-        for (int j = 0; j < kHalfDimensionFT; ++j)
-            sum += clip(input[offset2+j], 0)*(int8_t)ws[i*512+j+kHalfDimensionFT];
-        nextLayer[i] = clip(sum, 6);
+        sum = bs[i];
+        idx = i*512;
+        for (j = 0; j < kHalfDimensionFT; ++j)
+            sum += clip(input[offset+j])*ws[idx+j];
+        for (j = 0; j < kHalfDimensionFT; ++j)
+            sum += clip(input[offset2+j])*ws[idx+j+256];
+        nextLayer[i] = clip64(sum);
     }
 }
 
@@ -377,7 +367,6 @@ int32_t output(const int32_t* prevLayer, const int prevSize, const weight_t* ws,
 
 void determineChanges(const Move m, NNUEChangeQueue* queue, const int color)
 {
-    int initIdx = queue->idx;
     //If a KING moves, we have to reset everything
     if (m.piece == KING)
     {
@@ -413,15 +402,17 @@ void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, 
     for (int i = 0; i < queue->idx; ++i)
     {
         const int c = queue->changes[i].color;
-        int sfPc = (c==WHITE?6:14) - queue->changes[i].piece;
+        int sfPc = (c?6:14) - queue->changes[i].piece;
         int sq = toSf(color, queue->changes[i].sqr);
-        int idx = makeIndex(color, sq, sfPc, ksq);
-        int offset = kHalfDimensionFT * idx;
+        int offset = kHalfDimensionFT * makeIndex(color, sq, sfPc, ksq);
 
-        if (queue->changes[i].appears) {
+        if (queue->changes[i].appears)
+        {
             for (int j = 0; j < kHalfDimensionFT; ++j)
                 inp[j] += nn->ftWeights[offset+j];
-        } else {
+        }
+        else
+        {
             for (int j = 0; j < kHalfDimensionFT; ++j)
                 inp[j] -= nn->ftWeights[offset+j];
         }
@@ -447,21 +438,26 @@ int evaluate(const NNUE* nn, const Board* b)
 
 void initQueueEval(const Board* b)
 {
+    #ifdef USE_NNUE
     inputLayer(&nnue, b, WHITE, nInput);
     inputLayer(&nnue, b, BLACK, nInput + kHalfDimensionFT);
+    #endif
 }
 
 void updateDo(NNUEChangeQueue* q, const Move m, const Board* b)
 {
+    #ifdef USE_NNUE
     determineChanges(m, q, 1^b->stm);
 
     applyChanges(&nnue, b, q, WHITE, nInput);
     applyChanges(&nnue, b, q, BLACK, nInput+kHalfDimensionFT);
     assert(q->idx < 5);
+    #endif
 }
 
 void updateUndo(NNUEChangeQueue* q, const Board* b)
 {
+    #ifdef USE_NNUE
     assert(q->idx < 5);
 
     for (int i = 0; i < q->idx; ++i)
@@ -470,10 +466,23 @@ void updateUndo(NNUEChangeQueue* q, const Board* b)
     applyChanges(&nnue, b, q, WHITE, nInput);
     applyChanges(&nnue, b, q, BLACK, nInput+kHalfDimensionFT);
     q->idx = 0;
+    #endif
 }
 
+#ifdef TEST_ACC
+static int32_t testInput[512];
+#endif
 int evaluateAcc(const NNUE* nn, const Board* const b)
 {
+
+    #ifdef TEST_ACC
+    inputLayer(nn, b, WHITE, testInput);
+    inputLayer(nn, b, BLACK, testInput+256);
+
+    for (int i = 0; i < 512; ++i)
+        assert(testInput[i] == nInput[i]);
+    #endif
+
     propagateInput(nInput, b->stm, hiddenLayer1, dimensions[2], nn->weights1, nn->biases1);
     propagate(hiddenLayer1, dimensions[2], hiddenLayer2, dimensions[3], nn->weights2, nn->biases2);
 
@@ -484,7 +493,10 @@ int evaluateAcc(const NNUE* nn, const Board* const b)
 
 int evaluateNNUE(const Board* const b, const int useAcc)
 {
+    int ev;
     if (useAcc)
-        return evaluateAcc(&nnue, b);
-    return evaluate(&nnue, b);
+        ev = evaluateAcc(&nnue, b);
+    else
+        ev = evaluate(&nnue, b);
+    return ev;
 }
