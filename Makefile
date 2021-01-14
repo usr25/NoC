@@ -14,6 +14,8 @@ nnuedebug = no
 sparse = no
 gaviota = no
 popcnt = yes
+profile = no
+native = yes
 
 ifneq ($(NNUE),)
 	nnue = yes
@@ -29,8 +31,17 @@ ifeq ($(SPARSE),no)
 	sparse = no
 endif
 
+
 #If the cpu doesn't have popcnt instructions remove -mpopcnt
 CFLAGS=-O3 -flto -lm -lpthread
+
+ifeq ($(profile),yes)
+	CFLAGS += -pg
+endif
+
+ifeq ($(native),yes)
+	CFLAGS += -march=native
+endif
 
 ifeq ($(nnue),yes)
 	CFLAGS += -DUSE_NNUE
