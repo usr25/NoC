@@ -10,4 +10,4 @@ int compMoves(const Move* m1, const Move* m2);
 void sort(Move* start, Move* end);
 void moveToFst(Move* list, int idx);
 
-int history[2][4096];
+extern int history[2][4096];

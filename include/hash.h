@@ -45,4 +45,4 @@ inline int isRepetition(const Repetition* rep, const uint64_t hash) {return rep-
 inline void addHash(Repetition* rep, uint64_t hash) {rep->hashTable[rep->index++] = hash;}
 inline void remHash(Repetition* rep) {rep->index--;}
 
-Eval table[NUM_ENTRIES];
+extern Eval table[NUM_ENTRIES];

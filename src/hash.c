@@ -9,6 +9,8 @@
 
 #include <assert.h>
 
+Eval table[NUM_ENTRIES];
+
 uint64_t random[781] = 
 {0xa4eb873de16a53d0, 0xadaba31f919ffb63, 0x3463394ba75e4d58, 0xc2856572e6e47f50,
 0x13bd76d905f1559a, 0x689d9826de45d9be, 0x84e1e498ecb9e0a9, 0x82395260744ccfec,

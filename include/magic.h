@@ -2,11 +2,11 @@ void genMagics(void);
 void initMagics(void);
 
 //This arent optimal magics space wise, older hardware with smaller caches may suffer
-uint64_t bishMagicMoves[64] [512];
-uint64_t rookMagicMoves[64][4096];
+extern uint64_t bishMagicMoves[64] [512];
+extern uint64_t rookMagicMoves[64][4096];
 
-uint64_t bishMagic[64];
-uint64_t rookMagic[64];
+extern uint64_t bishMagic[64];
+extern uint64_t rookMagic[64];
 
 /* How it works:
  * 1- Get all the relevant bits for the attack using a mask getMoveTypeInt(sqr) & allPieces, it is not neccessary to include the bits of the blocking pieces in the mask

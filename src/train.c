@@ -116,7 +116,7 @@ void setVariables(const int argc, char** const argv)
  */
 void readValues(const char* path)
 {
-    sprintf(fenFile,  "%s/fenBig.csv",     path);
+    sprintf(fenFile,  "%s/fen.csv",     path);
     sprintf(valFile,  "%s/Values.txt",  path);
     sprintf(saveFile, "%s/opt.txt",     path);
 

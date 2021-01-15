@@ -18,6 +18,8 @@
 #include "../include/magic.h"
 #include "../include/evaluation.h"
 
+int history[2][4096];
+
 static int smallestAttackerSqr(const Board* b, const int sqr, const int col, const uint64_t diag, const uint64_t stra);
 __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr, const uint64_t diag, const uint64_t stra);
 

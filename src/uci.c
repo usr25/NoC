@@ -35,7 +35,7 @@ static Board gen_(char* beg, Repetition* rep);
 static Board gen_def(char* beg, Repetition* rep);
 
 #ifndef NNUE_PATH
-#define NNUE_PATH "nn-f4838ada61cc.nnue"
+#define NNUE_PATH "/home/j/Desktop/Chess/Engine/nn-f4838ada61cc.nnue"
 #endif
 
 /* Main loop, listens to user input and performs the desired actions
