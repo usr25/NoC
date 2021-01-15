@@ -16,6 +16,7 @@
 #include "../include/hash.h"
 #include "../include/search.h"
 #include "../include/evaluation.h"
+#include "../include/nnue.h"
 
 #define NUM_VARS 20
 
@@ -115,7 +116,7 @@ void setVariables(const int argc, char** const argv)
  */
 void readValues(const char* path)
 {
-    sprintf(fenFile,  "%s/fen.csv",     path);
+    sprintf(fenFile,  "%s/fenBig.csv",     path);
     sprintf(valFile,  "%s/Values.txt",  path);
     sprintf(saveFile, "%s/opt.txt",     path);
 
@@ -173,7 +174,7 @@ static ReadInt getNext(FILE* fp)
         }
     }
 
-    if (line) free(line);
+    free(line);
 
     return r;
 }
@@ -382,6 +383,8 @@ static void optimize(void)
 
     printf("Start training with %d threads, %d variables, and %d positions\n", num_thr, NUM_VARS, num_pos);
     printf("Init E: %.12f\n", bestVal);
+
+    return;
 
     do
     {

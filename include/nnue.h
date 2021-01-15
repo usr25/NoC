@@ -1,5 +1,6 @@
 //It is different in sparse/regular
 #define weight_t int8_t
+#define clipped_t int8_t
 
 typedef struct
 {
@@ -29,8 +30,12 @@ typedef struct
     int idx;
 } NNUEChangeQueue;
 
-static const int kHalfDimensionFT = 256;
-static const int kInputDimensionsFT = 41024;
+enum
+{
+    kHalfDimensionFT = 256,
+    kDimensionFT = 512,
+    kInputDimensionsFT = 41024
+};
 static const unsigned int NNUEVersion = 0x7AF32F16u;
 
 void initNNUE(const char* path);

@@ -31,9 +31,10 @@ const uint32_t NTHeader = 0x63337156;
 const uint32_t NNUEHash = 0x3e5aa6eeU;
 const uint32_t ArchSize = 177;
 
-const int FV_SCALE = 16;
-
-static NNUE nnue;
+enum {
+    FV_SCALE = 16,
+    SHIFT = 6,
+};
 
 enum {
   PS_W_PAWN   =  1,
@@ -56,14 +57,16 @@ const uint32_t PieceToIndex[2][16] = {
     0, PS_B_PAWN, PS_B_KNIGHT, PS_B_BISHOP, PS_B_ROOK, PS_B_QUEEN, 0, 0 }
 };
 
-inline const int clip64(const int v)
+static NNUE nnue;
+
+static inline const clipped_t clip64(const int32_t v)
 {
     if (v <= 0) return 0;
-    if (v >= 127<<6) return 127;
-    return v >> 6;
+    if (v >= 127 << SHIFT) return 127;
+    return v >> SHIFT;
 }
 
-inline const int clip(const int v)
+static inline const clipped_t clip(const int16_t v)
 {
     return v >= 127? 127 : (v <= 0? 0 : v);
 }
@@ -79,6 +82,7 @@ NNUE loadNNUE(const char* path)
     assert(dimensions[2] == dimensions[3]);
     assert(dimensions[2] == 32);
     assert(kHalfDimensionFT == dimensions[1] / 2);
+    assert(kHalfDimensionFT == kDimensionFT / 2);
 
     NNUE nn = (NNUE) {};
 
@@ -241,7 +245,7 @@ void showNNUE(const NNUE* nn)
         printf("%d, ", nn->biases1[i]);
     }
     printf("\n");
-    for (int i = 0; i < 512*32; ++i)
+    for (int i = 0; i < kDimensionFT*32; ++i)
     {
         printf("%d, ", nn->weights1[i]);
     }
@@ -274,14 +278,14 @@ void freeNNUE(NNUE* nn)
     free(nn->ftWeights);
 }
 
-inline const int makeIndex(const int c, const int sq, const int pc, const int ksq)
+static inline const int makeIndex(const int c, const int sq, const int pc, const int ksq)
 {
     return sq + PieceToIndex[c][pc] + PS_END * ksq;
 }
 
 //Sqrs aren't the same in this engine than in sf
 //also, flip it if it is the opposing side
-inline const int toSf(const int c, const int sq)
+static inline const int toSf(const int c, const int sq)
 {
     return (7 ^ sq) ^ (c? 0 : 0x3f);
 }
@@ -329,7 +333,7 @@ void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* 
     }
 }
 
-static void propagate(const int32_t* prevLayer, const int prevSize, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
+static void propagate(const clipped_t* __restrict__ prevLayer, const int prevSize, clipped_t* __restrict__ nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
 {
     int sum, offset;
     for (int i = 0; i < nextSize; ++i)
@@ -342,34 +346,34 @@ static void propagate(const int32_t* prevLayer, const int prevSize, int32_t* nex
     }
 }
 
-static int32_t clippedInput[512];
-static void propagateInput(const int32_t* input, const int stm, int32_t* nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
+static clipped_t clippedInput[512];
+static void propagateInput(const int32_t* __restrict__ input, const int stm, clipped_t* __restrict__ nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
 {
     assert(stm == 1 || stm == 0);
     const int offset = (1^stm)*kHalfDimensionFT;
     const int offset2 = kHalfDimensionFT ^ offset;
 
-    for (int i = 0; i < 512; ++i)
-        clippedInput[i] = clip(input[i]);
+    for (int i = 0; i < kDimensionFT; ++i)
+        clippedInput[i] = (clipped_t)clip(input[i]);
 
-    int idx, j, sum;
+    int idx, sum;
     for (int i = 0; i < nextSize; ++i)
     {
         sum = bs[i];
-        idx = i*512;
-        for (j = 0; j < kHalfDimensionFT; ++j)
+        idx = i*kDimensionFT;
+        for (int j = 0; j < kHalfDimensionFT; ++j)
             sum += clippedInput[offset+j]*ws[idx+j];
         idx += kHalfDimensionFT;
-        for (j = 0; j < kHalfDimensionFT; ++j)
+        for (int j = 0; j < kHalfDimensionFT; ++j)
             sum += clippedInput[offset2+j]*ws[idx+j];
         nextLayer[i] = clip64(sum);
     }
 }
 
-static int32_t output(const int32_t* prevLayer, const int prevSize, const weight_t* ws, int32_t out)
+static int32_t output(const clipped_t* __restrict__ prevLayer, const int prevSize, const weight_t* __restrict__ ws, int32_t out)
 {
     for (int i = 0; i < prevSize; ++i)
-        out += ws[i] * prevLayer[i];
+        out += prevLayer[i]*ws[i];
 
     return out;
 }
@@ -429,8 +433,8 @@ void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, 
 }
 
 static int32_t nInput[512];
-static int32_t hiddenLayer1[32];
-static int32_t hiddenLayer2[32];
+static clipped_t hiddenLayer1[32];
+static clipped_t hiddenLayer2[32];
 
 int evaluate(const NNUE* nn, const Board* b)
 {
@@ -488,7 +492,7 @@ int evaluateAcc(const NNUE* nn, const Board* const b)
     inputLayer(nn, b, WHITE, testInput);
     inputLayer(nn, b, BLACK, testInput+kHalfDimensionFT);
 
-    for (int i = 0; i < 512; ++i)
+    for (int i = 0; i < kDimensionFT; ++i)
         assert(testInput[i] == nInput[i]);
     #endif
 

@@ -16,6 +16,7 @@ gaviota = no
 popcnt = yes
 profile = no
 native = yes
+vectorize = no
 
 ifneq ($(NNUE),)
 	nnue = yes
@@ -37,6 +38,10 @@ CFLAGS=-O3 -flto -lm -lpthread
 
 ifeq ($(profile),yes)
 	CFLAGS += -pg
+endif
+
+ifeq ($(vectorize), yes)
+	CFLAGS += -fopt-info-vec -ftree-vectorizer-verbose=5
 endif
 
 ifeq ($(native),yes)

@@ -274,8 +274,10 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
     NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
 
+    int undo;
     for (int i = 0; i < numMoves; ++i)
     {
+        undo = 0;
         long initNodes = nodes;
         //If the move leads to being mated, break (since the moves are ordered based on score)
         if (list[i].score < MINS_MATE)
@@ -287,8 +289,6 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
         makeMove(&b, list[i], &h);
 
-        updateDo(&q, list[i], &b);
-
         newHash = makeMoveHash(hash, &b, list[i], h);
         inC = isInCheck(&b, b.stm);
 
@@ -298,6 +298,8 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
         }
         else
         {
+            updateDo(&q, list[i], &b);
+            undo = 1;
             addHash(&rep, newHash);
             if (i == 0)
             {
@@ -314,7 +316,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
         undoMove(&b, list[i], &h);
 
-        updateUndo(&q, &b);
+        if (undo) updateUndo(&q, &b);
 
         //For the sorting at later depths
         list[i].score = val;
