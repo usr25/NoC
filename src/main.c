@@ -29,7 +29,7 @@
 #endif
 
 #ifndef NNUE_PATH
-#define NNUE_PATH "nn-f4838ada61cc.nnue"
+#define NNUE_PATH "/home/j/Desktop/Chess/Engine/nn-f4838ada61cc.nnue"
 #endif
 
 //TODO: In move, use uint64_t in .from and .to to make faster makeMove / undoMove and implement syzygy
@@ -54,6 +54,10 @@ int main(const int argc, char** const argv)
 
     initEval();
     initSort();
+
+    #ifdef USE_NNUE
+    initNNUE(NNUE_PATH);
+    #endif
 
     #ifdef USE_TB
     if (argc > 1)

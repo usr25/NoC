@@ -696,6 +696,8 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     #endif
 
     #ifdef USE_NNUE
+    //int score = fastEval(&b);
+    //if (abs(score) <= V_QUEEN)
     const int score = evaluateNNUE(&b, 1);
     #else
     const int score = eval(&b);

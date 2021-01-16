@@ -1,4 +1,4 @@
-#ifndef NNUE_SPARSE
+#ifdef NNUE_SPARSE
 
 #include <stdlib.h>
 #include <assert.h>
@@ -13,50 +13,66 @@
 
 static const int dimensions[5] = {41024, 512, 32, 32, 1};
 
+#define mask_t int16_t
+
 const int getIdx(const int i, const int j, const int dim)
 {
-    return i*dim+j;
+    return j*kDimensionHidden+i;
 }
 
 static clipped_t clippedInput[512];
 static void propagateInput(const int32_t* __restrict__ input, const int stm,
-        clipped_t* __restrict__ nextLayer,
-        const weight_t* ws, const int32_t* bs)
+    clipped_t* __restrict__ nextLayer,
+    const weight_t* ws, const int32_t* bs)
 {
     assert(stm == 1 || stm == 0);
+
+    int32_t tmp[kDimensionHidden];
+    for (int i = 0; i < kDimensionHidden; ++i)
+        tmp[i] = bs[i];
+
     const int offset = (1^stm)*kHalfDimensionFT;
     const int offset2 = kHalfDimensionFT ^ offset;
 
     for (int i = 0; i < kDimensionFT; ++i)
-        clippedInput[i] = (clipped_t)clip(input[i]);
+        clippedInput[i] = clip(input[i]);
 
-    int idx, sum;
-    for (int i = 0; i < kDimensionHidden; ++i)
+    int idx, ni;
+    for (int i = 0; i < kHalfDimensionFT; ++i)
     {
-        sum = bs[i];
-        idx = i*kDimensionFT;
-        for (int j = 0; j < kHalfDimensionFT; ++j)
-            sum += clippedInput[offset+j]*ws[idx+j];
-        idx += kHalfDimensionFT;
-        for (int j = 0; j < kHalfDimensionFT; ++j)
-            sum += clippedInput[offset2+j]*ws[idx+j];
-        nextLayer[i] = clip64(sum);
+        idx = i + offset;
+        if (clippedInput[idx])
+            for (int j = 0; j < kDimensionHidden; ++j)
+                tmp[j] += clippedInput[idx]*ws[kDimensionHidden*i+j];
+
+        idx = i + offset2;
+        ni = i + kHalfDimensionFT;
+        if (clippedInput[idx])
+            for (int j = 0; j < kDimensionHidden; ++j)
+                tmp[j] += clippedInput[idx]*ws[kDimensionHidden*ni+j];
     }
+
+    for (unsigned i = 0; i < kDimensionHidden; i++)
+        nextLayer[i] = clip64(tmp[i]);
 }
 
 static void propagate(const clipped_t* __restrict__ prevLayer, const int prevSize,
     clipped_t* __restrict__ nextLayer, const int nextSize,
     const weight_t* ws, const int32_t* bs)
 {
-    int sum, offset;
+    int32_t tmp[kDimensionHidden];
     for (int i = 0; i < kDimensionHidden; ++i)
+        tmp[i] = bs[i];
+
+    for (int i = 0; i < prevSize; ++i)
     {
-        sum = bs[i];
-        offset = i*prevSize;
-        for (int j = 0; j < prevSize; ++j)
-            sum += prevLayer[j]*ws[offset+j];
-        nextLayer[i] = clip64(sum);
+        if (prevLayer[i])
+            for (int j = 0; j < kDimensionHidden; ++j)
+                tmp[j] += prevLayer[i]*ws[kDimensionHidden*i+j];
     }
+
+    for (unsigned i = 0; i < kDimensionHidden; i++)
+        nextLayer[i] = clip64(tmp[i]);
 }
 
 static int32_t output(const clipped_t* __restrict__ prevLayer,
@@ -79,7 +95,7 @@ int evaluate(const NNUE* nn, const Board* b, int32_t* nInput)
     propagateInput(nInput, b->stm, hiddenLayer1, nn->weights1, nn->biases1);
     propagate(hiddenLayer1, dimensions[2], hiddenLayer2, dimensions[3], nn->weights2, nn->biases2);
 
-    const int32_t out = output(hiddenLayer2, nn->outputW, *(nn->outputB));
+    int32_t out = output(hiddenLayer2, nn->outputW, *(nn->outputB));
 
     return out / FV_SCALE;
 }

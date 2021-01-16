@@ -1,1 +1,0 @@
-const int getIdx(const int i, const int j, const int dim);

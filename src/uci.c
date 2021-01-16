@@ -34,17 +34,10 @@ static int move_(Board* b, char* beg, Repetition* rep);
 static Board gen_(char* beg, Repetition* rep);
 static Board gen_def(char* beg, Repetition* rep);
 
-#ifndef NNUE_PATH
-#define NNUE_PATH "/home/j/Desktop/Chess/Engine/nn-f4838ada61cc.nnue"
-#endif
-
 /* Main loop, listens to user input and performs the desired actions
  */
 void loop(void)
 {
-    #ifdef USE_NNUE
-    initNNUE(NNUE_PATH);
-    #endif
     Board b = defaultBoard();
     Repetition rep = (Repetition) {.index = 0};
 

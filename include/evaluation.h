@@ -1,5 +1,6 @@
 void initEval(void);
 __attribute__((hot)) int eval(const Board* b);
+int fastEval(const Board* b);
 int insuffMat(const Board* b);
 
 extern int V_QUEEN[2];

@@ -146,6 +146,19 @@ void initEval(void)
 {
 }
 
+int fastEval(const Board* b)
+{
+    Eval ev;
+    initializeEvMov(&ev, b);
+    ev.ph = phase(&ev);
+    material(&ev);
+    pst2(&ev, b, WHITE);
+    pst2(&ev, b, BLACK);
+
+    const int evaluation = taperedEval(ev.ph, ev.result[0], ev.result[1]);
+    return TEMPO + (b->stm? evaluation : -evaluation);
+}
+
 int eval(const Board* b)
 {
     assert(POPCOUNT(b->allPieces) <= 32);

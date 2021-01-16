@@ -8,33 +8,22 @@
 #include "../include/moves.h"
 #include "../include/boardmoves.h"
 #include "../include/nnue.h"
-#ifdef SPARSE
-#include "../include/sparsennue.h"
-#else
-#include "../include/regularnnue.h"
-#endif
+#include "../include/nnuearch.h"
 
 #define CHECK_READ(read,correct) if (read != correct) {fprintf(stderr, "Unsuccessful read in %s %d\n", __FILE__, __LINE__); \
                                 exit(5);}
-
-//#define TEST_ACC
 
 void readHeaders(FILE* f, NNUE* nn);
 void readParams(FILE* f, NNUE* nn);
 void readWeights(FILE* f, weight_t* nn, const int dims, const int isOutput);
 void showNNUE(const NNUE* nn);
 
-const int dimensions[5] = {41024, 512, 32, 32, 1};
+static const int dimensions[5] = {41024, 512, 32, 32, 1};
 
 const uint32_t FTHeader = 0x5d69d7b8;
 const uint32_t NTHeader = 0x63337156;
 const uint32_t NNUEHash = 0x3e5aa6eeU;
 const uint32_t ArchSize = 177;
-
-enum {
-    FV_SCALE = 16,
-    SHIFT = 6,
-};
 
 enum {
   PS_W_PAWN   =  1,
@@ -57,19 +46,8 @@ const uint32_t PieceToIndex[2][16] = {
     0, PS_B_PAWN, PS_B_KNIGHT, PS_B_BISHOP, PS_B_ROOK, PS_B_QUEEN, 0, 0 }
 };
 
+
 static NNUE nnue;
-
-static inline const clipped_t clip64(const int32_t v)
-{
-    if (v <= 0) return 0;
-    if (v >= 127 << SHIFT) return 127;
-    return v >> SHIFT;
-}
-
-static inline const clipped_t clip(const int16_t v)
-{
-    return v >= 127? 127 : (v <= 0? 0 : v);
-}
 
 void initNNUE(const char* path)
 {
@@ -80,7 +58,7 @@ NNUE loadNNUE(const char* path)
 {
     assert(sizeof(uint32_t) == 4);
     assert(dimensions[2] == dimensions[3]);
-    assert(dimensions[2] == 32);
+    assert(dimensions[2] == kDimensionHidden);
     assert(kHalfDimensionFT == dimensions[1] / 2);
     assert(kHalfDimensionFT == kDimensionFT / 2);
 
@@ -333,51 +311,6 @@ void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* 
     }
 }
 
-static void propagate(const clipped_t* __restrict__ prevLayer, const int prevSize, clipped_t* __restrict__ nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
-{
-    int sum, offset;
-    for (int i = 0; i < nextSize; ++i)
-    {
-        sum = bs[i];
-        offset = i*prevSize;
-        for (int j = 0; j < prevSize; ++j)
-            sum += prevLayer[j]*ws[offset+j];
-        nextLayer[i] = clip64(sum);
-    }
-}
-
-static clipped_t clippedInput[512];
-static void propagateInput(const int32_t* __restrict__ input, const int stm, clipped_t* __restrict__ nextLayer, const int nextSize, const weight_t* ws, const int32_t* bs)
-{
-    assert(stm == 1 || stm == 0);
-    const int offset = (1^stm)*kHalfDimensionFT;
-    const int offset2 = kHalfDimensionFT ^ offset;
-
-    for (int i = 0; i < kDimensionFT; ++i)
-        clippedInput[i] = (clipped_t)clip(input[i]);
-
-    int idx, sum;
-    for (int i = 0; i < nextSize; ++i)
-    {
-        sum = bs[i];
-        idx = i*kDimensionFT;
-        for (int j = 0; j < kHalfDimensionFT; ++j)
-            sum += clippedInput[offset+j]*ws[idx+j];
-        idx += kHalfDimensionFT;
-        for (int j = 0; j < kHalfDimensionFT; ++j)
-            sum += clippedInput[offset2+j]*ws[idx+j];
-        nextLayer[i] = clip64(sum);
-    }
-}
-
-static int32_t output(const clipped_t* __restrict__ prevLayer, const int prevSize, const weight_t* __restrict__ ws, int32_t out)
-{
-    for (int i = 0; i < prevSize; ++i)
-        out += prevLayer[i]*ws[i];
-
-    return out;
-}
-
 void determineChanges(const Move m, NNUEChangeQueue* queue, const int color)
 {
     //If a KING moves, we have to reset everything
@@ -402,6 +335,7 @@ void determineChanges(const Move m, NNUEChangeQueue* queue, const int color)
         queue->changes[queue->idx++] = (NNUEChange) {.piece = PAWN, .sqr = m.enPass, .color = 1^color, .appears = 0};
 }
 
+static int32_t nInput[512];
 void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, const int color, int32_t* inp)
 {
     if (queue->changes[0].piece == KING)
@@ -430,23 +364,6 @@ void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, 
                 inp[j] -= nn->ftWeights[offset+j];
         }
     }
-}
-
-static int32_t nInput[512];
-static clipped_t hiddenLayer1[32];
-static clipped_t hiddenLayer2[32];
-
-int evaluate(const NNUE* nn, const Board* b)
-{
-    inputLayer(nn, b, WHITE, nInput);
-    inputLayer(nn, b, BLACK, nInput + kHalfDimensionFT);
-
-    propagateInput(nInput, b->stm, hiddenLayer1, dimensions[2], nn->weights1, nn->biases1);
-    propagate(hiddenLayer1, dimensions[2], hiddenLayer2, dimensions[3], nn->weights2, nn->biases2);
-
-    int32_t out = output(hiddenLayer2, dimensions[3], nn->outputW, *(nn->outputB));
-
-    return out / FV_SCALE;
 }
 
 void initQueueEval(const Board* b)
@@ -482,34 +399,12 @@ void updateUndo(NNUEChangeQueue* q, const Board* b)
     #endif
 }
 
-#ifdef TEST_ACC
-static int32_t testInput[512];
-#endif
-int evaluateAcc(const NNUE* nn, const Board* const b)
-{
-
-    #ifdef TEST_ACC
-    inputLayer(nn, b, WHITE, testInput);
-    inputLayer(nn, b, BLACK, testInput+kHalfDimensionFT);
-
-    for (int i = 0; i < kDimensionFT; ++i)
-        assert(testInput[i] == nInput[i]);
-    #endif
-
-    propagateInput(nInput, b->stm, hiddenLayer1, dimensions[2], nn->weights1, nn->biases1);
-    propagate(hiddenLayer1, dimensions[2], hiddenLayer2, dimensions[3], nn->weights2, nn->biases2);
-
-    const int32_t out = output(hiddenLayer2, dimensions[3], nn->outputW, *(nn->outputB));
-
-    return out / FV_SCALE;
-}
-
 int evaluateNNUE(const Board* const b, const int useAcc)
 {
     int ev;
     if (useAcc)
-        ev = evaluateAcc(&nnue, b);
+        ev = evaluateAcc(&nnue, b, nInput);
     else
-        ev = evaluate(&nnue, b);
+        ev = evaluate(&nnue, b, nInput);
     return ev;
 }

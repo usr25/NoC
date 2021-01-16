@@ -11,7 +11,7 @@ LICHESS=~/Desktop/Chess/lichess-bot-master/engines/
 
 nnue = yes
 nnuedebug = no
-sparse = no
+sparse = yes
 gaviota = no
 popcnt = yes
 profile = no
@@ -32,8 +32,6 @@ ifeq ($(SPARSE),no)
 	sparse = no
 endif
 
-
-#If the cpu doesn't have popcnt instructions remove -mpopcnt
 CFLAGS=-O3 -flto -lm -lpthread
 
 ifeq ($(profile),yes)

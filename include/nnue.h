@@ -34,17 +34,23 @@ enum
 {
     kHalfDimensionFT = 256,
     kDimensionFT = 512,
+    kDimensionHidden = 32,
     kInputDimensionsFT = 41024
 };
+
+enum {
+    FV_SCALE = 16,
+    SHIFT = 6,
+};
+
 static const unsigned int NNUEVersion = 0x7AF32F16u;
 
 void initNNUE(const char* path);
 NNUE loadNNUE(const char* path);
 void freeNNUE(NNUE* nn);
 void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* inp);
-int evaluate(const NNUE* nnue, const Board* b);
-int evaluateNNUE(const Board* b, const int useAcc);
 void determineChanges(const Move m, NNUEChangeQueue* queue, const int color);
+int evaluateNNUE(const Board* b, const int useAcc);
 
 void initQueueEval(const Board* b);
 void updateDo(NNUEChangeQueue* q, const Move m, const Board* const b);
