@@ -36,6 +36,7 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
 static Move tableLookUp(Board b, int* tbAv);
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
+static int evaluate(const Board* b);
 
 
 static const inline int mate(int height)
@@ -265,12 +266,8 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     uint64_t hash = hashPosition(&b), newHash;
     int subtreeSize[NMOVES];
 
-    #ifdef USE_NNUE
     initQueueEval(&b);
-    evalStack[0] = evaluateNNUE(&b, 1);
-    #else
-    evalStack[0] = eval(&b);
-    #endif
+    evalStack[0] = evaluate(&b);
 
     NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
 
@@ -406,11 +403,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         return alpha;
 
     if (height >= MAX_PLY)
-        #ifdef USE_NNUE
-        return evaluateNNUE(&b, 1);
-        #else
-        return eval(&b);
-        #endif
+        return evaluate(&b);
 
     if (isInC && (depth < 5 || IS_CAP(moveStack[height-1])))
         depth++;
@@ -420,8 +413,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int val, ttHit = 0, ev = -2000;
     Move bestM = NO_MOVE;
     Eval* tableEntry = &table[index];
-    if (tableEntry->key == prevHash)
+    const uint64_t posHash = hashPosition(&b);
+    if (tableEntry->key == posHash)
     {
+        //assert(hashPosition(&b) == tableEntry->key);
         if (height > 3 && tableEntry->depth >= depth)
         {
             switch (tableEntry->flag)
@@ -447,11 +442,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
 
     if (!(isInC || ttHit))
-        #ifdef USE_NNUE
-        ev = evaluateNNUE(&b, 1);
-        #else
-        ev = eval(&b);
-        #endif
+        ev = evaluate(&b);
     evalStack[height] = ev;
 
     int fprune = 0;
@@ -683,7 +674,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     else if (best >= beta)
         flag = LO;
 
-    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = best, .eval = ev, .depth = depth, .flag = flag};
+    table[index] = (Eval) {.key = posHash, .m = bestM, .val = best, .eval = ev, .depth = depth, .flag = flag};
 
     return best;
 }
@@ -695,13 +686,9 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     ++qsearchNodes;
     #endif
 
-    #ifdef USE_NNUE
     //int score = fastEval(&b);
     //if (abs(score) <= V_QUEEN)
-    const int score = evaluateNNUE(&b, 1);
-    #else
-    const int score = eval(&b);
-    #endif
+    const int score = evaluate(&b);
 
     if (score >= beta)
         return beta;
@@ -889,4 +876,15 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
     }
 
     return 0;
+}
+
+static int SEARCH_TEMPO = 11;
+static int evaluate(const Board* b)
+{
+    #ifdef USE_NNUE
+    int ev = evaluateNNUE(b, 1);
+    return ev + SEARCH_TEMPO;
+    #else
+    return eval(b);
+    #endif
 }
