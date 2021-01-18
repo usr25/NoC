@@ -25,7 +25,7 @@ __attribute__((hot)) static int see(Board* b, const int to, const int pieceAtSqr
 
 #define NUM_KM 2
 
-static const Move NOMOVE = (Move) {.from = -1, .to = -1};
+static Move NOMOVE = (Move) {.from = -1, .to = -1};
 static int pVal[6];
 Move killerMoves[MAX_PLY][NUM_KM];
 

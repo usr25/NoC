@@ -136,7 +136,9 @@ int hashPerft(Board b, const int depth, const uint64_t prevHash)
         makeMove(&b, moves[i], &h);
         uint64_t newHash = makeMoveHash(prevHash, &b, moves[i], h);
 
-        if (newHash != hashPosition(&b) && !hashPerft(b, depth - 1, newHash))
+        assert(newHash == hashPosition(&b));
+
+        if (newHash != hashPosition(&b) || !hashPerft(b, depth - 1, newHash))
             return 0;
 
         undoMove(&b, moves[i], &h);
@@ -205,9 +207,9 @@ int nnuePerft(Board b, const int depth, int32_t* test)
         applyChanges(&dummy, &b, &q, WHITE, test);
         applyChanges(&dummy, &b, &q, BLACK, test + 256);
 
-        for (int i = 0; i < 512; ++i)
+        for (int j = 0; j < 512; ++i)
         {
-            if (test[i] != nInputAft[i])
+            if (test[j] != nInputAft[j])
                 return 0;
         }
 
@@ -218,8 +220,8 @@ int nnuePerft(Board b, const int depth, int32_t* test)
 
         assert(q.idx < 5);
 
-        for (int i = 0; i < q.idx; ++i)
-            q.changes[i].appears ^= 1;
+        for (int j = 0; j < q.idx; ++j)
+            q.changes[j].appears ^= 1;
 
         applyChanges(&dummy, &b, &q, WHITE, test);
         applyChanges(&dummy, &b, &q, BLACK, test + 256);

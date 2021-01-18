@@ -131,7 +131,7 @@ static void testHashingPerfts()
     printf("H PawnPassand:  %d\n", perftH("8/2p5/K7/3P4/6p1/8/5P1k/8 w - -", 6));
     printf("H Castle: %d\n", perftH("r3k2r/8/8/8/8/8/8/R3K2R w KQkq -", 5));
 
-    printf("H Startpos: %d\n", perftH("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", 4));
+    printf("H Startpos: %d\n", perftH("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", 5));
     printf("H Perfect 4: %d\n", perftH("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -", 5));
     printf("H Complete: %d\n", perftH("r3kn2/5p2/8/4P3/6p1/8/5P2/R3K2N w Qq -", 6));
 }
@@ -173,7 +173,8 @@ static void parseFensFromFilePerft(void)
     char buff[256] = "";
     int hasEnded = 0;
 
-    int depth, perft, cnt = 0;
+    int depth, cnt = 0;
+    uint64_t perft;
     //fen,depth,perft(TODO:,move)
     //Dont put spaces, except in the fen
     while (!hasEnded)
@@ -184,7 +185,7 @@ static void parseFensFromFilePerft(void)
         hasEnded = upTo(fp, buff, ',');
         depth = atoi(buff);
         hasEnded = upTo(fp, buff, '\n');
-        perft = atoi(buff);
+        perft = atol(buff);
 
         uint64_t temp = perftRecursive(b, depth);
         tot += temp;

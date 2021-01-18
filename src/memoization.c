@@ -40,20 +40,20 @@ uint64_t king2[64];
 
 uint64_t POW2[64];
 
-static inline const int GETX(const int i)
+inline static const int GETX(const int i)
 {return i & 7;} //i % 8
-static inline const int GETY(const int i)
+inline static const int GETY(const int i)
 {return i >> 3;}//i / 8
 
-static inline int ISVALID(const int x, const int y)
+inline static int ISVALID(const int x, const int y)
 {return x >= 0 && x < 8 && y >= 0 && y < 8;}
 
-const void initializePOW2(void)
+void initializePOW2(void)
 {
     for (int i = 0; i < 64; ++i) POW2[i] = 1ULL << i;
 }
 
-const void genWhitePawnMoves(void)
+void genWhitePawnMoves(void)
 {
     int i = 8;
 
@@ -63,7 +63,7 @@ const void genWhitePawnMoves(void)
     for (; i < 56; ++i)
         whitePawnMoves[i] = POW2[i + 8];
 }
-const void genBlackPawnMoves(void)
+void genBlackPawnMoves(void)
 {
     int i = 55;
 
@@ -73,7 +73,7 @@ const void genBlackPawnMoves(void)
     for (; i > 7; --i)
         blackPawnMoves[i] = 1ULL << (i - 8);
 }
-const void genWhitePawnCaptures(void)
+void genWhitePawnCaptures(void)
 {
     for (int i = 0; i < 56; ++i)
     {
@@ -85,7 +85,7 @@ const void genWhitePawnCaptures(void)
             whitePawnCaptures[i] = ((1ULL << 2) | 1ULL) << (i + 7);
     }
 }
-const void genBlackPawnCaptures(void)
+void genBlackPawnCaptures(void)
 {
     for (int i = 63; i > 7; --i)
     {
@@ -98,7 +98,7 @@ const void genBlackPawnCaptures(void)
     }
 }
 
-const void genUpMoves(void)
+void genUpMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -114,7 +114,7 @@ const void genUpMoves(void)
         upMoves[i] = pos;
     }
 }
-const void genDownMoves(void)
+void genDownMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -130,7 +130,7 @@ const void genDownMoves(void)
         downMoves[i] = pos;
     }
 }
-const void genRightMoves(void)
+void genRightMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -146,7 +146,7 @@ const void genRightMoves(void)
         rightMoves[i] = pos;
     }
 }
-const void genLeftMoves(void)
+void genLeftMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -163,7 +163,7 @@ const void genLeftMoves(void)
     }
 }
 
-const void genUpRightMoves(void)
+void genUpRightMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -179,7 +179,7 @@ const void genUpRightMoves(void)
         uprightMoves[i] = pos;
     }
 }
-const void genUpLeftMoves(void)
+void genUpLeftMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -195,7 +195,7 @@ const void genUpLeftMoves(void)
         upleftMoves[i] = pos;
     }
 }
-const void genDownLeftMoves(void)
+void genDownLeftMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -211,7 +211,7 @@ const void genDownLeftMoves(void)
         downleftMoves[i] = pos;
     }
 }
-const void genDownRightMoves(void)
+void genDownRightMoves(void)
 {
     int x, y;
     uint64_t pos;
@@ -228,7 +228,7 @@ const void genDownRightMoves(void)
     }
 }
 
-const void genStraDiagMoves(void)
+void genStraDiagMoves(void)
 {
     for (int i = 0; i < 64; ++i)
     {
@@ -242,7 +242,7 @@ const void genStraDiagMoves(void)
 
 
 //Generates the king moves, it does NOT generate the castling moves
-const void genKingMoves(void)
+void genKingMoves(void)
 {
     int x, y, i;
     uint64_t pos;
@@ -266,7 +266,7 @@ const void genKingMoves(void)
     }
 }
 
-const void genKnightMoves(void)
+void genKnightMoves(void)
 {
     int x, y, i;
     uint64_t pos;
@@ -289,7 +289,7 @@ const void genKnightMoves(void)
     }
 }
 
-const void genVert(void)
+void genVert(void)
 {
     for (int i = 0; i < 8; ++i)
     {
@@ -299,7 +299,7 @@ const void genVert(void)
         }
     }
 }
-const void genHoriz(void)
+void genHoriz(void)
 {
     for (int i = 0; i < 8; ++i)
     {
@@ -310,7 +310,7 @@ const void genHoriz(void)
     }
 }
 
-const void genPawnLanes(void)
+void genPawnLanes(void)
 {
     pawnLanes[0] = vert[1];
     pawnLanes[7] = vert[6];
@@ -321,7 +321,7 @@ const void genPawnLanes(void)
     }
 }
 
-const void genIntersectionArrs(void)
+void genIntersectionArrs(void)
 {
     for (int i = 0; i < 64; ++i)
     {
@@ -337,7 +337,7 @@ const void genIntersectionArrs(void)
     }
 }
 
-const void genWPassedPawn(void)
+void genWPassedPawn(void)
 {
     for (int i = 0; i < 64; ++i)
     {
@@ -350,7 +350,7 @@ const void genWPassedPawn(void)
     }
 }
 
-const void genBPassedPawn(void)
+void genBPassedPawn(void)
 {
     for (int i = 0; i < 64; ++i)
     {
@@ -363,7 +363,7 @@ const void genBPassedPawn(void)
     }
 }
 
-const void genKing2(void)
+void genKing2(void)
 {
     for (int i = 0; i < 64; ++i)
     {
@@ -379,7 +379,7 @@ const void genKing2(void)
     }
 }
 
-const void initMemo(void)
+void initMemo(void)
 {
     initializePOW2();
 

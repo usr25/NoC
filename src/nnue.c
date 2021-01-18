@@ -23,7 +23,7 @@ static const int dimensions[5] = {41024, 512, 32, 32, 1};
 const uint32_t FTHeader = 0x5d69d7b8;
 const uint32_t NTHeader = 0x63337156;
 const uint32_t NNUEHash = 0x3e5aa6eeU;
-const uint32_t ArchSize = 177;
+const int ArchSize = 177;
 
 enum {
   PS_W_PAWN   =  1,
@@ -98,8 +98,8 @@ NNUE loadNNUE(const char* path)
 
 void readHeaders(FILE* f, NNUE* nn)
 {
-    uint32_t version, hash, size;
-    int successfulRead = 1;
+    uint32_t version, hash;
+    int successfulRead = 1, size;
 
     successfulRead &= fread(&version, sizeof(uint32_t), 1, f);
     successfulRead &= fread(&hash, sizeof(uint32_t), 1, f);

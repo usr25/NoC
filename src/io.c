@@ -13,10 +13,9 @@ static const char pieces[6] = {'k', 'q', 'r', 'b', 'n', 'p'};
 
 void drawPosition(const Board b, const int drawCoords){
     uint64_t pos = 1ULL << 63;
-    int i, j;
-    for (i = 0; i < 8; ++i)
+    for (int i = 0; i < 8; ++i)
     {
-        for (j = 0; j < 8; ++j)
+        for (int j = 0; j < 8; ++j)
         {
             if (pos & b.piece[1][PAWN])
                 printf(" P ");
@@ -120,11 +119,11 @@ void generateFen(const Board b, char* fen)
                     blankSquares = 0;
                 }
 
-                for (int i = KING; i <= PAWN; ++i)
+                for (int p = KING; p <= PAWN; ++p)
                 {
-                    if (b.piece[WHITE][i] & pos)
+                    if (b.piece[WHITE][p] & pos)
                     {
-                        fen[counter++] = pieces[i] - ('a' - 'A');
+                        fen[counter++] = pieces[p] - ('a' - 'A');
                         break;
                     }
                 }
@@ -137,11 +136,11 @@ void generateFen(const Board b, char* fen)
                     blankSquares = 0;
                 }
 
-                for (int i = KING; i <= PAWN; ++i)
+                for (int p = KING; p <= PAWN; ++p)
                 {
-                    if (b.piece[BLACK][i] & pos)
+                    if (b.piece[BLACK][p] & pos)
                     {
-                        fen[counter++] = pieces[i];
+                        fen[counter++] = pieces[p];
                         break;
                     }
                 }

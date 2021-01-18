@@ -33,21 +33,23 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 __attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, const int height, int null, const uint64_t prevHash, Repetition* rep, const int isInC);
 
 static void internalIterDeepening(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep);
-static Move tableLookUp(Board b, int* tbAv);
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash);
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
 static int evaluate(const Board* b);
 
+#ifdef USE_TB
+static Move tableLookUp(Board b, int* tbAv);
+#endif
 
-static const inline int mate(int height)
+inline static const int mate(int height)
 {
     return PLUS_MATE + 100 - height;
 }
-static inline int zugz(const Board b)
+inline static int zugz(const Board b)
 {
     return POPCOUNT(b.color[b.stm] ^ b.piece[b.stm][PAWN]) <= 2;
 }
-static inline int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, const int color)
+inline static int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, const int color)
 {
     if (color)
         return m.to > 39 && ((getWPassedPawn(m.to) & oppPawns) == 0);
@@ -55,7 +57,7 @@ static inline int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, co
         return m.to < 24 && ((getBPassedPawn(m.to) & oppPawns) == 0);
 }
 
-const Move NO_MOVE = (Move) {.from = -1, .to = -1};
+static Move NO_MOVE = (Move) {.from = -1, .to = -1};
 
 /* Time management */
 static clock_t stopAt = 0;
@@ -413,10 +415,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     int val, ttHit = 0, ev = -2000;
     Move bestM = NO_MOVE;
     Eval* tableEntry = &table[index];
-    const uint64_t posHash = hashPosition(&b);
-    if (tableEntry->key == posHash)
+
+    if (tableEntry->key == prevHash)
     {
-        //assert(hashPosition(&b) == tableEntry->key);
+        assert(hashPosition(&b) == tableEntry->key);
         if (height > 3 && tableEntry->depth >= depth)
         {
             switch (tableEntry->flag)
@@ -674,7 +676,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     else if (best >= beta)
         flag = LO;
 
-    table[index] = (Eval) {.key = posHash, .m = bestM, .val = best, .eval = ev, .depth = depth, .flag = flag};
+    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = best, .eval = ev, .depth = depth, .flag = flag};
 
     return best;
 }

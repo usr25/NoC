@@ -274,7 +274,7 @@ uint64_t hashPosition(const Board* b)
     return resultHash;
 }
 
-inline int changeTurn(const uint64_t prev)
+inline uint64_t changeTurn(const uint64_t prev)
 {
     return prev ^ random[TURN_OFFSET];
 }
