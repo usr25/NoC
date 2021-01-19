@@ -29,6 +29,7 @@ uint64_t perftRecursive(Board b, const int depth)
 
     const int numMoves = legalMoves(&b, moves) >> 1;
 
+    const int fifty = b.fifty;
     if (depth == 1)
         tot = numMoves;
     else
@@ -36,8 +37,18 @@ uint64_t perftRecursive(Board b, const int depth)
         for (int i = 0; i < numMoves; ++i)
         {
             makeMove(&b, moves[i], &h);
+            assert(boardIsOK(&b));
+            assert((moves[i].piece == PAWN || moves[i].capture > 0) || b.fifty == fifty+1);
+            assert(!(moves[i].piece == PAWN || moves[i].capture > 0) || b.fifty == 0);
+            undoMove(&b, moves[i], &h);
+            makePermaMove(&b, moves[i]);
+            assert(boardIsOK(&b));
+            assert((moves[i].piece == PAWN || moves[i].capture > 0) || b.fifty == fifty+1);
+            assert(!(moves[i].piece == PAWN || moves[i].capture > 0) || b.fifty == 0);
             tot += perftRecursive(b, depth - 1);
             undoMove(&b, moves[i], &h);
+            assert(boardIsOK(&b));
+            assert(b.fifty == fifty);
         }
     }
 

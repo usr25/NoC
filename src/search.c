@@ -543,9 +543,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     sort(list, list+numMoves);
 
     int iid = 0;
-    if (iid = (depth >= 5 && list[0].score < 290 && numMoves > 3))
+    if ((iid = (depth >= 5 && list[0].score < 290 && numMoves > 3)))
     {
-        const int targD = pv? depth / 2 : depth / 4;
+        const int targD = pv? depth - 3 : depth / 3;
         internalIterDeepening(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 

@@ -83,31 +83,31 @@ GAVLIB=-L$(GDIR) -lgtb -lpthread -lm
 .PHONY: help clean debug lichess all release assert train trainer
 
 $(ODIR)/%A.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -Wall
+	$(CC) $(CFLAGS)   -Wall   -c -o $@ $<
 
 $(ODIR)/%T.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -DTRAIN -DNDEBUG -DNUSE_TB -lpthread
+	$(CC) $(CFLAGS)   -DTRAIN -DNDEBUG -DNUSE_TB   -c -o $@ $<
 
 $(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -DDEBUG
+	$(CC) $(CFLAGS)   -DDEBUG   -c -o $@ $<
 
 $(ODIR)/%R.o: $(SDIR)/%.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) -DNDEBUG -DUSE_TB $(GAVLIB)
+	$(CC) $(CFLAGS)   -DNDEBUG -DUSE_TB $(GAVLIB)   -c -o $@ $<
 
 
 #GTB will only be used in release
 
 release: $(OBJR)
-	$(CC) -o $@ $^ $(CFLAGS) -DNDEBUG -DUSE_TB $(GAVLIB)
+	$(CC) -o $@ $^ $(CFLAGS)   -DNDEBUG -DUSE_TB $(GAVLIB)
 
 debug: $(OBJD)
-	$(CC) -o $@ $^ $(CFLAGS) -DDEBUG -DNUSE_TB
+	$(CC) -o $@ $^ $(CFLAGS)   -DDEBUG -DNUSE_TB
 
 assert: $(OBJA)
-	$(CC) -o $@ $^ $(CFLAGS) -DNUSE_TB -Wall
+	$(CC) -o $@ $^ $(CFLAGS)   -DNUSE_TB -Wall
 
 train: $(OBJT)
-	$(CC) -o $@ $^ $(CFLAGS) -DTRAIN -DNUSE_TB -DNDEBUG -lpthread
+	$(CC) -o $@ $^ $(CFLAGS)   -DTRAIN -DNUSE_TB -DNDEBUG
 
 lichess:
 	make all

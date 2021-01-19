@@ -27,11 +27,11 @@ inline int pieceAt(const Board* const b, const uint64_t pos, const int color)
     return NO_PIECE;
 }
 
-static inline int kingMoved(const int color)
+inline static int kingMoved(const int color)
 {
     return ~(3 << (color << 1));
 }
-static inline int rookMoved(const int color, const int from)
+inline static int rookMoved(const int color, const int from)
 {
     if (from == 56 * (1 ^ color))
         return ~(1 << (color << 1));
@@ -42,7 +42,7 @@ static inline int rookMoved(const int color, const int from)
     return 0b1111;
 }
 
-static inline void flipBits(Board* b, const uint64_t from, const int piece, const int color)
+inline static void flipBits(Board* b, const uint64_t from, const int piece, const int color)
 {
     b->piece[color][piece]  ^= from;
     b->color[color]         ^= from;
@@ -52,7 +52,7 @@ static inline void flipBits(Board* b, const uint64_t from, const int piece, cons
 /* Flips the necessary bits for castling
  * PRE: The castling direction has been decided and saved to move.castle
  */
-static inline void flipCastle(Board* b, const Move move, const int color)
+inline static void flipCastle(Board* b, const Move move, const int color)
 {
     uint64_t fromRook, toRook;
 
@@ -79,10 +79,11 @@ void makeMove(Board* b, const Move move, History* h)
     assert(move.from >= 0 && move.from < 64);
     assert(move.to >= 0 && move.to < 64);
     assert(move.piece >= KING && move.piece <= PAWN);
+    assert(b->fifty >= 0);
 
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
-    //assert(pieceAt(b, POW2[move.from], b->stm) == move.piece);
+    //assert(pieceAt(b, 1ULL << move.from, b->stm) == move.piece);
 
     //Save the data
     h->castleInfo = b->castleInfo;
@@ -90,7 +91,9 @@ void makeMove(Board* b, const Move move, History* h)
     h->enPass = b->enPass;
     h->fifty = b->fifty;
 
+    //Board changes
     b->enPass = 0;
+    b->fifty++;
 
     //Remove the piece from the 'from' sqr
     flipBits(b, fromBit, move.piece, b->stm);
@@ -119,7 +122,6 @@ void makeMove(Board* b, const Move move, History* h)
             if ((fromBit | toBit) & 0x8100000000000081ULL) //to reduce the number of calls
                 b->castleInfo &= rookMoved(b->stm, move.from) & rookMoved(b->stm, move.to);
             flipBits(b, toBit, ROOK, b->stm);
-            b->fifty++;
         break;
 
         case KING:
@@ -129,12 +131,10 @@ void makeMove(Board* b, const Move move, History* h)
                 flipBits(b, toBit, KING, b->stm);
 
             b->castleInfo &= kingMoved(b->stm);
-            b->fifty++;
         break;
 
         default:
             flipBits(b, toBit, move.piece, b->stm);
-            b->fifty++;
         break;
     }
 
@@ -157,10 +157,13 @@ void makePermaMove(Board* b, const Move move)
     assert(move.from >= 0 && move.from < 64);
     assert(move.to >= 0 && move.to < 64);
     assert(move.piece >= KING && move.piece <= PAWN);
+    assert(b->fifty >= 0);
 
     const uint64_t fromBit = POW2[move.from], toBit = POW2[move.to];
 
+    //Board changes
     b->enPass = 0;
+    b->fifty++;
 
     flipBits(b, fromBit, move.piece, b->stm);
 
@@ -188,7 +191,6 @@ void makePermaMove(Board* b, const Move move)
             if ((fromBit | toBit) & 0x8100000000000081ULL) //to reduce the number of calls
                 b->castleInfo &= rookMoved(b->stm, move.from) & rookMoved(b->stm, move.to);
             flipBits(b, toBit, ROOK, b->stm);
-            b->fifty++;
         break;
 
         case KING:
@@ -198,12 +200,10 @@ void makePermaMove(Board* b, const Move move)
                 flipBits(b, toBit, KING, b->stm);
 
             b->castleInfo &= kingMoved(b->stm);
-            b->fifty++;
         break;
 
         default:
             flipBits(b, toBit, move.piece, b->stm);
-            b->fifty++;
         break;
     }
 

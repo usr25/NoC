@@ -13,7 +13,7 @@
 #define CHECK_READ(read,correct) if (read != correct) {fprintf(stderr, "Unsuccessful read in %s %d\n", __FILE__, __LINE__); \
                                 exit(5);}
 
-void readHeaders(FILE* f, NNUE* nn);
+void readHeaders(FILE* f);
 void readParams(FILE* f, NNUE* nn);
 void readWeights(FILE* f, weight_t* nn, const int dims, const int isOutput);
 void showNNUE(const NNUE* nn);
@@ -81,7 +81,7 @@ NNUE loadNNUE(const char* path)
     CHECK_MALLOC(nn.ftBiases);
     CHECK_MALLOC(nn.ftWeights);
 
-    readHeaders(f, &nn);
+    readHeaders(f);
     readParams(f, &nn);
 
     fclose(f);
@@ -96,7 +96,7 @@ NNUE loadNNUE(const char* path)
     return nn;
 }
 
-void readHeaders(FILE* f, NNUE* nn)
+void readHeaders(FILE* f)
 {
     uint32_t version, hash;
     int successfulRead = 1, size;

@@ -318,7 +318,7 @@ static void loadFensIntoMem(void)
 static volatile int assign;
 /* Multithreaded function to calculate the error, called from each thread
  */
-static void* mthError(void* var)
+static void* mthError(void* _var)
 {
     const int limit = num_pos / num_thr;
     int success = pthread_mutex_lock(&mutex);

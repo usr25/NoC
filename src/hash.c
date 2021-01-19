@@ -11,7 +11,7 @@
 
 Eval table[NUM_ENTRIES];
 
-uint64_t random[781] = 
+const uint64_t random[781] =
 {0xa4eb873de16a53d0, 0xadaba31f919ffb63, 0x3463394ba75e4d58, 0xc2856572e6e47f50,
 0x13bd76d905f1559a, 0x689d9826de45d9be, 0x84e1e498ecb9e0a9, 0x82395260744ccfec,
 0xe6c5f86665c7b25c, 0x21ee4c2c5e09828, 0x2ea2eea2663ad6df, 0xde598f082b3aaa3f,
@@ -326,7 +326,7 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
             }
         /* no break */
         case ROOK:
-            if (xorCastle = b->castleInfo ^ h.castleInfo)
+            if ((xorCastle = b->castleInfo ^ h.castleInfo))
             {
                 for (int i = 0; i < 4; ++i)
                 {
@@ -337,6 +337,7 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
         /* no break */
         default:
             prev ^= calcPos(opp, m.piece, m.to);
+        break;
     }
 
     return prev;

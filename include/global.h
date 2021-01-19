@@ -69,7 +69,7 @@
 #define SCORE_MASK   0xfff
 #define TYPE_MASK   0xf000
 
-inline const int min(const int a, const int b) {return a < b? a : b;}
-inline const int max(const int a, const int b) {return a > b? a : b;}
+inline static const int min(const int a, const int b) {return a < b? a : b;}
+inline static const int max(const int a, const int b) {return a > b? a : b;}
 
 extern uint64_t POW2[64];

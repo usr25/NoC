@@ -201,7 +201,7 @@ int equal(const Board* a, const Board* b)
 const int textToPiece(char piece)
 {
     //Neat trick to turn lowercase to capital letter in ascii
-    piece = piece & ~0b100000;
+    piece &= ~0b100000;
     switch(piece)
     {
         case 'P':
@@ -231,7 +231,6 @@ const int getIndex(const char row, const char col)
     return ((col - '1') << 3) + (7 + 'a' - row);
 }
 
-//TODO: Maybe make it more real (eg.: PPCNT(WhKnight) < 5)
 int boardIsOK(const Board* b)
 {
     int ok = 1;
@@ -242,6 +241,11 @@ int boardIsOK(const Board* b)
     for (int c = BLACK; c <= WHITE && ok; ++c)
     {
         ok &= POPCOUNT(b->piece[c][KING]) == 1;
+        for (int p = KING; p <= PAWN; ++p)
+        {
+            ok &= (b->color[c] & b->piece[c][p]) == b->piece[c][p];
+            ok &= (b->color[c] | b->piece[c][p]) == b->color[c];
+        }
         ok &= ~b->color[c] == b->color[2|c];
     }
 
