@@ -880,13 +880,16 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
     return 0;
 }
 
-static int SEARCH_TEMPO = 11;
+static const int SEARCH_TEMPO = 11;
 static int evaluate(const Board* b)
 {
     #ifdef USE_NNUE
-    int ev = evaluateNNUE(b, 1);
-    return ev + SEARCH_TEMPO;
+    int ev = SEARCH_TEMPO + evaluateNNUE(b, 1);
     #else
-    return eval(b);
+    int ev = eval(b);
     #endif
+
+    ev = ev * (100 - b->fifty) / 100;
+
+    return ev;
 }
