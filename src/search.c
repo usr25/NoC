@@ -412,14 +412,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     else if (depth == 0)
         return qsearch(b, alpha, beta, -1);
 
-    int val, ttHit = 0, ev = -2000;
+    int val, ttHit = 0, ev = MINS_INF;
     Move bestM = NO_MOVE;
     Eval* tableEntry = &table[index];
 
     if (tableEntry->key == prevHash)
     {
         assert(hashPosition(&b) == tableEntry->key);
-        if (height > 3 && tableEntry->depth >= depth)
+        if (height > 3 && tableEntry->depth >= depth && abs(tableEntry->val) < PLUS_MATE - 200)
         {
             switch (tableEntry->flag)
             {
@@ -439,7 +439,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
 
         bestM = tableEntry->m;
-        ev = tableEntry->eval;
+        if (!isInC)
+            ev = tableEntry->eval;
         ttHit = moveIsValidBasic(&b, &bestM);
     }
 
@@ -447,11 +448,15 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         ev = evaluate(&b);
     evalStack[height] = ev;
 
+    assert((ev < PLUS_MATE && ev > MINS_MATE) || ev == MINS_INF);
+
     int fprune = 0;
     const int fmargin[8] = {0, 150, 250, 350, 450, 550, 650, 750};
     if (!isInC && !pv)
     {
-        // Razoring
+        assert(ev != MINS_INF);
+
+        //Razoring
         if (depth == 1 && ev + V_ROOK[0] + 101 <= alpha)
         {
             const int razScore = qsearch(b, alpha, beta, -1);
@@ -459,11 +464,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 return razScore;
         }
 
-        // Static pruning
-        if (depth <= 4 && ev - 180 * depth >= beta && ev < 9000)
-            return ev;
+        //Static beta pruning
+        if (depth <= 4 && ev - 180 * depth >= beta && abs(ev) < 9000)
+            return beta;
 
-        // Null move pruning
+        //Null move
         if (!null && ev >= beta && depth > R && !zugz(b))
         {
             if (nullMove(b, depth, beta, prevHash))
@@ -691,6 +696,8 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     //int score = fastEval(&b);
     //if (abs(score) <= V_QUEEN)
     const int score = evaluate(&b);
+
+    assert(score > MINS_MATE + 200 && score < PLUS_MATE - 200);
 
     if (score >= beta)
         return beta;
