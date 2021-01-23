@@ -279,10 +279,8 @@ void sort(Move* start, Move* end)
 
 void moveToFst(Move* ls, int idx)
 {
-    Move tmp = ls[idx--];
+    const Move tmp = ls[idx--];
     for (; idx >= 0; --idx)
-    {
         ls[idx+1] = ls[idx];
-    }
     ls[0] = tmp;
 }

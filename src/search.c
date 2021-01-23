@@ -258,6 +258,7 @@ static Move moveStack[MAX_PLY+10]; //To avoid possible overflow errors
 static int evalStack[MAX_PLY+10];
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
+    foundBeforeTimesUp = 0;
     assert(depth > 0);
     assert(numMoves > 0);
     assert(rep.index >= 0 && rep.index < 128);
@@ -339,10 +340,9 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     /*
     if (!exitFlag)
     {
+        //If enabled, remove line 335, moveToFst
         for (int j = 0; j < numMoves; ++j)
-        {
             list[j].score = subtreeSize[j];
-        }
         moveToFst(list, foundBeforeTimesUp);
         sort(list+1, list+numMoves);
         assert(compMoves(&list[0], &currBest));
@@ -441,6 +441,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         bestM = tableEntry->m;
         if (!isInC)
             ev = tableEntry->eval;
+        assert(bestM.from != -1);
         ttHit = moveIsValidBasic(&b, &bestM);
     }
 
@@ -482,7 +483,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
         //Futility pruning
         if (depth <= 7 && abs(alpha) <= 9000 && ev + fmargin[depth] <= alpha)
-        	fprune = 1;
+            fprune = 1; //return ev;
     }
 
     uint64_t newHash;
@@ -492,12 +493,16 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
     int undo = 0;
-
-    /*
-    if (ttHit)
+    int inC;
+/*
+    if (ttHit == 1)
     {
+        assert(RANGE_64(bestM.from) && RANGE_64(bestM.to));
+        moveStack[height] = bestM;
         makeMove(&b, bestM, &h);
         newHash = makeMoveHash(prevHash, &b, bestM, h);
+
+        inC = isInCheck(&b, b.stm);
 
         if (isDraw(&b, rep, newHash, IS_CAP(bestM)))
         {
@@ -509,11 +514,13 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             updateDo(&q, bestM, &b);
             undo = 1;
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, isInCheck(&b, b.stm));
+            val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
             remHash(rep);
         }
         undoMove(&b, bestM, &h);
         if (undo) updateUndo(&q, &b);
+
+        assert(val > best);
 
         best = val;
         if (best > alpha)
@@ -527,15 +534,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 #endif
                 if (!IS_CAP(bestM))
                 {
-                    addHistory(bestM.from, bestM.to, depth, 1^b.stm);
+                    addHistory(bestM.from, bestM.to, depth*depth, b.stm);
                     addKM(bestM, depth);
                 }
                 goto end;
             }
         }
     }
-    */
-
+*/
     Move list[NMOVES];
     const int numMoves = legalMoves(&b, list) >> 1;
     if (!numMoves)
@@ -557,15 +563,51 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int canBreak = depth <= 3 && ev + marginDepth[depth] <= alpha && !isInC;
     //const int fewMovesExt = b.stm != us && numMoves < 5;
 
-    int inC;
     Move m;
 
+    //ProbCut
+    if (!isInC && !pv && depth >= 5)
+    {
+        const int probBeta = beta + 160;
+        for (int i = 0; i < numMoves; ++i)
+        {
+            m = list[i];
+            if (!IS_CAP(m))
+                continue;
+
+            moveStack[height] = m;
+            assert(RANGE_64(m.from) && RANGE_64(m.to));
+            if (canBreak && !IS_CAP(m) && (i > 3 + depth || (i > 3 && !pv)))
+                break;
+
+            makeMove(&b, m, &h);
+
+            inC = isInCheck(&b, b.stm);
+            newHash = makeMoveHash(prevHash, &b, m, h);
+            updateDo(&q, m, &b);
+            addHash(rep, newHash);
+
+            val = -pvSearch(b, -probBeta, -probBeta+1, depth - 4, newHeight, null, newHash, rep, inC);
+            undoMove(&b, m, &h);
+            updateUndo(&q, &b);
+            remHash(rep);
+            assert(rep->index >= 0);
+            assert(compMoves(&moveStack[height], &m) && moveStack[height].piece == m.piece);
+
+            if (val >= probBeta)
+                return val;
+        }
+    }
+
+    //if (ttHit) assert(compMoves(&bestM, &list[0]));
+
     const int prev = b.stm;
+    assert(ttHit == 1 || ttHit == 0);
     for (int i = /*ttHit*/0; i < numMoves; ++i)
     {
         undo = 0;
 
-	    int SEEscore = 0;
+        int SEEscore = 0;
         m = list[i];
         moveStack[height] = m;
         assert(RANGE_64(m.from) && RANGE_64(m.to));
