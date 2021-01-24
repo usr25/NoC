@@ -269,10 +269,10 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
     uint64_t hash = hashPosition(&b), newHash;
     int subtreeSize[NMOVES];
 
-    initQueueEval(&b);
+    initNNUEAcc(&b);
     evalStack[0] = evaluate(&b);
 
-    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+    NNUEChangeList q = (NNUEChangeList) {.idx = 0};
 
     int undo;
     for (int i = 0; i < numMoves; ++i)
@@ -491,7 +491,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int newHeight = height + 1;
     History h;
 
-    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+    NNUEChangeList q = (NNUEChangeList) {.idx = 0};
     int undo = 0;
     int inC;
 /*
@@ -762,7 +762,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     int val;
 
     int undo = 0;
-    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+    NNUEChangeList q = (NNUEChangeList) {.idx = 0};
 
     for (int i = 0; i < numMoves; ++i)
     {
@@ -808,7 +808,7 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
     int val;
 
     History h;
-    NNUEChangeQueue q = (NNUEChangeQueue) {.idx = 0};
+    NNUEChangeList q = (NNUEChangeList) {.idx = 0};
 
     int undo;
     for (int i = 0; i < numMoves; ++i)

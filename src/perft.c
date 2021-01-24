@@ -181,7 +181,7 @@ void freeDummy(void)
     freeNNUE(&dummy);
 }
 
-int nnuePerft(Board b, const int depth, int32_t* test)
+int nnuePerft(Board b, const int depth, int16_t* test)
 {
     if (depth == 0) return 1;
 
@@ -189,24 +189,24 @@ int nnuePerft(Board b, const int depth, int32_t* test)
     History h;
 
     const int numMoves = legalMoves(&b, moves) >> 1;
-    int32_t* nInputBef = malloc(sizeof(int32_t)*512);
-    int32_t* nInputAft = malloc(sizeof(int32_t)*512);
+    int16_t* nInputBef = malloc(sizeof(int16_t)*kDimensionFT);
+    int16_t* nInputAft = malloc(sizeof(int16_t)*kDimensionFT);
     CHECK_MALLOC(nInputBef);
     CHECK_MALLOC(nInputAft);
 
     inputLayer(&dummy, &b, WHITE, nInputBef);
-    inputLayer(&dummy, &b, BLACK, nInputBef + 256);
+    inputLayer(&dummy, &b, BLACK, nInputBef+kHalfDimensionFT);
 
     if (test == NULL)
     {
-        test = malloc(sizeof(int32_t)*512);
+        test = malloc(sizeof(int16_t)*kDimensionFT);
         CHECK_MALLOC(test);
-        memcpy(test, nInputBef, sizeof(int32_t)*512);
+        memcpy(test, nInputBef, sizeof(int16_t)*kDimensionFT);
     }
 
     for (int i = 0; i < numMoves; ++i)
     {
-        NNUEChangeQueue q = (NNUEChangeQueue){.idx = 0};
+        NNUEChangeList q = (NNUEChangeList){.idx = 0};
         determineChanges(moves[i], &q, b.stm);
         assert(q.idx < 5);
 
@@ -235,7 +235,7 @@ int nnuePerft(Board b, const int depth, int32_t* test)
             q.changes[j].appears ^= 1;
 
         applyChanges(&dummy, &b, &q, WHITE, test);
-        applyChanges(&dummy, &b, &q, BLACK, test + 256);
+        applyChanges(&dummy, &b, &q, BLACK, test+256);
 
         for (int i = 0; i < 512; ++i)
         {

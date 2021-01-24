@@ -18,8 +18,6 @@ void readParams(FILE* f, NNUE* nn);
 void readWeights(FILE* f, weight_t* nn, const int dims, const int isOutput);
 void showNNUE(const NNUE* nn);
 
-static const int dimensions[5] = {41024, 512, 32, 32, 1};
-
 const uint32_t FTHeader = 0x5d69d7b8;
 const uint32_t NTHeader = 0x63337156;
 const uint32_t NNUEHash = 0x3e5aa6eeU;
@@ -48,6 +46,7 @@ const uint32_t PieceToIndex[2][16] = {
 
 
 static NNUE nnue;
+static int16_t nInput[kDimensionFT];
 
 void initNNUE(const char* path)
 {
@@ -269,13 +268,13 @@ static inline const int toSf(const int c, const int sq)
 }
 
 //Calculates the input layer for a given color (king-piece, king is of color)
-void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* inp)
+void inputLayer(const NNUE* nn, const Board* const b, const int color, int16_t* inp)
 {
     assert(POPCOUNT(b->allPieces) <= 32);
     int actives[30];
     int numActives = 0;
 
-    //memcpy(inp, nn->ftBiases, sizeof(int16_t)*kHalfDimensionFT);
+    memcpy(inp, nn->ftBiases, sizeof(int16_t)*kHalfDimensionFT);
 
     int ksq = toSf(color, LSB_INDEX(b->piece[color][KING]));
 
@@ -296,13 +295,6 @@ void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* 
 
     assert(numActives == POPCOUNT(b->allPieces)-2);
 
-    for (int i = 0; i < kHalfDimensionFT; ++i)
-        inp[i] = nn->ftBiases[i];
-
-    //TODO: Try this vectorization
-    //int32_t* doubleInput = (int32_t*)inp;
-    //int32_t* doubleWeights = (int32_t*)nn->ftWeights;
-
     for (int i = 0; i < numActives; ++i)
     {
         const int offset = kHalfDimensionFT * actives[i];
@@ -311,34 +303,33 @@ void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* 
     }
 }
 
-void determineChanges(const Move m, NNUEChangeQueue* queue, const int color)
+void determineChanges(const Move m, NNUEChangeList* list, const int color)
 {
     //If a KING moves, we have to reset everything
     if (m.piece == KING)
     {
-        queue->changes[0].piece = KING;
-        queue->idx = 1;
+        list->changes[0].piece = KING;
+        list->idx = 1;
         return;
     }
 
     //Removing the piece from the current sqr
-    queue->changes[queue->idx++] = (NNUEChange) {.piece = m.piece, .sqr = m.from, .color = color, .appears = 0};
+    list->changes[list->idx++] = (NNUEChange) {.piece = m.piece, .sqr = m.from, .color = color, .appears = 0};
     //Place it where it goes to
     const int newPiece = (m.piece==PAWN && m.promotion)? m.promotion : m.piece;
-    queue->changes[queue->idx++] = (NNUEChange) {.piece = newPiece, .sqr = m.to, .color = color, .appears = 1};
+    list->changes[list->idx++] = (NNUEChange) {.piece = newPiece, .sqr = m.to, .color = color, .appears = 1};
 
     //If we captured a piece, remove it
     if (m.capture)
-        queue->changes[queue->idx++] = (NNUEChange) {.piece = m.capture, .sqr = m.to, .color = 1^color, .appears = 0};
+        list->changes[list->idx++] = (NNUEChange) {.piece = m.capture, .sqr = m.to, .color = 1^color, .appears = 0};
     //En passand
     else if (m.piece == PAWN && m.enPass)
-        queue->changes[queue->idx++] = (NNUEChange) {.piece = PAWN, .sqr = m.enPass, .color = 1^color, .appears = 0};
+        list->changes[list->idx++] = (NNUEChange) {.piece = PAWN, .sqr = m.enPass, .color = 1^color, .appears = 0};
 }
 
-static int32_t nInput[512];
-void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, const int color, int32_t* inp)
+void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeList* list, const int color, int16_t* inp)
 {
-    if (queue->changes[0].piece == KING)
+    if (list->changes[0].piece == KING)
     {
         inputLayer(nn, b, color, inp);
         return;
@@ -346,14 +337,14 @@ void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, 
 
     const int ksq = toSf(color, LSB_INDEX(b->piece[color][KING]));
 
-    for (int i = 0; i < queue->idx; ++i)
+    for (int i = 0; i < list->idx; ++i)
     {
-        const int c = queue->changes[i].color;
-        const int sfPc = (c?6:14) - queue->changes[i].piece;
-        const int sq = toSf(color, queue->changes[i].sqr);
+        const int c = list->changes[i].color;
+        const int sfPc = (c?6:14) - list->changes[i].piece;
+        const int sq = toSf(color, list->changes[i].sqr);
         const int offset = kHalfDimensionFT * makeIndex(color, sq, sfPc, ksq);
 
-        if (queue->changes[i].appears)
+        if (list->changes[i].appears)
         {
             for (int j = 0; j < kHalfDimensionFT; ++j)
                 inp[j] += nn->ftWeights[offset+j];
@@ -366,7 +357,7 @@ void applyChanges(const NNUE* nn, const Board* b, const NNUEChangeQueue* queue, 
     }
 }
 
-void initQueueEval(const Board* b)
+void initNNUEAcc(const Board* b)
 {
     #ifdef USE_NNUE
     inputLayer(&nnue, b, WHITE, nInput);
@@ -374,7 +365,7 @@ void initQueueEval(const Board* b)
     #endif
 }
 
-void updateDo(NNUEChangeQueue* q, const Move m, const Board* b)
+void updateDo(NNUEChangeList* q, const Move m, const Board* b)
 {
     #ifdef USE_NNUE
     determineChanges(m, q, 1^b->stm);
@@ -385,7 +376,7 @@ void updateDo(NNUEChangeQueue* q, const Move m, const Board* b)
     #endif
 }
 
-void updateUndo(NNUEChangeQueue* q, const Board* b)
+void updateUndo(NNUEChangeList* q, const Board* b)
 {
     #ifdef USE_NNUE
     assert(q->idx < 5);

@@ -11,15 +11,18 @@
 #include "../include/nnue.h"
 #include "../include/nnuearch.h"
 
-static const int dimensions[5] = {41024, 512, 32, 32, 1};
+//static const int dimensions[5] = {41024, 512, 32, 32, 1};
+
+static clipped_t clippedInput[kDimensionFT];
+static clipped_t hiddenLayer1[kDimensionHidden];
+static clipped_t hiddenLayer2[kDimensionHidden];
 
 const int getIdx(const int i, const int j, const int dim)
 {
     return i*dim+j;
 }
 
-static clipped_t clippedInput[512];
-static void propagateInput(const int32_t* __restrict__ input, const int stm,
+static void propagateInput(const int16_t* __restrict__ input, const int stm,
         clipped_t* __restrict__ nextLayer,
         const weight_t* ws, const int32_t* bs)
 {
@@ -68,13 +71,10 @@ static int32_t output(const clipped_t* __restrict__ prevLayer,
     return out;
 }
 
-static clipped_t hiddenLayer1[kDimensionHidden];
-static clipped_t hiddenLayer2[kDimensionHidden];
-
-int evaluate(const NNUE* nn, const Board* b, int32_t* nInput)
+int evaluate(const NNUE* nn, const Board* b, int16_t* nInput)
 {
     inputLayer(nn, b, WHITE, nInput);
-    inputLayer(nn, b, BLACK, nInput + kHalfDimensionFT);
+    inputLayer(nn, b, BLACK, nInput+kHalfDimensionFT);
 
     propagateInput(nInput, b->stm, hiddenLayer1, nn->weights1, nn->biases1);
     propagate(hiddenLayer1, dimensions[2], hiddenLayer2, dimensions[3], nn->weights2, nn->biases2);
@@ -87,9 +87,9 @@ int evaluate(const NNUE* nn, const Board* b, int32_t* nInput)
 //#define TEST_ACC
 
 #ifdef TEST_ACC
-static int32_t testInput[512];
+static int32_t testInput[kDimensionFT];
 #endif
-int evaluateAcc(const NNUE* nn, const Board* const b, const int32_t* nInput)
+int evaluateAcc(const NNUE* nn, const Board* const b, const int16_t* nInput)
 {
     #ifdef TEST_ACC
     inputLayer(nn, b, WHITE, testInput);

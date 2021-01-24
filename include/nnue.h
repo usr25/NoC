@@ -28,7 +28,7 @@ typedef struct
 {
     NNUEChange changes[4];
     int idx;
-} NNUEChangeQueue;
+} NNUEChangeList;
 
 enum
 {
@@ -43,15 +43,16 @@ enum {
     SHIFT = 6,
 };
 
+static const int dimensions[5] = {41024, 512, 32, 32, 1};
 static const unsigned int NNUEVersion = 0x7AF32F16u;
 
 void initNNUE(const char* path);
 NNUE loadNNUE(const char* path);
 void freeNNUE(NNUE* nn);
-void inputLayer(const NNUE* nn, const Board* const b, const int color, int32_t* inp);
-void determineChanges(const Move m, NNUEChangeQueue* queue, const int color);
+void inputLayer(const NNUE* nn, const Board* const b, const int color, int16_t* inp);
+void determineChanges(const Move m, NNUEChangeList* list, const int color);
 int evaluateNNUE(const Board* b, const int useAcc);
 
-void initQueueEval(const Board* b);
-void updateDo(NNUEChangeQueue* q, const Move m, const Board* const b);
-void updateUndo(NNUEChangeQueue* q, const Board* const b);
+void initNNUEAcc(const Board* b);
+void updateDo(NNUEChangeList* q, const Move m, const Board* const b);
+void updateUndo(NNUEChangeList* q, const Board* const b);

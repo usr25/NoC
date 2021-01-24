@@ -1,6 +1,6 @@
 const int getIdx(const int i, const int j, const int dim);
-int evaluateAcc(const NNUE* nn, const Board* const b, const int32_t* nInput);
-int evaluate(const NNUE* nn, const Board* const b, int32_t* nInput);
+int evaluateAcc(const NNUE* nn, const Board* const b, const int16_t* nInput);
+int evaluate(const NNUE* nn, const Board* const b, int16_t* nInput);
 
 inline static const clipped_t clip64(const int32_t v)
 {
