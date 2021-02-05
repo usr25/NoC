@@ -156,6 +156,8 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             //SEE
             if (curr->piece == PAWN)
                 curr->score = pVal[curr->capture];
+            else if (curr->piece == KING)
+                curr->score = pVal[curr->capture] - 5;
             else
                 curr->score = 69 + seeCapture(*b, *curr);
         }
@@ -201,7 +203,10 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
         {
             //TODO: Add bonus if it captures the last piece to move
             //TODO: That could be improved using bbs of the last pieces moved
-            curr->score = seeCapture(*b, *curr);
+            if (curr->piece == KING)
+                curr->score = pVal[curr->capture];
+            else
+                curr->score = seeCapture(*b, *curr);
         }
     }
 }

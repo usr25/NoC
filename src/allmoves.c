@@ -386,24 +386,9 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
         *p++ = castleQSide(color);
 
     from = LSB_INDEX(b->piece[color][KING]);
-    tempMoves = getKingMoves(from) & b->color[color | 2] & ~forbidden;
 
     const uint64_t pinStra = getStraMoves(from);
     const uint64_t pinDiag = getDiagMoves(from);
-
-    tempCaptures = tempMoves & oppPieces;
-    tempMoves ^= tempCaptures;
-    while (tempCaptures)
-    {
-        to = LSB_INDEX(tempCaptures);
-        *p++ = (Move) {.piece = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
-        REMOVE_LSB(tempCaptures);
-    }
-    while(tempMoves)
-    {
-        *p++ = (Move) {.piece = KING, .from = from, .to = LSB_INDEX(tempMoves)};
-        REMOVE_LSB(tempMoves);
-    }
 
     //Promoting pawns
     temp = b->piece[color][PAWN] & (color? SEVENTH_RANK : SECOND_RANK);
@@ -633,6 +618,22 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
             *p++ = (Move) {.piece = KNIGHT, .from = from, .to = LSB_INDEX(tempMoves)};
             REMOVE_LSB(tempMoves);
         }
+    }
+
+    from = LSB_INDEX(b->piece[color][KING]);
+    tempMoves = getKingMoves(from) & b->color[color | 2] & ~forbidden;
+    tempCaptures = tempMoves & oppPieces;
+    tempMoves ^= tempCaptures;
+    while (tempCaptures)
+    {
+        to = LSB_INDEX(tempCaptures);
+        *p++ = (Move) {.piece = KING, .from = from, .to = to, .capture = pieceAt(b, POW2[to], opp)};
+        REMOVE_LSB(tempCaptures);
+    }
+    while(tempMoves)
+    {
+        *p++ = (Move) {.piece = KING, .from = from, .to = LSB_INDEX(tempMoves)};
+        REMOVE_LSB(tempMoves);
     }
 
     return p - list;
