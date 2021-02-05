@@ -123,6 +123,7 @@ help:
 	@echo "make target [NNUE=yes|no] [NNUE_PATH=path] [SPARSE=yes|no]"
 	@echo ""
 	@echo "Targets:"
+	@echo "  all: Generates directories and compiles with 'release'"
 	@echo "  debug: Enables asserts and debugging options"
 	@echo "  train: To compile the training model, it DOESN'T play chess"
 	@echo "  assert: Enables asserts"
