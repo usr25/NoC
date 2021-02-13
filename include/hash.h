@@ -41,8 +41,8 @@ uint64_t hashPosition(const Board* b);
 uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h);
 uint64_t changeTurn(const uint64_t prev);
 
-inline int isRepetition(const Repetition* rep, const uint64_t hash) {return rep->hashTable[rep->index - 4] == hash;}
-inline void addHash(Repetition* rep, uint64_t hash) {rep->hashTable[rep->index++] = hash;}
-inline void remHash(Repetition* rep) {rep->index--;}
+static inline int isRepetition(const Repetition* rep, const uint64_t hash) {return rep->hashTable[rep->index - 4] == hash;}
+static inline void addHash(Repetition* rep, uint64_t hash) {rep->hashTable[rep->index++] = hash;}
+static inline void remHash(Repetition* rep) {rep->index--;}
 
-extern Eval table[NUM_ENTRIES];
+extern Eval* table;

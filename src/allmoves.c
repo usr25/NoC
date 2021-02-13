@@ -365,7 +365,7 @@ static int movesKingFree(Board* b, Move* list, const int color, const uint64_t f
         REMOVE_LSB(tempMoves);
     }
 
-    return p - list;
+    return (int)(p - list);
 }
 
 /* Generates all legal moves when there is a pinned piece
@@ -636,7 +636,7 @@ static int movesPinnedPiece(Board* b, Move* list, const int color, const uint64_
         REMOVE_LSB(tempMoves);
     }
 
-    return p - list;
+    return (int)(p - list);
 }
 
 /* Generates all legal moves when the king is in check
@@ -846,7 +846,7 @@ int movesCheck(const Board* b, Move* list, const int color, const uint64_t forbi
         }
     }
 
-    return p - list;
+    return (int)(p - list);
 }
 
 static int movesQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned)
@@ -1033,7 +1033,7 @@ static int movesQuiesce(Board* b, Move* list, const uint64_t forbidden, const ui
         REMOVE_LSB(tempCaptures);
     }
 
-    return p - list;
+    return (int)(p - list);
 }
 static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, const uint64_t pinned)
 {
@@ -1219,5 +1219,5 @@ static int movesCheckQuiesce(Board* b, Move* list, const uint64_t forbidden, con
         }
     }
 
-    return p - list;
+    return (int)(p - list);
 }

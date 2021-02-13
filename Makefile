@@ -1,5 +1,6 @@
 CC=gcc
 CPP=g++
+WC=emcc
 
 NAME=NoC
 ODIR=obj
@@ -16,6 +17,7 @@ gaviota = no
 popcnt = yes
 profile = no
 native = yes
+warnings = no
 vectorize = no
 
 ifneq ($(NNUE),)
@@ -32,7 +34,14 @@ ifeq ($(SPARSE),no)
 	sparse = no
 endif
 
+
 CFLAGS=-O3 -flto -lm -lpthread
+WFLAGS=-Os -lm
+ENGINE_OPTIONS=
+
+ifeq ($(warnings),yes)
+	CFLAGS += -Wconversion -Wall -Wextra -Wshadow
+endif
 
 ifeq ($(profile),yes)
 	CFLAGS += -pg
@@ -47,15 +56,15 @@ ifeq ($(native),yes)
 endif
 
 ifeq ($(nnue),yes)
-	CFLAGS += -DUSE_NNUE
+	ENGINE_OPTIONS += -DUSE_NNUE
 	ifneq ($(NNUE_PATH),)
-		CFLAGS += -DNNUE_PATH=\"$(NNUE_PATH)\"
+		ENGINE_OPTIONS += -DNNUE_PATH=\"$(NNUE_PATH)\"
 	endif
 	ifeq ($(sparse),yes)
-		CFLAGS += -DNNUE_SPARSE
+		ENGINE_OPTIONS += -DNNUE_SPARSE
 	endif
 	ifeq ($(nnuedebug),yes)
-		CFLAGS += -DNNUE_DEBUG
+		ENGINE_OPTIONS += -DNNUE_DEBUG
 	endif
 endif
 
@@ -63,9 +72,15 @@ ifeq ($(popcnt),yes)
 	CFLAGS += -mpopcnt
 endif
 
+GAVLIB=
+
 ifeq ($(gaviota),yes)
-	CFLAGS += $(GAVLIB) -DUSE_TB
+	GAVLIB=-L$(GDIR) -lgtb -lpthread -lm
+	ENGINE_OPTIONS += -DUSE_TB $(GAVLIB)
 endif
+
+CFLAGS += $(ENGINE_OPTIONS)
+WFLAGS += $(ENGINE_OPTIONS)
 
 DEPS=$(IDIR)/*
 
@@ -78,9 +93,7 @@ OBJA:=$(filter-out $(ODIR)/gaviotaA.o, $(foreach wrd, $(OBJ), $(subst .o,A.o,$(w
 OBJT:=$(filter-out $(ODIR)/gaviotaT.o, $(foreach wrd, $(OBJ), $(subst .o,T.o,$(wrd))))
 OBJR:=$(foreach wrd, $(OBJ), $(subst .o,R.o,$(wrd)))
 
-GAVLIB=-L$(GDIR) -lgtb -lpthread -lm
-
-.PHONY: help clean debug lichess all release assert train trainer
+.PHONY: help clean debug lichess all release assert train trainer wasm
 
 $(ODIR)/%A.o: $(SDIR)/%.c $(DEPS)
 	$(CC) $(CFLAGS)   -Wall   -c -o $@ $<
@@ -92,13 +105,13 @@ $(ODIR)/%O.o: $(SDIR)/%.c $(DEPS)
 	$(CC) $(CFLAGS)   -DDEBUG   -c -o $@ $<
 
 $(ODIR)/%R.o: $(SDIR)/%.c $(DEPS)
-	$(CC) $(CFLAGS)   -DNDEBUG -DUSE_TB $(GAVLIB)   -c -o $@ $<
+	$(CC) $(CFLAGS)   -DNDEBUG $(GAVLIB)   -c -o $@ $<
 
 
 #GTB will only be used in release
 
 release: $(OBJR)
-	$(CC) -o $@ $^ $(CFLAGS)   -DNDEBUG -DUSE_TB $(GAVLIB)
+	$(CC) -o $@ $^ $(CFLAGS)   -DNDEBUG $(GAVLIB)
 
 debug: $(OBJD)
 	$(CC) -o $@ $^ $(CFLAGS)   -DDEBUG -DNUSE_TB
@@ -108,6 +121,9 @@ assert: $(OBJA)
 
 train: $(OBJT)
 	$(CC) -o $@ $^ $(CFLAGS)   -DTRAIN -DNUSE_TB -DNDEBUG
+
+wasm:
+	$(WC) $(WFLAGS)  src/*.c -s WASM=1 -o $(NAME).html
 
 lichess:
 	make all
@@ -128,6 +144,7 @@ help:
 	@echo "  train: To compile the training model, it DOESN'T play chess"
 	@echo "  assert: Enables asserts"
 	@echo "  release: Without asserts, use this build when playing"
+	@echo "  wasm: Generates a wasm file"
 	@echo "  clean: Removes the binaries"
 
 all:

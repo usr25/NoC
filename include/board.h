@@ -21,7 +21,7 @@ typedef struct
     int fifty;
 } Board;
 
-int textToPiece(char piece);
+const int textToPiece(char piece);
 
 Board genFromFen(char* const fen, int* counter);
 const Board defaultBoard(void);
@@ -29,5 +29,5 @@ const Board defaultBoard(void);
 int equal(const Board* a, const Board* b);
 Board duplicate(const Board b);
 
-int getIndex(const char row, const char col);
+const int getIndex(const char row, const char col);
 int boardIsOK(const Board* b);

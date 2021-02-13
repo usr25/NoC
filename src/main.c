@@ -45,6 +45,7 @@ int main(const int argc, char** const argv)
 
     initMemo();
     initMagics();
+    initializeTable();
 
     #ifdef TRAIN
     setVariables(argc, argv);

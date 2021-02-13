@@ -618,14 +618,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         makeMove(&b, m, &h);
 
         inC = isInCheck(&b, b.stm);
-
+/*
         if (0 && IS_CAP(m) && m.piece != PAWN && !inC) {
             SEEscore = seeCapture(b, m);
             if (depth <= 8 && best > MINS_MATE && SEEscore < -80*depth*depth){
                 continue;
             }
         }
-
+*/
         newHash = makeMoveHash(prevHash, &b, m, h);
 
         if (isDraw(&b, rep, newHash, IS_CAP(m)))

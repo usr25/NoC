@@ -7,11 +7,13 @@
 #include "../include/moves.h"
 #include "../include/hash.h"
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 
-Eval table[NUM_ENTRIES];
+Eval* table = NULL;
 
-const uint64_t random[781] =
+const uint64_t zobRandom[781] =
 {0xa4eb873de16a53d0, 0xadaba31f919ffb63, 0x3463394ba75e4d58, 0xc2856572e6e47f50,
 0x13bd76d905f1559a, 0x689d9826de45d9be, 0x84e1e498ecb9e0a9, 0x82395260744ccfec,
 0xe6c5f86665c7b25c, 0x21ee4c2c5e09828, 0x2ea2eea2663ad6df, 0xde598f082b3aaa3f,
@@ -213,10 +215,15 @@ const uint64_t random[781] =
  */
 void initializeTable(void)
 {
+    free(table);
+    table = calloc(NUM_ENTRIES, sizeof(Eval));
+    CHECK_MALLOC(table);
+    /*
     Eval* end;
     end = table + NUM_ENTRIES;
     for (Eval* ptr = table; ptr < end; ++ptr)
         ptr->key = 0;
+    */
 }
 
 /* Detects if the last move makes a 3fold repetion
@@ -235,11 +242,11 @@ int isThreeRep(const Repetition* r, const uint64_t hash)
     return count > 1;
 }
 
-inline uint64_t calcPos(const int color, const int piece, const int sqr)
+uint64_t calcPos(const int color, const int piece, const int sqr)
 {
     assert(KING <= piece && piece <= PAWN);
     assert(color == BLACK || color == WHITE);
-    return random[(color * COLOR_OFFSET) + (piece * PIECE_OFFSET) + sqr];
+    return zobRandom[(color * COLOR_OFFSET) + (piece * PIECE_OFFSET) + sqr];
 }
 
 /* Hashes a position
@@ -247,14 +254,14 @@ inline uint64_t calcPos(const int color, const int piece, const int sqr)
 uint64_t hashPosition(const Board* b)
 {
     //Turn
-    uint64_t resultHash = b->stm * random[TURN_OFFSET];
+    uint64_t resultHash = (uint64_t)b->stm * zobRandom[TURN_OFFSET];
     //EnPass
-    if (b->enPass) resultHash ^= random[EPAS_OFFSET + (b->enPass & 7)];
+    if (b->enPass) resultHash ^= zobRandom[EPAS_OFFSET + (b->enPass & 7)];
     //Castling
     for (int i = 0; i < 4; ++i)
     {
         if (b->castleInfo & (1 << i))
-            resultHash ^= random[CAST_OFFSET + i];
+            resultHash ^= zobRandom[CAST_OFFSET + i];
     }
 
     uint64_t temp;
@@ -276,14 +283,14 @@ uint64_t hashPosition(const Board* b)
 
 inline uint64_t changeTurn(const uint64_t prev)
 {
-    return prev ^ random[TURN_OFFSET];
+    return prev ^ zobRandom[TURN_OFFSET];
 }
 /* Updates the hash of the position, prev is the hash of the position before the move
  * PRE: The function is called after the move is made
  */
 uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
 {
-    prev ^= random[TURN_OFFSET];
+    prev ^= zobRandom[TURN_OFFSET];
     const int col = b->stm;
     const int opp = 1 ^ col;
 
@@ -296,7 +303,7 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
         prev ^= calcPos(col, m.capture, m.to);
 
     if (h.enPass)
-        prev ^= random[EPAS_OFFSET + (h.enPass & 7)];
+        prev ^= zobRandom[EPAS_OFFSET + (h.enPass & 7)];
 
     switch (m.piece)
     {
@@ -307,7 +314,7 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
                 prev ^= calcPos(opp, PAWN, m.to);
 
             if (b->enPass)
-                prev ^= random[EPAS_OFFSET + (b->enPass & 7)];
+                prev ^= zobRandom[EPAS_OFFSET + (b->enPass & 7)];
 
             if (m.enPass)
                 prev ^= calcPos(col, PAWN, m.enPass);
@@ -331,7 +338,7 @@ uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h)
                 for (int i = 0; i < 4; ++i)
                 {
                     if (xorCastle & (1 << i))
-                        prev ^= random[CAST_OFFSET + i];
+                        prev ^= zobRandom[CAST_OFFSET + i];
                 }
             }
         /* no break */

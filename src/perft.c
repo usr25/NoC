@@ -214,10 +214,10 @@ int nnuePerft(Board b, const int depth, int16_t* test)
 
         inputLayer(&dummy, &b, WHITE, nInputAft);
         inputLayer(&dummy, &b, BLACK, nInputAft + 256);
-
+/*
         applyChanges(&dummy, &b, &q, WHITE, test);
         applyChanges(&dummy, &b, &q, BLACK, test + 256);
-
+*/
         for (int j = 0; j < 512; ++i)
         {
             if (test[j] != nInputAft[j])
@@ -233,10 +233,10 @@ int nnuePerft(Board b, const int depth, int16_t* test)
 
         for (int j = 0; j < q.idx; ++j)
             q.changes[j].appears ^= 1;
-
+/*
         applyChanges(&dummy, &b, &q, WHITE, test);
         applyChanges(&dummy, &b, &q, BLACK, test+256);
-
+*/
         for (int i = 0; i < 512; ++i)
         {
             if (test[i] != nInputBef[i])
