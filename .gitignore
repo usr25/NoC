@@ -4,7 +4,7 @@
 *.pgn
 *.out
 *.csv
-*.nnue
+nn-*.nnue
 _*
 /obj
 usr
