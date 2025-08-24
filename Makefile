@@ -18,7 +18,7 @@ popcnt = yes
 profile = no
 native = yes
 warnings = no
-vectorize = no
+verbose_vectorize = no
 
 ifneq ($(NNUE),)
 	nnue = yes
@@ -47,7 +47,7 @@ ifeq ($(profile),yes)
 	CFLAGS += -pg
 endif
 
-ifeq ($(vectorize), yes)
+ifeq ($(verbose_vectorize), yes)
 	CFLAGS += -fopt-info-vec -ftree-vectorizer-verbose=5
 endif
 

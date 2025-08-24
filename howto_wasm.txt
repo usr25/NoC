@@ -1,0 +1,17 @@
+To convert the engine to WASM (for more safe and portable testing), do the following.
+
+https://developer.mozilla.org/en-US/docs/WebAssembly/C_to_wasm
+
+1- Download emcc
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+git pull
+2- install
+./emsdk install latest
+./emsdk activate latest
+source ./emsdk_env.sh
+3- compile
+emcc test.c -s WASM=1 -o test.html
+4- you have to initialize a server
+python3 -m http.server
+5- open it on firefox

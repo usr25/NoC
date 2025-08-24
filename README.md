@@ -34,6 +34,11 @@ The tablebases are currently used to give a fast mate in endgames, and in the se
 
 They aren't of much use when the match uses tablebases or engine scores to award a premature win.
 
+### Testing
+
+The testing has been performed using cutechess to perform the matches. Other free engines have been used to provide more varied opponents.
+The openings have been used from the [Silver Openings Suites](https://www.chessprogramming.org/Template:Silver_Openings_Suite). This Suite includes common openings as well as gambits.
+
 ### About
 
 Chess engine written in C. Currently used in lichess.org as 'usr25', though it is offline most of the time. From the testing I've done it should be around 3000elo.
