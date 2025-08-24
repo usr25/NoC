@@ -175,7 +175,7 @@ void readParams(FILE* f, NNUE* nn)
         cnt++;
     if (cnt)
     {
-        fprintf(stderr, "NNUE file hasn't been read completely, %d ints remeain\n", cnt);
+        fprintf(stderr, "NNUE file hasn't been read completely, %d ints remain\n", cnt);
         exit(10);
     }
 }
