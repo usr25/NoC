@@ -1,7 +1,6 @@
 *.o
 *.d
 *.fen
-*.pgn
 *.out
 *.csv
 nn-*.nnue
