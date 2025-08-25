@@ -114,10 +114,11 @@ void addPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
             int capt = pieceAt(b, POW2[to], opp); 
 
             if (onlyTacticals){
-                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt, .score = 650};
+                *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .capture = capt, .score = 2050};
             } else {
+                //Other promotions which are not to QUEEN have less score, as it is unlikely that they improve the position
                 for (int i = ROOK; i <= KNIGHT; ++i)
-                    *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .capture = capt, .score = 550};
+                    *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .capture = capt, .score = 200};
             }
 
             REMOVE_LSB(tempCaptures);
@@ -129,8 +130,9 @@ void addPawn(MoveGen* mg, const Board* b, const int onlyTacticals) {
             if (onlyTacticals){
                 *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = QUEEN, .score = 650};
             } else {
+                //Other promotions which are not to QUEEN have less score, as it is unlikely that they improve the position
                 for (int i = ROOK; i <= KNIGHT; ++i)
-                    *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .score = 550};
+                    *p++ = (Move) {.piece = PAWN, .from = from, .to = to, .promotion = i, .score = 100};
             }
 
             REMOVE_LSB(tempMoves);

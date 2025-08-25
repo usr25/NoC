@@ -157,14 +157,14 @@ inline void assignScores(Board* b, Move* list, const int numMoves, const Move be
             if (curr->piece == PAWN)
                 curr->score = pVal[curr->capture];
             else if (curr->piece == KING)
-                curr->score = pVal[curr->capture] - 5;
+                curr->score = pVal[curr->capture] - 100;
             else
                 curr->score = 69 + seeCapture(*b, *curr);
         }
         else
         {
             if (pawnAtt & (1ULL << curr->to))
-                curr->score -= 25 - 2*curr->piece;
+                curr->score -= 25 + 5*(PAWN - curr->piece);
             int add = history[b->stm][BASE_64(curr->from, curr->to)];
             if (add > 0)
                 add = (int)sqrt(add) / 2;
@@ -204,7 +204,7 @@ inline void assignScoresQuiesce(Board* b, Move* list, const int numMoves)
             //TODO: Add bonus if it captures the last piece to move
             //TODO: That could be improved using bbs of the last pieces moved
             if (curr->piece == KING)
-                curr->score = pVal[curr->capture];
+                curr->score = pVal[curr->capture] - 50;
             else
                 curr->score = seeCapture(*b, *curr);
         }
@@ -219,17 +219,17 @@ inline void addHistory(const int from, const int to, const int n, const int stm)
 {
     assert(RANGE_64(from) && RANGE_64(to));
     int* h = &history[stm][BASE_64(from, to)];
-    *h+=n;
+    *h += n;
     if (*h > 7000)
-        *h/=10;
+        *h /= 10;
 }
 inline void decHistory(const int from, const int to, const int n, const int stm)
 {
     assert(RANGE_64(from) && RANGE_64(to));
     int* h = &history[stm][BASE_64(from, to)];
-    *h-=n;
+    *h -= n;
     if (*h < -7000)
-        *h/=10;
+        *h /= 10;
 }
 void initHistory(void)
 {
