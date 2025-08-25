@@ -6,9 +6,9 @@
 #define CHECK_MALLOC(ptr) if (!(ptr)) { fprintf(stderr, "Malloc failed in %s %d\n", __FILE__, __LINE__); \
                             exit(66);};
 
-#define REMOVE_LSB(bb) bb &= bb - 1ULL
-#define POPCOUNT(ll) (int)__builtin_popcountll(ll)
-#define LSB_INDEX(ll) (int)__builtin_ctzll(ll)
+#define REMOVE_LSB(bb) (bb &= bb - 1ULL)
+#define POPCOUNT(ll) ((int)__builtin_popcountll(ll))
+#define LSB_INDEX(ll) ((int)__builtin_ctzll(ll))
 #define MSB_INDEX(ll) (63 ^ (int)__builtin_clzll(ll))
 
 #define WHITE_PAWN_ATT(bb) (((bb) << 9) & 0xfefefefefefefefeULL) | (((bb) << 7) & 0x7f7f7f7f7f7f7f7fULL)
@@ -68,6 +68,8 @@
 
 #define SCORE_MASK   0xfff
 #define TYPE_MASK   0xf000
+
+#define ONLINE_LAG 0 //50 //To account for lag in milliseconds
 
 inline static const int min(const int a, const int b) {return a < b? a : b;}
 inline static const int max(const int a, const int b) {return a > b? a : b;}

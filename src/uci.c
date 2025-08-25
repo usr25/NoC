@@ -197,7 +197,7 @@ static void go_(Board b, char* beg, Repetition* rep)
         //Play with time
         if (!sp.timeToMove)
         {
-            clock_t remTime = max(b.stm? wtime : btime, 100) - 40; //To avoid problems with lag
+            clock_t remTime = max(b.stm? wtime : btime, 100) - 40 - ONLINE_LAG; //To avoid problems with lag
             clock_t increment = b.stm? winc : binc;
             clock_t timeInSecs, timeInTicks, remTimeInTicks;
             remTimeInTicks = remTime * CLOCKS_PER_SEC / 1000;
