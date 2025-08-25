@@ -197,17 +197,20 @@ static void go_(Board b, char* beg, Repetition* rep)
         //Play with time
         if (!sp.timeToMove)
         {
-            clock_t remTime   = max(b.stm? wtime : btime, 100) - 50; //To avoid problems with lag
-            clock_t increment = b.stm? winc  : binc;
+            clock_t remTime = max(b.stm? wtime : btime, 100) - 40; //To avoid problems with lag
+            clock_t increment = b.stm? winc : binc;
             clock_t timeInSecs, timeInTicks, remTimeInTicks;
             remTimeInTicks = remTime * CLOCKS_PER_SEC / 1000;
 
             if (movestogo)
-                timeInSecs = min(remTime / 5, remTime / (movestogo + 4) + (clock_t)((double)increment * .95));
+                timeInSecs = min(remTime / 5, remTime / (movestogo + 2) + (clock_t)((double)increment * .9f));
             else if (increment)
-                timeInSecs = min(remTime / 5, remTime / 61 + (clock_t)((double)increment * .95));
+            {
+                clock_t numOfIncrements = remTime / increment;
+                timeInSecs = min(remTime / 5, remTime / (55 + numOfIncrements / 10) + (clock_t)((double)increment * .9f));
+            }
             else
-                timeInSecs = remTime / 51;
+                timeInSecs = remTime / 49;
 
             timeInTicks = timeInSecs * CLOCKS_PER_SEC / 1000;
 
