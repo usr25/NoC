@@ -126,7 +126,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         sp.depth = MAX_PLY;
     }
 
-    clock_t start = clock(), last, elapsed;
+    clock_t start = clock(), now, elapsed;
 
     stopAt = sp.timeToMove + start;
     timeToMove = sp.timeToMove;
@@ -191,8 +191,8 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
             foundBeforeTimesUp = -1;
             temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
 
-            last = clock();
-            elapsed = last - start;
+            now = clock();
+            elapsed = now - start;
 
             if (temp.score >= beta)
             {
@@ -200,13 +200,13 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                 delta += delta / 2;
                 researches++;
 
-                if (requestedExtraTime == 0 && last < stopAt && depth > 5)
+                if (requestedExtraTime == 0 && now < stopAt && depth > 5)
                 {
                     requestedExtraTime++;
                     stopAt += sp.extraTime;
                     timeToMove += sp.extraTime;
                 }
-                else if (requestedExtraTime == 1 && last < stopAt && depth > 8)
+                else if (requestedExtraTime == 1 && now < stopAt && depth > 8)
                 {
                     requestedExtraTime++;
                     stopAt += sp.extraTime;
@@ -220,13 +220,13 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                 delta += delta / 2;
                 researches++;
 
-                if (requestedExtraTime == 0 && last < stopAt && depth > 5)
+                if (requestedExtraTime == 0 && now < stopAt && depth > 5)
                 {
                     requestedExtraTime++;
                     stopAt += 2*sp.extraTime;
                     timeToMove += 2*sp.extraTime;
                 }
-                else if (requestedExtraTime == 1 && last < stopAt && depth > 8)
+                else if (requestedExtraTime == 1 && now < stopAt && depth > 8)
                 {
                     requestedExtraTime++;
                     stopAt += 2*sp.extraTime;
