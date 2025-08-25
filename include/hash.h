@@ -11,7 +11,8 @@ enum{LO, HI, EXACT};
 
 /* Struct to hold the information about a position for the transposition table
  * key -> Hash of the position
- * val -> Evaluation assigned to the position
+ * val -> Evaluation assigned to the position with the search
+ * eval -> Actual evaluation (NNUE analysis) of the position
  * depth -> depth at which the entry was created
  * Move -> Best move for that position
  */

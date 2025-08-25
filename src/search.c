@@ -677,14 +677,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                     if (!pv && notImproving)
                         reduction++;
-                    if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < 4))
+                    else if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < 4))
                         reduction--;
                     else if (m.piece == PAWN && isAdvancedPassedPawn(m, b.piece[b.stm][PAWN], 1 ^ b.stm))
                         reduction--;
-                    //else if (fewMovesExt)
-                    //    reduction--;
-                    //if (list[i].piece == KING && list[i].castle)
-                    //    reduction--;
+                    else if (!IS_CAP(m) && m.piece == KING && !list[i].castle)
+                        reduction++;
 
                     if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
                 }
