@@ -82,6 +82,9 @@ static uint64_t queries = 0;
 
 static int exitFlag = 0;
 
+static int useNNUEEval = 0;
+
+
 void initCall(void)
 {
     queries = 0;
@@ -97,6 +100,7 @@ void initCall(void)
     finishingTime = 0;
     requestedExtraTime = 0;
     foundBeforeTimesUp = 0;
+    useNNUEEval = 1;
 
     initHistory();
     initKM();
@@ -150,6 +154,21 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     }
     #endif
 
+    //Determine if we use the classical evaluation
+    //If there are too few pieces, classical evaluation is much better
+    //Due to it being much faster (and endgames with king moves are extremely slow with NNUEs)
+    //I have tried changes within the evaluation but the NNUE and the evaluation are too far appart.
+    //The best method is to simply turn it on / off at the global level
+    int ourPieces = POPCOUNT(b.color[b.stm]);
+    int oppPieces = POPCOUNT(b.color[1^b.stm]);
+    useNNUEEval = ourPieces + oppPieces > 8;
+    #ifdef USE_NNUE
+    if (!useNNUEEval)
+    {
+        printf("Switching off the NNUE because there are too few pieces %d\n", ourPieces + oppPieces);
+    }
+    #endif
+
     assignScores(&b, list, numMoves, NO_MOVE, 0);
 
     Move best = list[0], temp;
@@ -169,7 +188,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         sort(list, list+numMoves);
         while (1)
         {
-            foundBeforeTimesUp = 0;
+            foundBeforeTimesUp = -1;
             temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
 
             last = clock();
@@ -181,9 +200,15 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                 delta += delta / 2;
                 researches++;
 
-                if (!requestedExtraTime && last < stopAt)
+                if (requestedExtraTime == 0 && last < stopAt && depth > 5)
                 {
-                    requestedExtraTime = 1;
+                    requestedExtraTime++;
+                    stopAt += sp.extraTime;
+                    timeToMove += sp.extraTime;
+                }
+                else if (requestedExtraTime == 1 && last < stopAt && depth > 8)
+                {
+                    requestedExtraTime++;
                     stopAt += sp.extraTime;
                     timeToMove += sp.extraTime;
                 }
@@ -195,16 +220,22 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
                 delta += delta / 2;
                 researches++;
 
-                if (!requestedExtraTime && last < stopAt)
+                if (requestedExtraTime == 0 && last < stopAt && depth > 5)
                 {
-                    requestedExtraTime = 1;
+                    requestedExtraTime++;
+                    stopAt += 2*sp.extraTime;
+                    timeToMove += 2*sp.extraTime;
+                }
+                else if (requestedExtraTime == 1 && last < stopAt && depth > 8)
+                {
+                    requestedExtraTime++;
                     stopAt += 2*sp.extraTime;
                     timeToMove += 2*sp.extraTime;
                 }
             }
             else
             {
-                if (exitFlag && foundBeforeTimesUp)
+                if (exitFlag && foundBeforeTimesUp > -1)
                     best = list[foundBeforeTimesUp];
                 break;
             }
@@ -234,8 +265,8 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         //A premature exit when we are playing with time
         if (playWithTime &&
                (best.score >= PLUS_MATE //We have found a mate
-            || (playWithTime && ((clock_t)(1.35f * elapsed) > timeToMove)) //There isn't enough time for another iter
-            || finishingTime)) //We have consumed the extra time
+            || (clock_t)(1.35f * elapsed) > timeToMove) //There isn't enough time for another iter
+            || finishingTime) //We have consumed the extra time
             break;
 
     }
@@ -256,9 +287,10 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 static double percentage = 0;
 static Move moveStack[MAX_PLY+10]; //To avoid possible overflow errors
 static int evalStack[MAX_PLY+10];
+
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
-    foundBeforeTimesUp = 0;
+    foundBeforeTimesUp = -1;
     assert(depth > 0);
     assert(numMoves > 0);
     assert(rep.index >= 0 && rep.index < 128);
@@ -298,7 +330,8 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
         }
         else
         {
-            updateDo(&q, list[i], &b);
+            if (useNNUEEval)
+                updateDo(&q, list[i], &b);
             undo = 1;
             addHash(&rep, newHash);
             if (i == 0)
@@ -316,38 +349,24 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 
         undoMove(&b, list[i], &h);
 
-        if (undo) updateUndo(&q, &b);
+        if (undo && useNNUEEval) updateUndo(&q, &b);
 
         //For the sorting at later depths
         list[i].score = val;
         subtreeSize[i] = (int)((nodes - initNodes) / 2);
 
-        if (val > alpha)
+        if (val > alpha && !exitFlag)
         {
-            if (!exitFlag)
-                foundBeforeTimesUp = i;
+            foundBeforeTimesUp = i;
             currBest = list[i];
             alpha = val;
-
             if (val >= beta)
             {
-                if (!exitFlag)
-                    moveToFst(list, i);
+                moveToFst(list, i);
                 break;
             }
         }
     }
-    /*
-    if (!exitFlag)
-    {
-        //If enabled, remove line 335, moveToFst
-        for (int j = 0; j < numMoves; ++j)
-            list[j].score = subtreeSize[j];
-        moveToFst(list, foundBeforeTimesUp);
-        sort(list+1, list+numMoves);
-        assert(compMoves(&list[0], &currBest));
-    }
-    */
 
     return currBest;
 }
@@ -360,6 +379,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     assert(b.fifty >= 0);
     assert(height > 0 && height <= MAX_PLY);
     assert(depth >= 0);
+
+    if (exitFlag)
+        return 0;
 
     nodes++;
     const int pv = beta - alpha > 1;
@@ -381,11 +403,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     }
     #endif
 
-    if (exitFlag)
-        return 0;
     if (playWithTime && (nodes & 1023) == 0 && clock() > stopAt)
     {
-        if (percentage > .86f && !finishingTime)
+        if (percentage > .70f && !finishingTime)
         {
             finishingTime = 1;
             stopAt += timeToMove / 5;
@@ -511,14 +531,15 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         else
         {
-            updateDo(&q, bestM, &b);
+            if (useNNUEEval)
+                updateDo(&q, bestM, &b);
             undo = 1;
             addHash(rep, newHash);
             val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
             remHash(rep);
         }
         undoMove(&b, bestM, &h);
-        if (undo) updateUndo(&q, &b);
+        if (undo && useNNUEEval) updateUndo(&q, &b);
 
         assert(val > best);
 
@@ -634,7 +655,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         else
         {
-            updateDo(&q, m, &b);
+            if (useNNUEEval)
+                updateDo(&q, m, &b);
             undo = 1;
 
             addHash(rep, newHash);
@@ -681,7 +703,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
 
         undoMove(&b, m, &h);
-        if (undo) updateUndo(&q, &b);
+        if (undo && useNNUEEval) updateUndo(&q, &b);
 
         if (val > best)
         {
@@ -776,14 +798,15 @@ int qsearch(Board b, int alpha, const int beta, const int d)
             val = 0;
         else
         {
-            updateDo(&q, list[i], &b);
+            if (useNNUEEval)
+                updateDo(&q, list[i], &b);
             undo = 1;
             val = -qsearch(b, -beta, -alpha, d - 1 /*+ (list[i].capture < 3)*/);
         }
 
         undoMove(&b, list[i], &h);
 
-        if (undo) updateUndo(&q, &b);
+        if (undo && useNNUEEval) updateUndo(&q, &b);
 
         if (val > alpha)
         {
@@ -825,7 +848,8 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
         }
         else
         {
-            updateDo(&q, list[i], &b);
+            if (useNNUEEval)
+                updateDo(&q, list[i], &b);
             undo = 1;
             addHash(rep, newHash);
             val = -pvSearch(b, -beta, -alpha, depth - 1, height, 1, newHash, rep, isInCheck(&b, b.stm));
@@ -835,7 +859,7 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
         list[i].score = val;
 
         undoMove(&b, list[i], &h);
-        if (undo) updateUndo(&q, &b);
+        if (undo && useNNUEEval) updateUndo(&q, &b);
     }
 
     sort(list, list+numMoves);
@@ -932,10 +956,14 @@ static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t n
 static const int SEARCH_TEMPO = 11;
 static int evaluate(const Board* b)
 {
+    int ev;
     #ifdef USE_NNUE
-    int ev = SEARCH_TEMPO + evaluateNNUE(b, 1);
+    if (useNNUEEval)
+        ev = SEARCH_TEMPO + evaluateNNUE(b, 1);
+    else
+        ev = eval(b);
     #else
-    int ev = eval(b);
+    ev = eval(b);
     #endif
 
     ev = ev * (100 - b->fifty) / 100;
