@@ -28,6 +28,7 @@
 //Depth of the null move prunning
 #define R 3
 
+const int DEPTH_APPLY_CONSECUTIVE_MOVE_TIME_REDUCTION = 7;
 
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
 __attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, const int height, int null, const uint64_t prevHash, Repetition* rep, const int isInC);
@@ -66,6 +67,7 @@ static int playWithTime = 0;
 static int foundBeforeTimesUp = 0;
 static int finishingTime = 0;
 static int requestedExtraTime = 0;
+static int consecutiveMoveTimeReductions = 0;
 
 /* Info string */
 static uint64_t nodes = 0;
@@ -100,6 +102,7 @@ void initCall(void)
     finishingTime = 0;
     requestedExtraTime = 0;
     foundBeforeTimesUp = 0;
+    consecutiveMoveTimeReductions = 0;
     useNNUEEval = 1;
 
     initHistory();
@@ -137,7 +140,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     const int numMoves = legalMoves(&b, list) >> 1;
 
     //If there is only one possible move, return it
-    if (numMoves == 1)
+    if (playWithTime && numMoves == 1)
         return list[0];
 
     #ifdef USE_TB
@@ -179,7 +182,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     for (int depth = 1; depth <= sp.depth; ++depth)
     {
         delta = 45;
-        if (depth >= 6)
+        if (depth >= 6) //TODO: Test at 5, due to the use of NNUEs
         {
             alpha = bestScore - delta;
             beta = bestScore + delta;
@@ -257,10 +260,31 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         else
             sd.consecutiveMove = 0;
 
-        if (abs(sd.lastScore - bestScore) < 11)
+        if ((b.stm == WHITE && bestScore - sd.lastScore > -50)
+            ||(b.stm == BLACK && bestScore - sd.lastScore < 50))
             sd.consecutiveScore++;
         else
             sd.consecutiveScore = 0;
+
+        int losingDrawishPlus = (b.stm == WHITE && bestScore < 200) || (b.stm == BLACK && bestScore > -200);
+
+
+        if (playWithTime
+            && min(sd.consecutiveMove, sd.consecutiveScore) >= DEPTH_APPLY_CONSECUTIVE_MOVE_TIME_REDUCTION + losingDrawishPlus * 2
+            && POPCOUNT(b.allPieces) < 28)
+            consecutiveMoveTimeReductions++;
+
+        if (playWithTime && consecutiveMoveTimeReductions > 0 && consecutiveMoveTimeReductions < 6)
+            timeToMove -= timeToMove / 40;
+
+        if (playWithTime && consecutiveMoveTimeReductions > 0 && min(sd.consecutiveMove, sd.consecutiveScore) < DEPTH_APPLY_CONSECUTIVE_MOVE_TIME_REDUCTION)
+        {
+            timeToMove += (min(consecutiveMoveTimeReductions, 8) / 2 + 1 + losingDrawishPlus * 2) * timeToMove / 5;
+            consecutiveMoveTimeReductions = -1;
+            printf("Reset time change, losingDrawishPlus: %d\n", losingDrawishPlus);
+        }
+
+        timeToMove = min(timeToMove, sp.maxTime);
 
         //A premature exit when we are playing with time
         if (playWithTime &&
@@ -268,8 +292,10 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
             || (clock_t)(1.35f * elapsed) > timeToMove) //There isn't enough time for another iter
             || finishingTime) //We have consumed the extra time
             break;
-
     }
+
+    if (playWithTime && consecutiveMoveTimeReductions > 0)
+        printf("Reduced time %d times\n", consecutiveMoveTimeReductions);
 
     #ifdef DEBUG
     printf("Beta Hits: %f\n", (float)betaCutOffHit / betaCutOff);

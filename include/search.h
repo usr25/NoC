@@ -3,6 +3,7 @@ typedef struct
     int depth;
     clock_t timeToMove;
     clock_t extraTime;
+    clock_t maxTime;
 
 } SearchParams;
 

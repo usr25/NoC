@@ -216,6 +216,7 @@ static void go_(Board b, char* beg, Repetition* rep)
 
             sp.timeToMove = timeInTicks;
             sp.extraTime = min(timeInTicks / 2, (remTimeInTicks - timeInTicks) / 4);
+            sp.maxTime = min((sp.timeToMove + sp.extraTime) + (sp.timeToMove + sp.extraTime) / 5, remTimeInTicks);
         }
     }
 
