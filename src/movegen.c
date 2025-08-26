@@ -277,7 +277,7 @@ void addKing(MoveGen* mg, const Board* b, const int onlyTacticals) {
     { 
         while(tempMoves)
         {
-            *p++ = (Move) {.piece = KING, .from = from, .to = LSB_INDEX(tempMoves)};
+            *p++ = (Move) {.piece = KING, .from = from, .to = LSB_INDEX(tempMoves), .score = -1};
             REMOVE_LSB(tempMoves);
         }
     }

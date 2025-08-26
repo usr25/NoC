@@ -138,11 +138,11 @@ int canCastle(const Board* b, const int color, const uint64_t forbidden)
 //TODO: Give extra score to castling?
 inline Move castleKSide(const int color)
 {
-    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1, .score = 0};
+    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 1, .castle = 1, .score = 10};
 }
 inline Move castleQSide(const int color)
 { 
-    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2, .score = 0};
+    return (Move) {.piece = KING, .from = 56 * (1 ^ color) + 3, .to = 56 * (1 ^ color) + 5, .castle = 2, .score = 10};
 }
 
 //Tiles controlled by the opp king / pawns / knights
