@@ -605,12 +605,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
             inC = isInCheck(&b, b.stm);
             newHash = makeMoveHash(prevHash, &b, m, h);
-            updateDo(&q, m, &b);
+            if (useNNUEEval) updateDo(&q, m, &b);
             addHash(rep, newHash);
 
             val = -pvSearch(b, -probBeta, -probBeta+1, depth - 4, newHeight, null, newHash, rep, inC);
             undoMove(&b, m, &h);
-            updateUndo(&q, &b);
+            if (useNNUEEval) updateUndo(&q, &b);
             remHash(rep);
             assert(rep->index >= 0);
             assert(compMoves(&moveStack[height], &m) && moveStack[height].piece == m.piece);
