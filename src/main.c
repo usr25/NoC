@@ -34,7 +34,7 @@
 int main(const int argc, char** const argv)
 {
     #ifdef NDEBUG
-    printf("    _   __      ______\n   / | / /___  / ____/\n  /  |/ / __ \\/ /     \n / /|  / /_/ / /___   \n/_/ |_/\\____/\\____/  \n\n");
+    printf("    _   __      ______   _   ___   ____  ________\n   / | / /___  / ____/  / | / / | / / / / / ____/\n  /  |/ / __ \\/ /      /  |/ /  |/ / / / / __/   \n / /|  / /_/ / /___   / /|  / /|  / /_/ / /___   \n/_/ |_/\\____/\\____/  /_/ |_/_/ |_/\\____/_____/   \n\n");
     printf("%s (RELEASE) uci chess engine made by %s\n", ENGINE_NAME, ENGINE_AUTHOR);
     printf("NoC Copyright (C) 2021 Jorge Fernandez\n");
     #else
