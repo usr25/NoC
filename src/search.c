@@ -504,7 +504,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         assert(ev != MINS_INF);
 
         //Razoring
-        if (depth == 1 && ev + V_ROOK[0] + 101 <= alpha)
+        if (depth == 1 && ev + V_ROOK[0] <= alpha)
         {
             const int razScore = qsearch(b, alpha, beta, -1);
             if (razScore >= beta)
@@ -512,7 +512,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
 
         //Static beta pruning
-        if (depth <= 4 && ev - 180 * depth >= beta && abs(ev) < V_QUEEN[0])
+        if (depth <= 4 && ev - 180 * depth >= beta && abs(ev) < 9000)
             return beta;
 
         //Null move
@@ -795,7 +795,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
         return beta;
     else if (score > alpha)
         alpha = score;
-    else if (score + V_QUEEN[0] <= alpha)
+    else if (score + 9000 <= alpha)
         return alpha;
 
     if (d == 0)
