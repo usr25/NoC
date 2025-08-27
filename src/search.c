@@ -512,7 +512,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
 
         //Static beta pruning
-        if (depth <= 4 && ev - 180 * depth >= beta && abs(ev) < 9000)
+        if (depth <= 4 && ev - 180 * depth >= beta && abs(ev) < V_QUEEN[0])
             return beta;
 
         //Null move
@@ -528,6 +528,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
 
         //Futility pruning
+        //TODO: Probably wrongly implemented
         if (depth <= 7 && abs(alpha) <= 9000 && ev + fmargin[depth] <= alpha)
             fprune = 1; //return ev;
     }
@@ -601,9 +602,9 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     sort(list, list+numMoves);
 
     int iid = 0;
-    if ((iid = (depth >= 5 && list[0].score < 290 && numMoves > 3)))
+    if ((iid = (depth > 5 && list[0].score < 290 && numMoves > 6 - pv)))
     {
-        const int targD = pv? depth - 3 : depth / 3;
+        const int targD = pv? depth - 3 : depth / 4;
         internalIterDeepening(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 
@@ -642,7 +643,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             assert(compMoves(&moveStack[height], &m) && moveStack[height].piece == m.piece);
 
             if (val >= probBeta)
-                return val;
+                return val - (probBeta - beta);
         }
     }
 
