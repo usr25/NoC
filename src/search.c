@@ -710,8 +710,11 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                         reduction--;
                     else if (!IS_CAP(m) && m.piece == KING && !list[i].castle)
                         reduction++;
+                    else if (height > 1 && moveStack[height-2].to == m.from && moveStack[height-2].from == m.to)
+                        reduction++;
 
                     if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
+                    if (reduction < 1) reduction = 1;
                 }
 
                 assert(depth - reduction >= 0);
