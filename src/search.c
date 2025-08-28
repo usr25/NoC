@@ -199,8 +199,8 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
             if (temp.score >= beta)
             {
-                beta += delta;
                 delta += delta / 2;
+                beta += delta;
                 researches++;
 
                 if (requestedExtraTime == 0 && now < stopAt && depth > 5)
@@ -271,7 +271,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
         if (playWithTime
             && min(sd.consecutiveMove, sd.consecutiveScore) >= DEPTH_APPLY_CONSECUTIVE_MOVE_TIME_REDUCTION + losingDrawishPlus * 2
-            && POPCOUNT(b.allPieces) < 28)
+            && POPCOUNT(b.allPieces) < 30)
             consecutiveMoveTimeReductions++;
 
         if (playWithTime && consecutiveMoveTimeReductions > 0 && consecutiveMoveTimeReductions < 6)
@@ -356,8 +356,7 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
         }
         else
         {
-            if (useNNUEEval)
-                updateDo(&q, list[i], &b);
+            if (useNNUEEval) updateDo(&q, list[i], &b);
             undo = 1;
             addHash(&rep, newHash);
             if (i == 0)
@@ -558,8 +557,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         else
         {
-            if (useNNUEEval)
-                updateDo(&q, bestM, &b);
+            if (useNNUEEval) updateDo(&q, bestM, &b);
             undo = 1;
             addHash(rep, newHash);
             val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
@@ -682,8 +680,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
         else
         {
-            if (useNNUEEval)
-                updateDo(&q, m, &b);
+            if (useNNUEEval) updateDo(&q, m, &b);
             undo = 1;
 
             addHash(rep, newHash);
@@ -817,7 +814,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     for (int i = 0; i < numMoves; ++i)
     {
         undo = 0;
-        if (!(nMvsAndChck & 1) && i > 2 && list[i].score + score < alpha)
+        if (!(nMvsAndChck & 1) && i > 4 && list[i].score + score < alpha)
             break;
 
         makeMove(&b, list[i], &h);
@@ -826,8 +823,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
             val = 0;
         else
         {
-            if (useNNUEEval)
-                updateDo(&q, list[i], &b);
+            if (useNNUEEval) updateDo(&q, list[i], &b);
             undo = 1;
             val = -qsearch(b, -beta, -alpha, d - 1 /*+ (list[i].capture < 3)*/);
         }
@@ -876,8 +872,7 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
         }
         else
         {
-            if (useNNUEEval)
-                updateDo(&q, list[i], &b);
+            if (useNNUEEval) updateDo(&q, list[i], &b);
             undo = 1;
             addHash(rep, newHash);
             val = -pvSearch(b, -beta, -alpha, depth - 1, height, 1, newHash, rep, isInCheck(&b, b.stm));
