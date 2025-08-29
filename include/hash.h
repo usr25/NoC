@@ -37,6 +37,7 @@ typedef struct
 } Repetition;
 
 void initializeTable(void);
+void reinitializeTable(void);
 int isThreeRep(const Repetition* r, const uint64_t hash);
 uint64_t hashPosition(const Board* b);
 uint64_t makeMoveHash(uint64_t prev, Board* b, const Move m, const History h);

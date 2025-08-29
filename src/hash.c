@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 Eval* table = NULL;
 
@@ -224,6 +225,11 @@ void initializeTable(void)
     for (Eval* ptr = table; ptr < end; ++ptr)
         ptr->key = 0;
     */
+}
+
+void reinitializeTable(void)
+{
+    memset(table, 0, NUM_ENTRIES*sizeof(Eval));
 }
 
 /* Detects if the last move makes a 3fold repetion
