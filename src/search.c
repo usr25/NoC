@@ -107,6 +107,7 @@ void initCall(void)
 
     initHistory();
     initKM();
+    //reinitializeTable();
 }
 
 static int us;
@@ -168,7 +169,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
     #ifdef USE_NNUE
     if (!useNNUEEval)
     {
-        printf("Switching off the NNUE because there are too few pieces %d\n", ourPieces + oppPieces);
+        printf("debug Switching off the NNUE because there are too few pieces %d\n", ourPieces + oppPieces);
     }
     #endif
 
@@ -281,7 +282,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         {
             timeToMove += (min(consecutiveMoveTimeReductions, 8) / 2 + 1 + losingDrawishPlus * 2) * timeToMove / 5;
             consecutiveMoveTimeReductions = -1;
-            printf("Reset time change, losingDrawishPlus: %d\n", losingDrawishPlus);
+            printf("debug Reset time change, losingDrawishPlus: %d\n", losingDrawishPlus);
         }
 
         timeToMove = min(timeToMove, sp.maxTime);
@@ -751,7 +752,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                         addKM(bestM, depth);
                     }
 
-                    if (depth < 6)
+                    if (depth < 4)
                     {
                         for (int j = 0; j < i; ++j)
                             decHistory(list[j].from, list[j].to, (!IS_CAP(list[j]))*depth, b.stm);
