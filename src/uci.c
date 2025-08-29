@@ -184,6 +184,7 @@ static void go_(Board b, char* beg, Repetition* rep)
         } else if (strncmp(beg, "movetime", 8) == 0) {
             beg += 9;
             sp.timeToMove = (clock_t)atoi(beg) * CLOCKS_PER_SEC / 1000;
+            sp.maxTime = sp.timeToMove;
         }
 
         ++beg;
@@ -197,7 +198,7 @@ static void go_(Board b, char* beg, Repetition* rep)
         //Play with time
         if (!sp.timeToMove)
         {
-            clock_t remTime = max(b.stm? wtime : btime, 100) - 40 - ONLINE_LAG; //To avoid problems with lag
+            clock_t remTime = max(b.stm? wtime : btime, 100) - 40;
             clock_t increment = b.stm? winc : binc;
             clock_t timeInSecs, timeInTicks, remTimeInTicks;
             remTimeInTicks = remTime * CLOCKS_PER_SEC / 1000;
@@ -219,6 +220,8 @@ static void go_(Board b, char* beg, Repetition* rep)
             sp.maxTime = min((sp.timeToMove + sp.extraTime) + (sp.timeToMove + sp.extraTime) / 5, remTimeInTicks);
         }
     }
+
+    sp.timeToMove -= ONLINE_LAG;
 
     assert(sp.timeToMove >= 0);
     assert(sp.extraTime >= 0);
