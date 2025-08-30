@@ -47,6 +47,7 @@ int main(const int argc, char** const argv)
     initMemo();
     initMagics();
     initializeTable();
+    initializeReductionTable();
 
     #ifdef TRAIN
     if (arguments.train != NULL) {

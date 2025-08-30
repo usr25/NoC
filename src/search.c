@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
+#include <math.h>
 
 #include "../include/global.h"
 #include "../include/board.h"
@@ -40,6 +41,10 @@ static int nullMove(Board b, const int depth, const int beta, const uint64_t pre
 static inline int isDraw(const Board* b, const Repetition* rep, const uint64_t newHash, const int lastMCapture);
 static int evaluate(const Board* b);
 
+//It is limited to 64*64 so that we may obtain advantages from better caching
+#define REDUCTION_TABLE_SIZE (64)
+static int reductionTable[REDUCTION_TABLE_SIZE][REDUCTION_TABLE_SIZE];
+
 #ifdef USE_TB
 static Move tableLookUp(Board b, int* tbAv);
 #endif
@@ -69,6 +74,11 @@ inline static const int plyToDepth(const int ply)
 {
     assert(ply < PLY_SIZE);
     return ply * PLY_SIZE;
+}
+
+inline static int lmr(const int ply, const int nMove)
+{
+    return reductionTable[min(ply, REDUCTION_TABLE_SIZE-1)][min(nMove, REDUCTION_TABLE_SIZE-1)];
 }
 
 static Move NO_MOVE = (Move) {.from = -1, .to = -1};
@@ -713,6 +723,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     {
                         int hv = history[1^b.stm][BASE_64(m.from, m.to)];
                         reduction += plyToDepth(1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250));
+                        //reduction = max(min(lmr(currentRealDepth, i), depth / 3), 1*PLY_SIZE) + plyToDepth(-(!pv && improving) - (hv > 1250));
+                        //reduction += plyToDepth(1 - (!pv && improving) - (hv > 1250)) + depth / 3;
                     }
 
                     if (!pv && notImproving)
@@ -1008,4 +1020,18 @@ static int evaluate(const Board* b)
     ev = ev * (100 - b->fifty) / 100;
 
     return ev;
+}
+
+void initializeReductionTable(void)
+{
+    //i is for the depth
+    for (int i = 0; i < REDUCTION_TABLE_SIZE; ++i)
+    {
+        //j is for the move
+        for (int j = 0; j < REDUCTION_TABLE_SIZE; ++j)
+        {
+            float reductionPly = 0.2f + log((float)(i+1)) / 2.0f + log((float)(j+1)) / 4.0f;
+            reductionTable[i][j] = (int)(reductionPly * (float)PLY_SIZE);
+        }
+    }
 }
