@@ -752,10 +752,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                         addKM(bestM, depth);
                     }
 
-                    if (depth < 4)
+                    for (int j = 0; j < i; ++j)
                     {
-                        for (int j = 0; j < i; ++j)
-                            decHistory(list[j].from, list[j].to, (!IS_CAP(list[j]))*depth, b.stm);
+                        if (!IS_CAP(list[j]))
+                            decHistory(list[j].from, list[j].to, min(depth, 4), b.stm);
                     }
                     break;
                 }
