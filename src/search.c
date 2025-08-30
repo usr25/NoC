@@ -30,6 +30,8 @@
 
 const int DEPTH_APPLY_CONSECUTIVE_MOVE_TIME_REDUCTION = 7;
 
+const int PLY_SIZE = 100;
+
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep);
 __attribute__((hot)) static int pvSearch(Board b, int alpha, int beta, int depth, const int height, int null, const uint64_t prevHash, Repetition* rep, const int isInC);
 
@@ -56,6 +58,17 @@ inline static int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, co
         return m.to > 39 && ((getWPassedPawn(m.to) & oppPawns) == 0);
     else
         return m.to < 24 && ((getBPassedPawn(m.to) & oppPawns) == 0);
+}
+inline static const int depthToPly(const int depth)
+{
+    assert(depth % PLY_SIZE == 0);
+    return depth / PLY_SIZE;
+}
+
+inline static const int plyToDepth(const int ply)
+{
+    assert(ply < PLY_SIZE);
+    return ply * PLY_SIZE;
 }
 
 static Move NO_MOVE = (Move) {.from = -1, .to = -1};
@@ -193,7 +206,7 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
         while (1)
         {
             foundBeforeTimesUp = -1;
-            temp = bestMoveList(b, depth, alpha, beta, list, numMoves, rep);
+            temp = bestMoveList(b, plyToDepth(depth), alpha, beta, list, numMoves, rep);
 
             now = clock();
             elapsed = now - start;
@@ -318,7 +331,7 @@ static int evalStack[MAX_PLY+10];
 static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* list, const int numMoves, Repetition rep)
 {
     foundBeforeTimesUp = -1;
-    assert(depth > 0);
+    assert(depthToPly(depth) > 0);
     assert(numMoves > 0);
     assert(rep.index >= 0 && rep.index < 128);
 
@@ -362,13 +375,13 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
             addHash(&rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, 1, 0, newHash, &rep, inC);
+                val = -pvSearch(b, -beta, -alpha, depth - plyToDepth(1), 1, 0, newHash, &rep, inC);
             }
             else
             {
-                val = -pvSearch(b, -alpha - 1, -alpha, depth - 1, 1, 0, newHash, &rep, inC);
+                val = -pvSearch(b, -alpha - 1, -alpha, depth - plyToDepth(1), 1, 0, newHash, &rep, inC);
                 if (val > alpha)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, 1, 0, newHash, &rep, inC);
+                    val = -pvSearch(b, -beta, -alpha, depth - plyToDepth(1), 1, 0, newHash, &rep, inC);
             }
             remHash(&rep);
         }
@@ -400,11 +413,12 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 static const int marginDepth[4] = {0, 400, 600, 1200};
 static int pvSearch(Board b, int alpha, int beta, int depth, const int height, const int null, const uint64_t prevHash, Repetition* rep, const int isInC)
 {
+    assert(depth % PLY_SIZE == 0);
     assert(rep->index >= 0 && rep->index < 128);
     assert(beta >= alpha);
     assert(b.fifty >= 0);
     assert(height > 0 && height <= MAX_PLY);
-    assert(depth >= 0);
+    assert(depthToPly(depth) >= 0);
 
     if (exitFlag)
         return 0;
@@ -453,10 +467,13 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (height >= MAX_PLY)
         return evaluate(&b);
 
-    if (isInC && (depth < 5 || IS_CAP(moveStack[height-1])))
-        depth++;
+    if (isInC && (depth < plyToDepth(5) || IS_CAP(moveStack[height-1])))
+        depth += plyToDepth(1);
     else if (depth == 0)
-        return qsearch(b, alpha, beta, -1);
+        return qsearch(b, alpha, beta, plyToDepth(-1));
+
+    const int currentRealDepth = depthToPly(depth);
+    assert(plyToDepth(currentRealDepth) == depth);
 
     int val, ttHit = 0, ev = MINS_INF;
     Move bestM = NO_MOVE;
@@ -465,7 +482,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     if (tableEntry->key == prevHash)
     {
         assert(hashPosition(&b) == tableEntry->key);
-        if (height > 3 && tableEntry->depth >= depth && abs(tableEntry->val) < PLUS_MATE - 200)
+        if (height > 3 && tableEntry->depth >= currentRealDepth && abs(tableEntry->val) < PLUS_MATE - 200)
         {
             switch (tableEntry->flag)
             {
@@ -485,7 +502,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         }
 
         bestM = tableEntry->m;
-        if (!isInC)
+        if (!isInC) //TODO: See if this is needed
             ev = tableEntry->eval;
         assert(bestM.from != -1);
         ttHit = moveIsValidBasic(&b, &bestM);
@@ -504,19 +521,19 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         assert(ev != MINS_INF);
 
         //Razoring
-        if (depth == 1 && ev + V_ROOK[0] <= alpha)
+        if (depth == plyToDepth(1) && ev + V_ROOK[0] <= alpha)
         {
-            const int razScore = qsearch(b, alpha, beta, -1);
+            const int razScore = qsearch(b, alpha, beta, plyToDepth(-1));
             if (razScore >= beta)
                 return razScore;
         }
 
         //Static beta pruning
-        if (depth <= 4 && ev - 180 * depth >= beta && abs(ev) < 9000)
+        if (depth <= plyToDepth(4) && ev - 180 * currentRealDepth >= beta && abs(ev) < 9000)
             return beta;
 
         //Null move
-        if (!null && ev >= beta && depth > R && !zugz(b))
+        if (!null && ev >= beta && depth > plyToDepth(R) && !zugz(b))
         {
             if (nullMove(b, depth, beta, prevHash))
             {
@@ -529,7 +546,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
         //Futility pruning
         //TODO: Probably wrongly implemented
-        if (depth <= 7 && abs(alpha) <= 9000 && ev + fmargin[depth] <= alpha)
+        if (depth <= plyToDepth(7) && abs(alpha) <= 9000 && ev + fmargin[currentRealDepth] <= alpha)
             fprune = 1; //return ev;
     }
 
@@ -597,23 +614,23 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     const int improving = height > 1 && ev > evalStack[height-2] + 20 && !isInC && !null;
     const int notImproving = height > 1 && ev < evalStack[height-2] - 75 && !isInC && !null;
 
-    assignScores(&b, list, numMoves, bestM, depth);
+    assignScores(&b, list, numMoves, bestM, currentRealDepth);
     sort(list, list+numMoves);
 
     int iid = 0;
-    if ((iid = (depth > 5 && list[0].score < 290 && numMoves > 6 - pv && !ttHit)))
+    if ((iid = (depth > plyToDepth(5) && list[0].score < 290 && numMoves > 6 - pv && !ttHit)))
     {
-        const int targD = pv? depth - 3 : depth / 4;
+        const int targD = pv? depth - plyToDepth(3) : plyToDepth(depthToPly(depth) / 4);
         internalIterDeepening(b, list, numMoves, alpha, beta, targD, newHeight, prevHash, rep);
     }
 
-    const int canBreak = depth <= 3 && ev + marginDepth[depth] <= alpha && !isInC;
+    const int canBreak = depth <= plyToDepth(3) && ev + marginDepth[currentRealDepth] <= alpha && !isInC;
     //const int fewMovesExt = b.stm != us && numMoves < 5;
 
     Move m;
 
     //ProbCut
-    if (!isInC && !pv && depth >= 5)
+    if (!isInC && !pv && depth >= plyToDepth(5))
     {
         const int probBeta = beta + 160;
         for (int i = 0; i < numMoves; ++i)
@@ -624,7 +641,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
             moveStack[height] = m;
             assert(RANGE_64(m.from) && RANGE_64(m.to));
-            if (canBreak && !IS_CAP(m) && (i > 3 + depth || (i > 3 && !pv)))
+            if (canBreak && !IS_CAP(m) && (i > 3 + currentRealDepth || (i > 3 && !pv)))
                 break;
 
             makeMove(&b, m, &h);
@@ -634,7 +651,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             if (useNNUEEval) updateDo(&q, m, &b);
             addHash(rep, newHash);
 
-            val = -pvSearch(b, -probBeta, -probBeta+1, depth - 4, newHeight, null, newHash, rep, inC);
+            val = -pvSearch(b, -probBeta, -probBeta+1, depth - plyToDepth(4), newHeight, null, newHash, rep, inC);
             undoMove(&b, m, &h);
             if (useNNUEEval) updateUndo(&q, &b);
             remHash(rep);
@@ -658,7 +675,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
         m = list[i];
         moveStack[height] = m;
         assert(RANGE_64(m.from) && RANGE_64(m.to));
-        if (canBreak && !IS_CAP(m) && (i > 3 + depth || (i > 3 && !pv)))
+        if (canBreak && !IS_CAP(m) && (i > 3 + currentRealDepth || (i > 3 && !pv)))
             break;
 
         assert(b.stm == prev);
@@ -687,22 +704,23 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             addHash(rep, newHash);
             if (i == 0)
             {
-                val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
+                val = -pvSearch(b, -beta, -alpha, depth - plyToDepth(1), newHeight, null, newHash, rep, inC);
             }
             else
             {
-                int reduction = 1;
-                if (depth > 1 && !inC && !isInC)
+                int reduction = plyToDepth(1);
+                if (depth > plyToDepth(1) && !inC && !isInC)
                 {
+                    reduction = 1;
                     if (i > 3 + 2*pv)
                     {
                         int hv = history[1^b.stm][BASE_64(m.from, m.to)];
-                        reduction += 1 - (!pv && improving) + depth / 3 - (hv > 1250);
+                        reduction += 1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250);
                     }
 
                     if (!pv && notImproving)
                         reduction++;
-                    else if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < 4))
+                    else if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < plyToDepth(4)))
                         reduction--;
                     else if (m.piece == PAWN && isAdvancedPassedPawn(m, b.piece[b.stm][PAWN], 1 ^ b.stm))
                         reduction--;
@@ -711,16 +729,19 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     else if (height > 1 && moveStack[height-2].to == m.from && moveStack[height-2].from == m.to)
                         reduction++;
 
+                    reduction *= PLY_SIZE;
+
                     if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
-                    if (reduction < 1) reduction = 1;
+                    if (reduction < plyToDepth(1)) reduction = plyToDepth(1);
                 }
 
                 assert(depth - reduction >= 0);
+                assert((depth - reduction) % PLY_SIZE == 0);
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep, inC);
-                if (val > alpha && reduction > 1)
-                    val = -pvSearch(b, -alpha-1, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
+                if (val > alpha && reduction > plyToDepth(1))
+                    val = -pvSearch(b, -alpha-1, -alpha, depth - plyToDepth(1), newHeight, null, newHash, rep, inC);
                 if (pv && val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - 1, newHeight, null, newHash, rep, inC);
+                    val = -pvSearch(b, -beta, -alpha, depth - plyToDepth(1), newHeight, null, newHash, rep, inC);
             }
 
             remHash(rep);
@@ -748,14 +769,14 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
                     if (!IS_CAP(bestM))
                     {
-                        addHistory(bestM.from, bestM.to, depth*depth, b.stm);
-                        addKM(bestM, depth);
+                        addHistory(bestM.from, bestM.to, currentRealDepth*currentRealDepth, b.stm);
+                        addKM(bestM, currentRealDepth);
                     }
 
                     for (int j = 0; j < i; ++j)
                     {
                         if (!IS_CAP(list[j]))
-                            decHistory(list[j].from, list[j].to, min(depth, 4), b.stm);
+                            decHistory(list[j].from, list[j].to, min(currentRealDepth, 4), b.stm);
                     }
                     break;
                 }
@@ -771,12 +792,12 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
     else if (best >= beta)
         flag = LO;
 
-    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = best, .eval = ev, .depth = depth, .flag = flag};
+    table[index] = (Eval) {.key = prevHash, .m = bestM, .val = best, .eval = ev, .depth = currentRealDepth, .flag = flag};
 
     return best;
 }
 
-int qsearch(Board b, int alpha, const int beta, const int d)
+int qsearch(Board b, int alpha, const int beta, const int depth)
 {
     assert(beta >= alpha);
     #ifdef DEBUG
@@ -796,7 +817,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
     else if (score + 9000 <= alpha)
         return alpha;
 
-    if (d == 0)
+    if (depth == 0)
         return alpha;
 
     Move list[NMOVES];
@@ -826,7 +847,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
         {
             if (useNNUEEval) updateDo(&q, list[i], &b);
             undo = 1;
-            val = -qsearch(b, -beta, -alpha, d - 1 /*+ (list[i].capture < 3)*/);
+            val = -qsearch(b, -beta, -alpha, depth - plyToDepth(1) /*+ (list[i].capture < 3)*/);
         }
 
         undoMove(&b, list[i], &h);
@@ -849,7 +870,7 @@ int qsearch(Board b, int alpha, const int beta, const int d)
 static void internalIterDeepening(Board b, Move* list, const int numMoves, int alpha, const int beta, const int depth, const int height, const uint64_t prevHash, Repetition* rep)
 {
     assert(beta >= alpha);
-    assert(depth >= 1);
+    assert(depth >= 0);
     assert(height > 0 && height <= MAX_PLY);
 
     uint64_t newHash;
@@ -876,7 +897,7 @@ static void internalIterDeepening(Board b, Move* list, const int numMoves, int a
             if (useNNUEEval) updateDo(&q, list[i], &b);
             undo = 1;
             addHash(rep, newHash);
-            val = -pvSearch(b, -beta, -alpha, depth - 1, height, 1, newHash, rep, isInCheck(&b, b.stm));
+            val = -pvSearch(b, -beta, -alpha, depth - plyToDepth(1), height, 1, newHash, rep, isInCheck(&b, b.stm));
             remHash(rep);
         }
 
@@ -950,10 +971,10 @@ static Move tableLookUp(Board b, int* tbAv)
 
 static int nullMove(Board b, const int depth, const int beta, const uint64_t prevHash)
 {
-    assert(depth >= R);
+    assert(depth > plyToDepth(R));
     Repetition _rep = (Repetition) {.index = 0};
     b.stm ^= 1;
-    const int td = (depth < 6)? depth - R : depth / 3 + 1;
+    const int td = (depth < plyToDepth(6))? depth - plyToDepth(R) : plyToDepth(depthToPly(depth) / 3) + plyToDepth(1);
     const int val = -pvSearch(b, -beta, -beta + 1, td, MAX_PLY - 15, 1, changeTurn(prevHash), &_rep, 0);
     b.stm ^= 1;
 
