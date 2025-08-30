@@ -61,7 +61,7 @@ inline static int isAdvancedPassedPawn(const Move m, const uint64_t oppPawns, co
 }
 inline static const int depthToPly(const int depth)
 {
-    assert(depth % PLY_SIZE == 0);
+    assert(depth >= -5 * PLY_SIZE);
     return depth / PLY_SIZE;
 }
 
@@ -313,11 +313,11 @@ Move bestTime(Board b, Repetition rep, SearchParams sp)
 
     #ifdef DEBUG
     printf("Beta Hits: %f\n", (float)betaCutOffHit / betaCutOff);
-    printf("Qsearch Nodes: %llu\n", qsearchNodes);
-    printf("Null Cutoffs: %llu\n", nullCutOffs);
-    printf("Researches: %llu\n", researches);
-    printf("Repetitions: %llu\n", repe);
-    printf("Queries: %llu\n", queries);
+    printf("Qsearch Nodes: %lu\n", qsearchNodes);
+    printf("Null Cutoffs: %lu\n", nullCutOffs);
+    printf("Researches: %lu\n", researches);
+    printf("Repetitions: %lu\n", repe);
+    printf("Queries: %lu\n", queries);
     #endif
 
     playWithTime = 0;
@@ -413,7 +413,6 @@ static Move bestMoveList(Board b, const int depth, int alpha, int beta, Move* li
 static const int marginDepth[4] = {0, 400, 600, 1200};
 static int pvSearch(Board b, int alpha, int beta, int depth, const int height, const int null, const uint64_t prevHash, Repetition* rep, const int isInC)
 {
-    assert(depth % PLY_SIZE == 0);
     assert(rep->index >= 0 && rep->index < 128);
     assert(beta >= alpha);
     assert(b.fifty >= 0);
@@ -469,11 +468,10 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
 
     if (isInC && (depth < plyToDepth(5) || IS_CAP(moveStack[height-1])))
         depth += plyToDepth(1);
-    else if (depth == 0)
+    else if (depth < plyToDepth(1))
         return qsearch(b, alpha, beta, plyToDepth(-1));
 
     const int currentRealDepth = depthToPly(depth);
-    assert(plyToDepth(currentRealDepth) == depth);
 
     int val, ttHit = 0, ev = MINS_INF;
     Move bestM = NO_MOVE;
@@ -711,32 +709,28 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                 int reduction = plyToDepth(1);
                 if (depth > plyToDepth(1) && !inC && !isInC)
                 {
-                    reduction = 1;
                     if (i > 3 + 2*pv)
                     {
                         int hv = history[1^b.stm][BASE_64(m.from, m.to)];
-                        reduction += 1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250);
+                        reduction += plyToDepth(1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250));
                     }
 
                     if (!pv && notImproving)
-                        reduction++;
+                        reduction += plyToDepth(1);
                     else if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < plyToDepth(4)))
-                        reduction--;
+                        reduction += plyToDepth(-1);
                     else if (m.piece == PAWN && isAdvancedPassedPawn(m, b.piece[b.stm][PAWN], 1 ^ b.stm))
-                        reduction--;
+                        reduction += plyToDepth(-1);
                     else if (!IS_CAP(m) && m.piece == KING && !list[i].castle)
-                        reduction++;
+                        reduction += plyToDepth(1);
                     else if (height > 1 && moveStack[height-2].to == m.from && moveStack[height-2].from == m.to)
-                        reduction++;
-
-                    reduction *= PLY_SIZE;
+                        reduction += plyToDepth(1);
 
                     if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
                     if (reduction < plyToDepth(1)) reduction = plyToDepth(1);
                 }
 
                 assert(depth - reduction >= 0);
-                assert((depth - reduction) % PLY_SIZE == 0);
                 val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep, inC);
                 if (val > alpha && reduction > plyToDepth(1))
                     val = -pvSearch(b, -alpha-1, -alpha, depth - plyToDepth(1), newHeight, null, newHash, rep, inC);
