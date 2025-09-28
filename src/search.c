@@ -722,8 +722,8 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     if (i > 3 + 2*pv)
                     {
                         int hv = history[1^b.stm][BASE_64(m.from, m.to)];
-                        reduction += plyToDepth(1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250));
-                        //reduction = max(min(lmr(currentRealDepth, i), depth / 3), 1*PLY_SIZE) + plyToDepth(-(!pv && improving) - (hv > 1250));
+                        //reduction += plyToDepth(1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250));
+                        reduction += max(min(lmr(currentRealDepth, i), depth / 3), 1*PLY_SIZE) + plyToDepth(-(!pv && improving) - (hv > 1250));
                         //reduction += plyToDepth(1 - (!pv && improving) - (hv > 1250)) + depth / 3;
                     }
 
@@ -733,7 +733,7 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
                     if (m.piece == PAWN && isAdvancedPassedPawn(m, b.piece[b.stm][PAWN], 1 ^ b.stm))
                         reduction += plyToDepth(-1);
 
-                    if (!IS_CAP(m) && m.piece == KING && !list[i].castle)
+                    else if (!IS_CAP(m) && m.piece == KING && !list[i].castle)
                         reduction += plyToDepth(1);
                     else if (height > 1 && moveStack[height-2].to == m.from && moveStack[height-2].from == m.to)
                         reduction += plyToDepth(1);
