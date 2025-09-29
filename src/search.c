@@ -716,38 +716,42 @@ static int pvSearch(Board b, int alpha, int beta, int depth, const int height, c
             }
             else
             {
+                int extension = plyToDepth(
+                    (height > 1 && moveStack[height-1].to == m.to)
+                    );
                 int reduction = plyToDepth(1);
-                if (depth > plyToDepth(1) && !inC && !isInC)
+                if (depth > plyToDepth(2) && !IS_CAP(m) && i > 3)
                 {
-                    if (i > 3 + 2*pv)
-                    {
-                        int hv = history[1^b.stm][BASE_64(m.from, m.to)];
-                        //reduction += plyToDepth(1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250));
-                        reduction += max(min(lmr(currentRealDepth, i), depth / 3), 1*PLY_SIZE) + plyToDepth(-(!pv && improving) - (hv > 1250));
-                        //reduction += plyToDepth(1 - (!pv && improving) - (hv > 1250)) + depth / 3;
-                    }
+                    int hv = history[1^b.stm][BASE_64(m.from, m.to)];
+                    //reduction += plyToDepth(1 - (!pv && improving) + (depthToPly(depth) / 3) - (hv > 1250));
+                    reduction += lmr(currentRealDepth, i);
 
-                    //TODO: Test this more
-                    if ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < plyToDepth(4)))
-                        reduction += plyToDepth(-1);
-                    if (m.piece == PAWN && isAdvancedPassedPawn(m, b.piece[b.stm][PAWN], 1 ^ b.stm))
-                        reduction += plyToDepth(-1);
-
-                    else if (!IS_CAP(m) && m.piece == KING && !list[i].castle)
-                        reduction += plyToDepth(1);
-                    else if (height > 1 && moveStack[height-2].to == m.from && moveStack[height-2].from == m.to)
-                        reduction += plyToDepth(1);
-
-                    if (reduction > depth) reduction = depth; //TODO: Try removing this and setting depth <= 0
-                    if (reduction < plyToDepth(1)) reduction = plyToDepth(1);
+                    reduction -= plyToDepth(
+                          ((IS_CAP(m) && m.capture < PAWN) || (moveStack[height-1].to == m.to && depth < plyToDepth(4)))
+                        + (m.piece == PAWN && isAdvancedPassedPawn(m, b.piece[b.stm][PAWN], 1 ^ b.stm))
+                        + inC
+                        + isInC
+                        + pv
+                        + (!pv && improving)
+                        + (hv > 1250)
+                        );
+                    reduction += plyToDepth( 
+                          (!IS_CAP(m) && m.piece == KING && !list[i].castle)
+                        + (height > 1 && moveStack[height-2].to == m.from && moveStack[height-2].from == m.to)
+                        );
                 }
 
-                assert(depth - reduction >= 0);
-                val = -pvSearch(b, -alpha-1, -alpha, depth - reduction, newHeight, null, newHash, rep, inC);
+                extension = min(extension, plyToDepth(1));
+                int targetDepth = depth + extension;
+                if (reduction > targetDepth) reduction = targetDepth; //TODO: Try removing this and setting depth <= 0
+                if (reduction < plyToDepth(1)) reduction = plyToDepth(1);
+
+                assert(targetDepth - reduction >= 0);
+                val = -pvSearch(b, -alpha-1, -alpha, targetDepth - reduction, newHeight, null, newHash, rep, inC);
                 if (val > alpha && reduction > plyToDepth(1))
-                    val = -pvSearch(b, -alpha-1, -alpha, depth - plyToDepth(1), newHeight, null, newHash, rep, inC);
+                    val = -pvSearch(b, -alpha-1, -alpha, targetDepth - plyToDepth(1), newHeight, null, newHash, rep, inC);
                 if (pv && val > alpha && val < beta)
-                    val = -pvSearch(b, -beta, -alpha, depth - plyToDepth(1), newHeight, null, newHash, rep, inC);
+                    val = -pvSearch(b, -beta, -alpha, targetDepth - plyToDepth(1), newHeight, null, newHash, rep, inC);
             }
 
             remHash(rep);
